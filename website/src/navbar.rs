@@ -16,7 +16,7 @@ fn create_link(app: &mut App, navigate: NavigateFn, label: &str, route: &str) ->
     text.set_font_size(app, 16.0);
     text.set_selectable(app, false);
     text.set_color(app, NAVBAR_TEXT_COLOR);
-    let link = Link(app, move |app| navigate(&route_owned, app));
+    let link = Link(app, move |app, states| navigate(&route_owned, app, states));
     link.push(app, text);
     link
 }

@@ -13,7 +13,7 @@ use crate::elements::scrollable::{ScrollOptions, ScrollState};
 use crate::elements::{DynElement, ElementInternals, RetainedElements};
 use crate::events::{CheckboxToggledEvent, ClickEvent, CustomEvent, EventCallbackKind, EventKind, EventListenerOptions, FocusEvent, KeyboardEvent, PointerButtonEvent, PointerCaptureEvent, PointerEnterEvent, PointerId, PointerLeaveEvent, PointerMovedEvent, RadioValueChangedEvent, ScrollEvent, SliderValueChangedEvent, TextInputChangedEvent, UnfocusEvent};
 use crate::style::{AlignContent, AlignItems, AlignSelf, Animation, BoxShadow, BoxSizing, Display, FlexDirection, FlexWrap, FontFamily, FontStyle, FontWeight, JustifyContent, Overflow, Position, ScrollbarColor, TextAlign, Underline, Unit};
-use crate::{App, RetGuiError};
+use crate::{App, RetGuiError, States};
 
 fn with_element<R>(
     element: DynElement,
@@ -154,7 +154,7 @@ pub trait Element: Copy {
     fn add_pointer_enter_listener(
         &self,
         app: &mut App,
-        on_pointer_enter: impl Fn(&mut PointerEnterEvent, &mut App) + 'static,
+        on_pointer_enter: impl Fn(&mut PointerEnterEvent, &mut App, &mut States) + 'static,
     ) {
         with_element_mut(self.as_dyn_element(), &mut app.elements, |element| {
             element.on_pointer_enter(Rc::new(on_pointer_enter))
@@ -165,7 +165,7 @@ pub trait Element: Copy {
     fn add_pointer_leave_listener(
         &self,
         app: &mut App,
-        on_pointer_leave: impl Fn(&mut PointerLeaveEvent, &mut App) + 'static,
+        on_pointer_leave: impl Fn(&mut PointerLeaveEvent, &mut App, &mut States) + 'static,
     ) {
         with_element_mut(self.as_dyn_element(), &mut app.elements, |element| {
             element.on_pointer_leave(Rc::new(on_pointer_leave))
@@ -176,7 +176,7 @@ pub trait Element: Copy {
     fn add_radio_value_changed_listener(
         &self,
         app: &mut App,
-        on_radio_value_changed: impl Fn(&mut RadioValueChangedEvent, &mut App) + 'static,
+        on_radio_value_changed: impl Fn(&mut RadioValueChangedEvent, &mut App, &mut States) + 'static,
     ) {
         with_element_mut(self.as_dyn_element(), &mut app.elements, |element| {
             element.on_radio_value_changed(Rc::new(on_radio_value_changed))
@@ -187,7 +187,7 @@ pub trait Element: Copy {
     fn add_checkbox_toggled_listener(
         &self,
         app: &mut App,
-        on_checkbox_toggled: impl Fn(&mut CheckboxToggledEvent, &mut App) + 'static,
+        on_checkbox_toggled: impl Fn(&mut CheckboxToggledEvent, &mut App, &mut States) + 'static,
     ) {
         with_element_mut(self.as_dyn_element(), &mut app.elements, |element| {
             element.on_checkbox_toggled(Rc::new(on_checkbox_toggled))
@@ -198,7 +198,7 @@ pub trait Element: Copy {
     fn add_text_input_changed_listener(
         &self,
         app: &mut App,
-        on_text_input_changed: impl Fn(&mut TextInputChangedEvent, &mut App) + 'static,
+        on_text_input_changed: impl Fn(&mut TextInputChangedEvent, &mut App, &mut States) + 'static,
     ) {
         with_element_mut(self.as_dyn_element(), &mut app.elements, |element| {
             element.on_text_input_changed(Rc::new(on_text_input_changed))
@@ -226,7 +226,7 @@ pub trait Element: Copy {
     fn add_pointer_button_down_listener(
         &self,
         app: &mut App,
-        on_pointer_button_down: impl Fn(&mut PointerButtonEvent, &mut App) + 'static,
+        on_pointer_button_down: impl Fn(&mut PointerButtonEvent, &mut App, &mut States) + 'static,
     ) {
         with_element_mut(self.as_dyn_element(), &mut app.elements, |element| {
             element.on_pointer_button_down(Rc::new(on_pointer_button_down))
@@ -237,7 +237,7 @@ pub trait Element: Copy {
     fn add_pointer_moved_listener(
         &self,
         app: &mut App,
-        on_pointer_moved: impl Fn(&mut PointerMovedEvent, &mut App) + 'static,
+        on_pointer_moved: impl Fn(&mut PointerMovedEvent, &mut App, &mut States) + 'static,
     ) {
         with_element_mut(self.as_dyn_element(), &mut app.elements, |element| {
             element.on_pointer_moved(Rc::new(on_pointer_moved))
@@ -248,7 +248,7 @@ pub trait Element: Copy {
     fn add_pointer_button_up_listener(
         &self,
         app: &mut App,
-        on_pointer_button_up: impl Fn(&mut PointerButtonEvent, &mut App) + 'static,
+        on_pointer_button_up: impl Fn(&mut PointerButtonEvent, &mut App, &mut States) + 'static,
     ) {
         with_element_mut(self.as_dyn_element(), &mut app.elements, |element| {
             element.on_pointer_button_up(Rc::new(on_pointer_button_up))
@@ -256,14 +256,18 @@ pub trait Element: Copy {
     }
 
     /// Adds a click listener.
-    fn add_click_listener(&self, app: &mut App, on_click: impl Fn(&mut ClickEvent, &mut App) + 'static) {
+    fn add_click_listener(&self, app: &mut App, on_click: impl Fn(&mut ClickEvent, &mut App, &mut States) + 'static) {
         with_element_mut(self.as_dyn_element(), &mut app.elements, |element| {
             element.on_click(Rc::new(on_click))
         });
     }
 
     /// Adds a custom event listener.
-    fn add_custom_event_listener(&self, app: &mut App, on_custom_event: impl Fn(&mut CustomEvent, &mut App) + 'static) {
+    fn add_custom_event_listener(
+        &self,
+        app: &mut App,
+        on_custom_event: impl Fn(&mut CustomEvent, &mut App, &mut States) + 'static,
+    ) {
         with_element_mut(self.as_dyn_element(), &mut app.elements, |element| {
             element.on_custom_event(Rc::new(on_custom_event))
         });
@@ -279,14 +283,18 @@ pub trait Element: Copy {
     }
 
     /// Adds a focus event listener.
-    fn add_focus_listener(&self, app: &mut App, on_focus: impl Fn(&mut FocusEvent, &mut App) + 'static) {
+    fn add_focus_listener(&self, app: &mut App, on_focus: impl Fn(&mut FocusEvent, &mut App, &mut States) + 'static) {
         with_element_mut(self.as_dyn_element(), &mut app.elements, |element| {
             element.on_focus(Rc::new(on_focus))
         });
     }
 
     /// Adds an unfocus event listener.
-    fn add_unfocus_listener(&self, app: &mut App, on_unfocus: impl Fn(&mut UnfocusEvent, &mut App) + 'static) {
+    fn add_unfocus_listener(
+        &self,
+        app: &mut App,
+        on_unfocus: impl Fn(&mut UnfocusEvent, &mut App, &mut States) + 'static,
+    ) {
         with_element_mut(self.as_dyn_element(), &mut app.elements, |element| {
             element.on_unfocus(Rc::new(on_unfocus))
         });
@@ -296,7 +304,7 @@ pub trait Element: Copy {
     fn add_lost_pointer_capture_listener(
         &self,
         app: &mut App,
-        on_lost_pointer_capture: impl Fn(&mut PointerCaptureEvent, &mut App) + 'static,
+        on_lost_pointer_capture: impl Fn(&mut PointerCaptureEvent, &mut App, &mut States) + 'static,
     ) {
         with_element_mut(self.as_dyn_element(), &mut app.elements, |element| {
             element.on_lost_pointer_capture(Rc::new(on_lost_pointer_capture))
@@ -307,7 +315,7 @@ pub trait Element: Copy {
     fn add_got_pointer_capture_listener(
         &self,
         app: &mut App,
-        on_got_pointer_capture: impl Fn(&mut PointerCaptureEvent, &mut App) + 'static,
+        on_got_pointer_capture: impl Fn(&mut PointerCaptureEvent, &mut App, &mut States) + 'static,
     ) {
         with_element_mut(self.as_dyn_element(), &mut app.elements, |element| {
             element.on_got_pointer_capture(Rc::new(on_got_pointer_capture))
@@ -318,7 +326,7 @@ pub trait Element: Copy {
     fn add_keyboard_input_listener(
         &self,
         app: &mut App,
-        on_keyboard_input: impl Fn(&mut KeyboardEvent, &mut App) + 'static,
+        on_keyboard_input: impl Fn(&mut KeyboardEvent, &mut App, &mut States) + 'static,
     ) {
         with_element_mut(self.as_dyn_element(), &mut app.elements, |element| {
             element.on_keyboard_input(Rc::new(on_keyboard_input))
@@ -329,7 +337,7 @@ pub trait Element: Copy {
     fn add_slider_value_changed_listener(
         &self,
         app: &mut App,
-        on_slider_value_changed: impl Fn(&mut SliderValueChangedEvent, &mut App) + 'static,
+        on_slider_value_changed: impl Fn(&mut SliderValueChangedEvent, &mut App, &mut States) + 'static,
     ) {
         with_element_mut(self.as_dyn_element(), &mut app.elements, |element| {
             element.on_slider_value_changed(Rc::new(on_slider_value_changed))
@@ -337,7 +345,11 @@ pub trait Element: Copy {
     }
 
     /// Adds a scroll event listener.
-    fn add_scroll_listener(&self, app: &mut App, on_scroll: impl Fn(&mut ScrollEvent, &mut App) + 'static) {
+    fn add_scroll_listener(
+        &self,
+        app: &mut App,
+        on_scroll: impl Fn(&mut ScrollEvent, &mut App, &mut States) + 'static,
+    ) {
         with_element_mut(self.as_dyn_element(), &mut app.elements, |element| {
             element.on_scroll(Rc::new(on_scroll))
         });

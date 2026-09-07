@@ -25,12 +25,10 @@ fn create_button(
     button.set_padding(app, px(15), px(30), px(15), px(30));
     button.set_justify_content(app, JustifyContent::Center);
     button.set_background_color(app, base_color);
-    button.add_pointer_button_up_listener(app, move |event, app| {
+    button.add_pointer_button_up_listener(app, move |event, app, states| {
         if event.button == Some(PointerButton::Left) {
-            let count = state.update(app, |count| {
-                *count += delta;
-                *count
-            });
+            let count = state.borrow_mut(states);
+            *count += delta;
             count_text.set_text(app, &format!("Count: {count}"));
             event.stop_propagation();
         }
@@ -46,8 +44,8 @@ mod test_utils;
 fn counter() {
     run(
         "counter_test",
-        |app| {
-            let count = app.insert_state(0_i64);
+        |app, states| {
+            let count = states.insert(0_i64);
             let count_text = Text::new(app, "Count: 0");
             let subtract = create_button(app, "-", rgb(244, 67, 54), -1, count, count_text);
             let add_button = create_button(app, "+", rgb(76, 175, 80), 1, count, count_text);
@@ -72,7 +70,7 @@ fn counter() {
                 test.click(&add_button);
             }
 
-            assert_eq!(*test.app().state(count), 3);
+            assert_eq!(*count.borrow(test.states()), 3);
             test_utils::check_snapshot(test_utils::screenshot_rgb(test, &window), "counter.png");
         },
     );

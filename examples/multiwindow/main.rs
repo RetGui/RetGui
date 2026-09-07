@@ -1,7 +1,7 @@
 use retgui::elements::{Container, Element, State, Text, Window};
 use retgui::events::Event;
 use retgui::style::{AlignItems, Display, FlexDirection, JustifyContent, Unit};
-use retgui::{App, Color, rgb};
+use retgui::{App, Color, States, rgb};
 
 #[derive(Default, Clone, Copy)]
 pub struct Counter {
@@ -40,14 +40,12 @@ fn create_button(
     container.set_justify_content(app, JustifyContent::Center);
     container.set_align_items(app, AlignItems::Center);
     container.set_background_color(app, base_color);
-    container.add_click_listener(app, move |event, app| {
-        let (create_window, count) = state.update(app, |state| {
-            let create_window = state.change(delta);
-            (create_window, state.count())
-        });
-        count_text.set_text(app, &format!("Count: {count}"));
+    container.add_click_listener(app, move |event, app, states| {
+        let state = state.borrow_mut(states);
+        let create_window = state.change(delta);
+        count_text.set_text(app, &format!("Count: {}", state.count()));
         if create_window {
-            counter(app);
+            counter(app, states);
         }
         event.stop_propagation();
     });
@@ -55,8 +53,8 @@ fn create_button(
     container
 }
 
-pub fn counter(app: &mut App) -> Window {
-    let count = app.insert_state(Counter::default());
+pub fn counter(app: &mut App, states: &mut States) -> Window {
+    let count = states.insert(Counter::default());
     let count_text = Text::new(app, "Count: 0");
     let subtract = create_button("-", rgb(244, 67, 54), -1, app, count, count_text);
     let add = create_button("+", rgb(76, 175, 80), 1, app, count, count_text);
@@ -84,9 +82,10 @@ pub fn counter(app: &mut App) -> Window {
 
 fn main() {
     let mut app = App::new();
-    let _counter1 = counter(&mut app);
+    let mut states = States::new();
+    let _counter1 = counter(&mut app, &mut states);
     use retgui::RetGuiOptions;
 
     util::setup_logging();
-    retgui::retgui_main(app, RetGuiOptions::basic("Counter"));
+    retgui::retgui_main(app, states, RetGuiOptions::basic("Counter"));
 }

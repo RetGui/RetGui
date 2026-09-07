@@ -14,7 +14,7 @@ use crate::elements::codeeditor::highlighter::compute_code_editor_style;
 use crate::elements::element_data::ElementData;
 use crate::elements::internal_helpers::{apply_generic_container_layout, draw_generic_container};
 use crate::elements::traits::clone_element;
-use crate::elements::{DynElement, Element, ElementIds, ElementInternals, ElementStates, RetGuiAccessTree, RetainedElements, TextInput, TextInputElement};
+use crate::elements::{DynElement, Element, ElementIds, ElementInternals, RetGuiAccessTree, RetainedElements, TextInput, TextInputElement};
 use crate::events::EventKind;
 use crate::layout::GummyTree;
 use crate::text::text_context::TextContext;
@@ -85,21 +85,12 @@ impl ElementInternals for CodeEditorElement {
     fn draw(
         &self,
         elements: &RetainedElements,
-        states: &ElementStates,
         renderer: &mut dyn Renderer,
         resource_manager: Arc<ResourceManager>,
         scale_factor: f64,
         text_context: &mut TextContext,
     ) {
-        draw_generic_container(
-            self,
-            elements,
-            states,
-            renderer,
-            resource_manager,
-            text_context,
-            scale_factor,
-        );
+        draw_generic_container(self, elements, renderer, resource_manager, text_context, scale_factor);
     }
 
     fn on_event(
@@ -112,7 +103,6 @@ impl ElementInternals for CodeEditorElement {
         _focus: &mut Option<DynElement>,
         _focus_outline_visible: bool,
         _pending_animation_updates: &mut Vec<(DynElement, bool)>,
-        _states: &mut ElementStates,
         event: &mut EventKind,
         _text_context: &mut TextContext,
     ) {

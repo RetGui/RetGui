@@ -46,7 +46,7 @@ use crate::app::App;
 use crate::app::CreatedRenderer;
 use crate::elements::element_data::ElementData;
 use crate::elements::internal_helpers::{apply_generic_container_layout, draw_generic_container};
-use crate::elements::{DynElement, Element, ElementIds, ElementInternals, ElementStates, HasElementData, RetainedElements, scrollable};
+use crate::elements::{DynElement, Element, ElementIds, ElementInternals, HasElementData, RetainedElements, scrollable};
 use crate::events::pointer_capture::PointerCapture;
 use crate::events::{EventKind, KeyboardEvent, PointerScrollEvent, PointerType};
 use crate::layout::GummyTree;
@@ -139,21 +139,12 @@ impl ElementInternals for WindowElement {
     fn draw(
         &self,
         elements: &RetainedElements,
-        states: &ElementStates,
         renderer: &mut dyn Renderer,
         resource_manager: Arc<ResourceManager>,
         scale_factor: f64,
         text_context: &mut TextContext,
     ) {
-        draw_generic_container(
-            self,
-            elements,
-            states,
-            renderer,
-            resource_manager,
-            text_context,
-            scale_factor,
-        );
+        draw_generic_container(self, elements, renderer, resource_manager, text_context, scale_factor);
     }
 
     fn on_event(
@@ -166,7 +157,6 @@ impl ElementInternals for WindowElement {
         focus: &mut Option<DynElement>,
         focus_outline_visible: bool,
         _pending_animation_updates: &mut Vec<(DynElement, bool)>,
-        _states: &mut ElementStates,
         event: &mut EventKind,
         _text_context: &mut TextContext,
     ) {
@@ -277,7 +267,6 @@ impl Window {
         WindowElement::on_request_redraw(
             &mut retgui_app.elements,
             &mut retgui_app.gummy_tree,
-            &retgui_app.states,
             &mut retgui_app.text_context,
             retgui_app.resource_manager.clone(),
             self.inner,
@@ -307,7 +296,6 @@ impl WindowElement {
     pub(crate) fn on_request_redraw(
         elements: &mut RetainedElements,
         gummy_tree: &mut GummyTree,
-        states: &ElementStates,
         text_context: &mut TextContext,
         resource_manager: Arc<ResourceManager>,
         window: DynElement,
@@ -316,7 +304,6 @@ impl WindowElement {
             (window as &mut dyn Any).downcast_mut::<Self>().unwrap().on_redraw(
                 elements,
                 gummy_tree,
-                states,
                 text_context,
                 resource_manager,
             );
@@ -326,7 +313,6 @@ impl WindowElement {
     pub(crate) fn create_window(
         elements: &mut RetainedElements,
         gummy_tree: &mut GummyTree,
-        states: &ElementStates,
         text_context: &mut TextContext,
         resource_manager: Arc<ResourceManager>,
         runtime: &mut RetGuiRuntime,
@@ -338,7 +324,6 @@ impl WindowElement {
             (window as &mut dyn Any).downcast_mut::<Self>().unwrap().create(
                 elements,
                 gummy_tree,
-                states,
                 text_context,
                 resource_manager,
                 runtime,
@@ -644,7 +629,6 @@ impl WindowElement {
         &mut self,
         elements: &mut RetainedElements,
         gummy_tree: &mut GummyTree,
-        states: &ElementStates,
         text_context: &mut TextContext,
         resource_manager: Arc<ResourceManager>,
     ) {
@@ -655,7 +639,7 @@ impl WindowElement {
 
         let layout_stats = self.layout_window(elements, gummy_tree, text_context, resource_manager.clone());
 
-        let render_stats = self.draw_window(elements, gummy_tree, states, text_context, resource_manager);
+        let render_stats = self.draw_window(elements, gummy_tree, text_context, resource_manager);
         self.perf_stats
             .update_stats(frame_start.elapsed(), layout_stats, render_stats);
     }
@@ -677,7 +661,6 @@ impl WindowElement {
         &mut self,
         elements: &mut RetainedElements,
         gummy_tree: &mut GummyTree,
-        states: &ElementStates,
         text_context: &mut TextContext,
         resource_manager: Arc<ResourceManager>,
         runtime: &mut RetGuiRuntime,
@@ -695,7 +678,7 @@ impl WindowElement {
                 .renderer_type
                 .create_headless(self.window_size.width, self.window_size.height);
             self.resize_renderer_surface();
-            self.on_redraw(elements, gummy_tree, states, text_context, resource_manager);
+            self.on_redraw(elements, gummy_tree, text_context, resource_manager);
             return;
         };
 
@@ -760,7 +743,7 @@ impl WindowElement {
         }
 
         {
-            self.on_redraw(elements, gummy_tree, states, text_context, resource_manager);
+            self.on_redraw(elements, gummy_tree, text_context, resource_manager);
             let root = self
                 .element_data
                 .access_root
@@ -835,7 +818,6 @@ impl WindowElement {
         &mut self,
         elements: &mut RetainedElements,
         gummy_tree: &mut GummyTree,
-        states: &ElementStates,
         text_context: &mut TextContext,
         resource_manager: Arc<ResourceManager>,
     ) -> RenderStats {
@@ -848,7 +830,6 @@ impl WindowElement {
 
         self.draw_transformed(
             elements,
-            states,
             &mut *renderer,
             resource_manager.clone(),
             scale_factor,

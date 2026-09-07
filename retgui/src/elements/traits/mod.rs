@@ -1,4 +1,5 @@
 pub use deep_clone::clone_element;
+pub(crate) use deep_clone::finish_clone;
 pub use element::Element;
 pub use element_data::HasElementData;
 pub(crate) use element_internals::set_focus_outline_visible;

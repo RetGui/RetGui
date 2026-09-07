@@ -1,7 +1,7 @@
 use retgui::elements::{Container, Element, State, Text, Window};
 use retgui::events::Event;
 use retgui::style::{AlignItems, BoxShadow, FlexDirection, JustifyContent};
-use retgui::{App, Color, RetGuiOptions, pct, px, retgui_main, rgb, rgba};
+use retgui::{App, Color, RetGuiOptions, States, pct, px, retgui_main, rgb, rgba};
 
 use util::setup_logging;
 
@@ -33,11 +33,9 @@ fn create_button(
     container.set_padding(app, px(15), px(30), px(15), px(30));
     container.set_justify_content(app, JustifyContent::Center);
     container.set_background_color(app, base_color);
-    container.add_click_listener(app, move |event, app| {
-        let count = state.update(app, |count| {
-            *count += delta;
-            *count
-        });
+    container.add_click_listener(app, move |event, app, states| {
+        let count = state.borrow_mut(states);
+        *count += delta;
         count_text.set_text(app, &format!("Count: {count}"));
         event.stop_propagation();
     });
@@ -45,8 +43,8 @@ fn create_button(
     container
 }
 
-pub fn counter(app: &mut App) -> Container {
-    let count = app.insert_state(0_i64);
+pub fn counter(app: &mut App, states: &mut States) -> Container {
+    let count = states.insert(0_i64);
     let count_text = Text::new(app, "Count: 0");
     let subtract = create_button(app, "-", rgb(244, 63, 94), -1, count, count_text);
     let add = create_button(app, "+", rgb(16, 185, 129), 1, count, count_text);
@@ -70,10 +68,11 @@ pub fn counter(app: &mut App) -> Container {
 pub fn main() {
     setup_logging();
     let mut app = App::new();
-    let content = counter(&mut app);
+    let mut states = States::new();
+    let content = counter(&mut app, &mut states);
     let window = Window::new(&mut app, "Counter");
     window.set_width(&mut app, pct(100));
     window.set_height(&mut app, pct(100));
     window.push(&mut app, content);
-    retgui_main(app, RetGuiOptions::basic("Counter"));
+    retgui_main(app, states, RetGuiOptions::basic("Counter"));
 }

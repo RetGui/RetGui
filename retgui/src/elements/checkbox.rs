@@ -21,7 +21,7 @@ use crate::elements::element_data::ElementData;
 use crate::elements::element_id::create_unique_element_id;
 use crate::elements::internal_helpers::{apply_generic_container_layout, apply_generic_container_layout_non_dom};
 use crate::elements::traits::clone_element;
-use crate::elements::{DynElement, Element, ElementIds, ElementInternals, ElementStates, RetGuiAccessTree, RetainedElements, scrollable};
+use crate::elements::{DynElement, Element, ElementIds, ElementInternals, RetGuiAccessTree, RetainedElements, scrollable};
 use crate::events::{CheckboxToggledEvent, EventKind};
 use crate::layout::GummyTree;
 use crate::style::Unit;
@@ -102,7 +102,6 @@ impl ElementInternals for CheckboxElement {
     fn draw(
         &self,
         elements: &RetainedElements,
-        states: &ElementStates,
         renderer: &mut dyn Renderer,
         resource_manager: Arc<ResourceManager>,
         _scale_factor: f64,
@@ -160,7 +159,6 @@ impl ElementInternals for CheckboxElement {
 
         self.draw_children(
             elements,
-            states,
             renderer,
             resource_manager.clone(),
             _scale_factor,
@@ -182,7 +180,6 @@ impl ElementInternals for CheckboxElement {
         focus: &mut Option<DynElement>,
         focus_outline_visible: bool,
         _pending_animation_updates: &mut Vec<(DynElement, bool)>,
-        _states: &mut ElementStates,
         event: &mut EventKind,
         _text_context: &mut TextContext,
     ) {
@@ -203,7 +200,6 @@ impl ElementInternals for CheckboxElement {
         &mut self,
         _elements: &mut RetainedElements,
         event_queue: &mut VecDeque<EventKind>,
-        _states: &mut ElementStates,
         event: AccessEvent,
     ) -> Result<(), IsshoError> {
         if let AccessEvent::Toggle = event {

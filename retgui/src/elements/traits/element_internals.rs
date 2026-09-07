@@ -13,7 +13,7 @@ use retgui_renderer::renderer::Renderer;
 use retgui_resource_manager::ResourceManager;
 
 use crate::elements::scrollable::{ScrollState, draw_scrollbar};
-use crate::elements::{DynElement, ElementIds, ElementStates, HasElementData, RetGuiAccessTree, RetainedElements, ScrollOptions, WindowElement};
+use crate::elements::{DynElement, ElementIds, HasElementData, RetGuiAccessTree, RetainedElements, ScrollOptions, WindowElement};
 use crate::events::pointer_capture::PointerCapture;
 use crate::events::{CheckboxToggledHandler, ClickHandler, CustomHandler, EventCallback, EventCallbackKind, EventKind, EventListenerOptions, FocusEvent, FocusHandler, KeyboardInputHandler, PointerCaptureHandler, PointerEnterHandler, PointerEventHandler, PointerId, PointerLeaveHandler, PointerUpdateHandler, RadioValueChangedHandler, ScrollHandler, SliderValueChangedHandler, TextInputChangedHandler, UnfocusEvent, UnfocusHandler};
 use crate::layout::GummyTree;
@@ -52,7 +52,7 @@ impl AnimationSchedule {
 
 /// Internal element methods that should typically be ignored by users. Public for custom elements.
 pub trait ElementInternals: HasElementData + Any {
-    fn deep_clone(
+   fn deep_clone(
         &self,
         elements: &mut RetainedElements,
         gummy_tree: &mut GummyTree,
@@ -96,7 +96,6 @@ pub trait ElementInternals: HasElementData + Any {
     fn draw_children(
         &self,
         elements: &RetainedElements,
-        states: &ElementStates,
         renderer: &mut dyn Renderer,
         resource_manager: Arc<ResourceManager>,
         scale_factor: f64,
@@ -109,7 +108,6 @@ pub trait ElementInternals: HasElementData + Any {
         for child in &self.element_data().children {
             elements.get_for_draw(*child).draw_transformed(
                 elements,
-                states,
                 renderer,
                 resource_manager.clone(),
                 scale_factor,
@@ -158,7 +156,6 @@ pub trait ElementInternals: HasElementData + Any {
     fn draw_transformed(
         &self,
         elements: &RetainedElements,
-        states: &ElementStates,
         renderer: &mut dyn Renderer,
         resource_manager: Arc<ResourceManager>,
         scale_factor: f64,
@@ -187,7 +184,7 @@ pub trait ElementInternals: HasElementData + Any {
             self.element_data().set_accessibility_bounds_from_layout(scale_factor);
         }
 
-        self.draw(elements, states, renderer, resource_manager, scale_factor, text_context);
+        self.draw(elements, renderer, resource_manager, scale_factor, text_context);
         renderer.set_transform(parent_transform);
     }
 
@@ -195,7 +192,6 @@ pub trait ElementInternals: HasElementData + Any {
     fn draw(
         &self,
         _elements: &RetainedElements,
-        _states: &ElementStates,
         _renderer: &mut dyn Renderer,
         _resource_manager: Arc<ResourceManager>,
         _scale_factor: f64,
@@ -227,7 +223,6 @@ pub trait ElementInternals: HasElementData + Any {
         _focus: &mut Option<DynElement>,
         _focus_outline_visible: bool,
         _pending_animation_updates: &mut Vec<(DynElement, bool)>,
-        _states: &mut ElementStates,
         _event: &mut EventKind,
         _text_context: &mut TextContext,
     ) {
@@ -1388,7 +1383,6 @@ pub trait ElementInternals: HasElementData + Any {
         &mut self,
         _elements: &mut RetainedElements,
         _event_queue: &mut VecDeque<EventKind>,
-        _states: &mut ElementStates,
         _event: AccessEvent,
     ) -> Result<(), IsshoError> {
         Ok(())
@@ -1399,7 +1393,6 @@ pub trait ElementInternals: HasElementData + Any {
         &mut self,
         _elements: &mut RetainedElements,
         gummy_tree: &mut GummyTree,
-        _states: &mut ElementStates,
         _pending_resources: &mut VecDeque<(
             retgui_resource_manager::ResourceId,
             retgui_resource_manager::resource_type::ResourceType,

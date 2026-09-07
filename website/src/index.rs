@@ -21,7 +21,7 @@ fn hero_intro(app: &mut App, navigate: NavigateFn) -> Container {
     let learn_label = Text::new(app, "Learn RetGui");
     learn_label.set_selectable(app, false);
     learn_label.set_color(app, palette::css::WHITE);
-    let learn = Link(app, move |app| navigate("/docs", app));
+    let learn = Link(app, move |app, states| navigate("/docs", app, states));
     learn.set_padding(app, px(8), px(20), px(8), px(20));
     learn.set_background_color(app, rgb(69, 117, 230));
     learn.push(app, learn_label);

@@ -22,7 +22,7 @@ use winit::window::WindowId;
 
 #[cfg(target_arch = "wasm32")]
 use crate::app::CreatedRenderer;
-use crate::elements::{AnimationSchedule, DynElement, ElementStates, RetainedElements, Window, WindowElement};
+use crate::elements::{AnimationSchedule, DynElement, RetainedElements, Window, WindowElement};
 use crate::layout::GummyTree;
 use crate::style::StyleVariant;
 use crate::text::text_context::TextContext;
@@ -104,7 +104,6 @@ impl WindowManager {
         &mut self,
         elements: &mut RetainedElements,
         gummy_tree: &mut GummyTree,
-        states: &ElementStates,
         text_context: &mut TextContext,
         resource_manager: &Arc<ResourceManager>,
         runtime: &mut RetGuiRuntime,
@@ -123,7 +122,6 @@ impl WindowManager {
             WindowElement::create_window(
                 elements,
                 gummy_tree,
-                states,
                 text_context,
                 resource_manager.clone(),
                 runtime,
@@ -145,7 +143,6 @@ impl WindowManager {
         &mut self,
         elements: &mut RetainedElements,
         gummy_tree: &mut GummyTree,
-        states: &ElementStates,
         text_context: &mut TextContext,
         resource_manager: &Arc<ResourceManager>,
         runtime: &mut RetGuiRuntime,
@@ -173,7 +170,6 @@ impl WindowManager {
                 WindowElement::create_window(
                     elements,
                     gummy_tree,
-                    states,
                     text_context,
                     resource_manager.clone(),
                     runtime,
@@ -225,7 +221,6 @@ impl WindowManager {
         &mut self,
         elements: &mut RetainedElements,
         gummy_tree: &mut GummyTree,
-        states: &mut ElementStates,
         pending_resources: &mut VecDeque<(ResourceId, ResourceType)>,
         pending_animation_updates: &mut Vec<(DynElement, bool)>,
         window: &Window,
@@ -233,7 +228,6 @@ impl WindowManager {
         self.animation_tick_at(
             elements,
             gummy_tree,
-            states,
             pending_resources,
             pending_animation_updates,
             window,
@@ -245,7 +239,6 @@ impl WindowManager {
         &mut self,
         elements: &mut RetainedElements,
         gummy_tree: &mut GummyTree,
-        states: &mut ElementStates,
         pending_resources: &mut VecDeque<(ResourceId, ResourceType)>,
         pending_animation_updates: &mut Vec<(DynElement, bool)>,
         window: &Window,
@@ -276,7 +269,7 @@ impl WindowManager {
                         let delta = now.duration_since(scheduled.last_tick);
                         scheduled.last_tick = now;
                         let next = elements.dispatch_mut(scheduled.element, |animating, elements| {
-                            animating.animation_tick(elements, gummy_tree, states, pending_resources, delta)
+                            animating.animation_tick(elements, gummy_tree, pending_resources, delta)
                         });
                         if next == AnimationSchedule::None {
                             continue;

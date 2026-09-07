@@ -10,6 +10,7 @@ use std::time::{Duration, Instant};
 use maudio::engine::Engine;
 use maudio::sound::Sound;
 use maudio::sound::notifier::EndNotifier;
+use maudio::sound::sound_flags::SoundFlags;
 
 use retgui_primitives::brush::Brush;
 
@@ -22,17 +23,40 @@ use web_time::{Duration, Instant};
 
 use crate::elements::element_data::ElementData;
 use crate::elements::internal_helpers::{apply_generic_container_layout, draw_generic_container, push_child_to_element, queue_animation_update};
+use crate::elements::tinyvg::TinyVgElement;
 use crate::elements::traits::clone_element;
-use crate::elements::{AnimationSchedule, Button, ButtonElement, DynElement, Element, ElementIds, ElementInternals, ElementStates, RetGuiAccessTree, RetainedElements, Slider, SliderElement, State, Text, TextElement, TinyVg, TinyVgElement, scrollable};
-use crate::events::EventKind;
+use crate::elements::{AnimationSchedule, Button, ButtonElement, DynElement, Element, ElementIds, ElementInternals, RetGuiAccessTree, RetainedElements, Slider, SliderElement, Text, TextElement, TinyVg, scrollable};
+use crate::events::{Event, EventKind};
 use crate::layout::GummyTree;
 use crate::style::{AlignItems, Display, Unit};
 use crate::text::text_context::TextContext;
 use crate::{App, Color, ResourceType, rgb};
 
-pub(crate) struct SoundData {
+struct SoundData {
     sound: Sound,
     end_notifier: EndNotifier,
+}
+
+impl Clone for SoundData {
+    fn clone(&self) -> Self {
+        let mut sound = self
+            .sound
+            .engine()
+            .clone_sound(&self.sound, SoundFlags::NONE)
+            .expect("failed to clone sound");
+        let end_notifier = sound.set_end_callback().expect("failed to set sound end callback");
+        sound.set_volume(self.sound.volume());
+        sound
+            .seek_to_frame(self.sound.cursor_pcm().unwrap_or_default())
+            .expect("failed to seek cloned sound");
+        if self.sound.is_playing() {
+            sound.play_sound().expect("failed to play cloned sound");
+        }
+        Self {
+            sound,
+            end_notifier,
+        }
+    }
 }
 
 pub(crate) struct AudioContext {
@@ -80,7 +104,7 @@ pub(crate) struct AudioElement {
     _volume_icon: ResourceId,
     volume_track: Slider,
     duration: Text,
-    sound_data: Option<State<SoundData>>,
+    sound_data: Option<SoundData>,
     next_ui_update: Option<Instant>,
 }
 
@@ -108,14 +132,38 @@ impl ElementInternals for AudioElement {
         access_tree: &RetGuiAccessTree,
         by_internal_id: &mut ElementIds,
     ) -> DynElement {
-        DynElement::new(clone_element::<Self, _>(
-            self,
-            elements,
-            gummy_tree,
-            access_tree,
-            by_internal_id,
-            |_, _| None,
-        ))
+        let inner = clone_element::<Self, _>(self, elements, gummy_tree, access_tree, by_internal_id, |_, _| None);
+        let missing = DynElement::from_key(Default::default(), elements.store_id());
+        let remap_child = |source: &[DynElement], cloned: &[DynElement], child| {
+            source
+                .iter()
+                .position(|candidate| *candidate == child)
+                .and_then(|index| cloned.get(index).copied())
+                .unwrap_or(missing)
+        };
+        let source_children = &self.element_data.children;
+        let children = &elements.get(inner).element_data().children;
+        let play_button = remap_child(source_children, children, self.play_button.inner);
+        let track = remap_child(source_children, children, self.track.inner);
+        let duration = remap_child(source_children, children, self.duration.inner);
+        let volume_track = remap_child(source_children, children, self.volume_track.inner);
+        let play_button_icon = elements
+            .try_get(self.play_button.inner)
+            .zip(elements.try_get(play_button))
+            .map_or(missing, |(source, cloned)| {
+                remap_child(
+                    &source.element_data().children,
+                    &cloned.element_data().children,
+                    self.play_button_icon.inner,
+                )
+            });
+        let audio = elements.get_as_mut::<Self>(inner);
+        audio.play_button.inner = play_button;
+        audio.play_button_icon.inner = play_button_icon;
+        audio.track.inner = track;
+        audio.duration.inner = duration;
+        audio.volume_track.inner = volume_track;
+        inner
     }
 
     fn apply_layout(
@@ -131,21 +179,12 @@ impl ElementInternals for AudioElement {
     fn draw(
         &self,
         elements: &RetainedElements,
-        states: &ElementStates,
         renderer: &mut dyn Renderer,
         resource_manager: Arc<ResourceManager>,
         scale_factor: f64,
         text_context: &mut TextContext,
     ) {
-        draw_generic_container(
-            self,
-            elements,
-            states,
-            renderer,
-            resource_manager,
-            text_context,
-            scale_factor,
-        );
+        draw_generic_container(self, elements, renderer, resource_manager, text_context, scale_factor);
     }
 
     fn on_event(
@@ -158,7 +197,6 @@ impl ElementInternals for AudioElement {
         focus: &mut Option<DynElement>,
         focus_outline_visible: bool,
         _pending_animation_updates: &mut Vec<(DynElement, bool)>,
-        _states: &mut ElementStates,
         event: &mut EventKind,
         _text_context: &mut TextContext,
     ) {
@@ -169,7 +207,6 @@ impl ElementInternals for AudioElement {
         &mut self,
         elements: &mut RetainedElements,
         gummy_tree: &mut GummyTree,
-        states: &mut ElementStates,
         pending_resources: &mut VecDeque<(ResourceId, ResourceType)>,
         delta: Duration,
     ) -> AnimationSchedule {
@@ -179,7 +216,7 @@ impl ElementInternals for AudioElement {
         };
         let now = Instant::now();
         if now >= next_ui_update {
-            if self.update(elements, gummy_tree, states, pending_resources) {
+            if self.update(elements, gummy_tree, pending_resources) {
                 self.next_ui_update = None;
             } else {
                 self.next_ui_update = Some(now + AUDIO_UI_UPDATE_INTERVAL);
@@ -205,7 +242,6 @@ impl Audio {
             by_internal_id,
             pending_resources,
             audio_context,
-            states,
             ..
         } = app;
 
@@ -281,39 +317,50 @@ impl Audio {
         push_child_to_element(elements, gummy_tree, play_button.inner, play_button_icon.inner);
         elements
             .get_mut(play_button.inner)
-            .on_click(Rc::new(move |_event, app| {
-                app.elements.dispatch_mut(inner, |audio, arena| {
-                    (audio as &mut dyn std::any::Any)
-                        .downcast_mut::<AudioElement>()
-                        .expect("audio handle changed type")
-                        .toggle(
+            .on_click(Rc::new(move |event, app, _states| {
+                let Ok(inner) = event.current_target().parent(app) else {
+                    return;
+                };
+                app.elements.try_dispatch_mut(inner, |audio, arena| {
+                    if let Some(audio) = (audio as &mut dyn std::any::Any).downcast_mut::<AudioElement>() {
+                        audio.toggle(
                             arena,
                             &mut app.gummy_tree,
-                            &mut app.states,
                             &mut app.pending_resources,
                             &mut app.pending_animation_updates,
                         );
+                    }
                 });
             }));
         let play_control = play_button;
         elements
             .get_mut(track.inner)
-            .on_slider_value_changed(Rc::new(move |event, app| {
-                app.elements.get_as::<AudioElement>(inner).set_cursor(
-                    &mut app.states,
-                    app.elements.store_id(),
-                    event.value as f32,
-                );
+            .on_slider_value_changed(Rc::new(move |event, app, _states| {
+                let Ok(inner) = event.current_target().parent(app) else {
+                    return;
+                };
+                if let Some(audio) = app
+                    .elements
+                    .try_get_mut(inner)
+                    .and_then(|element| (element as &mut dyn std::any::Any).downcast_mut::<AudioElement>())
+                {
+                    audio.set_cursor(event.value as f32);
+                }
             }));
         let track_control = track;
         elements
             .get_mut(volume_track.inner)
-            .on_slider_value_changed(Rc::new(move |event, app| {
-                app.elements.get_as::<AudioElement>(inner).set_volume(
-                    &mut app.states,
-                    app.elements.store_id(),
-                    event.value as f32,
-                );
+            .on_slider_value_changed(Rc::new(move |event, app, _states| {
+                let Ok(inner) = event.current_target().parent(app) else {
+                    return;
+                };
+                if let Some(audio) = app
+                    .elements
+                    .try_get_mut(inner)
+                    .and_then(|element| (element as &mut dyn std::any::Any).downcast_mut::<AudioElement>())
+                {
+                    audio.set_volume(event.value as f32);
+                }
             }));
         let volume_control = volume_track;
         let volume_icon_element = TinyVgElement::insert(
@@ -342,7 +389,7 @@ impl Audio {
             (audio as &mut dyn std::any::Any)
                 .downcast_mut::<AudioElement>()
                 .expect("audio handle changed type")
-                .set_sound(elements, gummy_tree, audio_context, states, path);
+                .set_sound(elements, gummy_tree, audio_context, path);
         });
         Self { inner }
     }
@@ -362,7 +409,6 @@ impl Audio {
                 .play(
                     arena,
                     &mut app.gummy_tree,
-                    &mut app.states,
                     &mut app.pending_resources,
                     &mut app.pending_animation_updates,
                 );
@@ -377,7 +423,6 @@ impl Audio {
                 .pause(
                     arena,
                     &mut app.gummy_tree,
-                    &mut app.states,
                     &mut app.pending_resources,
                     &mut app.pending_animation_updates,
                 );
@@ -392,7 +437,6 @@ impl Audio {
                 .toggle(
                     arena,
                     &mut app.gummy_tree,
-                    &mut app.states,
                     &mut app.pending_resources,
                     &mut app.pending_animation_updates,
                 );
@@ -401,7 +445,7 @@ impl Audio {
 
     pub fn is_playing(&self, app: &App) -> bool {
         app.try_get_as::<AudioElement>(self.inner)
-            .is_some_and(|audio| audio.is_playing(&app.states, app.elements.store_id()))
+            .is_some_and(AudioElement::is_playing)
     }
 }
 
@@ -410,33 +454,18 @@ impl AudioElement {
         &mut self,
         elements: &mut RetainedElements,
         gummy_tree: &mut GummyTree,
-        states: &mut ElementStates,
         pending_resources: &mut VecDeque<(ResourceId, ResourceType)>,
         pending_animation_updates: &mut Vec<(DynElement, bool)>,
     ) {
-        if self.is_playing(states, elements.store_id()) {
-            self.pause(
-                elements,
-                gummy_tree,
-                states,
-                pending_resources,
-                pending_animation_updates,
-            );
+        if self.is_playing() {
+            self.pause(elements, gummy_tree, pending_resources, pending_animation_updates);
         } else {
-            self.play(
-                elements,
-                gummy_tree,
-                states,
-                pending_resources,
-                pending_animation_updates,
-            );
+            self.play(elements, gummy_tree, pending_resources, pending_animation_updates);
         }
     }
 
-    fn is_playing(&self, states: &ElementStates, store_id: u64) -> bool {
-        self.sound_data
-            .map(|sound| sound.read_from(states, store_id).sound.is_playing())
-            .unwrap_or(false)
+    fn is_playing(&self) -> bool {
+        self.sound_data.as_ref().is_some_and(|sound| sound.sound.is_playing())
     }
 
     fn set_sound(
@@ -444,7 +473,6 @@ impl AudioElement {
         elements: &mut RetainedElements,
         gummy_tree: &mut GummyTree,
         audio_context: &mut Option<AudioContext>,
-        states: &mut ElementStates,
         path: &Path,
     ) {
         let (sound, end_notifier, duration, current_time) = {
@@ -460,23 +488,18 @@ impl AudioElement {
         elements
             .get_as_mut::<TextElement>(self.duration.inner)
             .set_text(gummy_tree, &format_time(current_time, duration as u32));
-        self.sound_data = Some(State::insert(
-            states,
-            elements.store_id(),
-            SoundData {
-                sound,
-                end_notifier,
-            },
-        ));
+        self.sound_data = Some(SoundData {
+            sound,
+            end_notifier,
+        });
         let volume = elements.get_as::<SliderElement>(self.volume_track.inner).get_value() as f32;
-        self.set_volume(states, elements.store_id(), volume);
+        self.set_volume(volume);
     }
 
     fn play(
         &mut self,
         elements: &mut RetainedElements,
         gummy_tree: &mut GummyTree,
-        states: &mut ElementStates,
         pending_resources: &mut VecDeque<(ResourceId, ResourceType)>,
         pending_animation_updates: &mut Vec<(DynElement, bool)>,
     ) {
@@ -486,12 +509,8 @@ impl AudioElement {
         if let Some(icon) = elements.try_get_as_mut::<TinyVgElement>(self.play_button_icon.inner) {
             icon.set_resource_id(gummy_tree, pending_resources, self.pause_icon.clone());
         }
-        if let Some(sound_data) = self.sound_data {
-            sound_data
-                .write_to(states, elements.store_id())
-                .sound
-                .play_sound()
-                .expect("failed to play sound");
+        if let Some(sound_data) = &mut self.sound_data {
+            sound_data.sound.play_sound().expect("failed to play sound");
             self.start_progress_updates(pending_animation_updates);
         }
     }
@@ -500,7 +519,6 @@ impl AudioElement {
         &mut self,
         elements: &mut RetainedElements,
         gummy_tree: &mut GummyTree,
-        states: &mut ElementStates,
         pending_resources: &mut VecDeque<(ResourceId, ResourceType)>,
         pending_animation_updates: &mut Vec<(DynElement, bool)>,
     ) {
@@ -510,29 +528,21 @@ impl AudioElement {
         if let Some(icon) = elements.try_get_as_mut::<TinyVgElement>(self.play_button_icon.inner) {
             icon.set_resource_id(gummy_tree, pending_resources, self.play_icon.clone());
         }
-        if let Some(sound_data) = self.sound_data {
-            sound_data
-                .write_to(states, elements.store_id())
-                .sound
-                .stop_sound()
-                .expect("failed to pause sound");
+        if let Some(sound_data) = &mut self.sound_data {
+            sound_data.sound.stop_sound().expect("failed to pause sound");
         }
         self.stop_progress_updates(pending_animation_updates);
     }
 
-    fn set_cursor(&self, states: &mut ElementStates, store_id: u64, value: f32) {
-        if let Some(sound_data) = self.sound_data {
-            sound_data
-                .write_to(states, store_id)
-                .sound
-                .seek_to_second(value)
-                .unwrap();
+    fn set_cursor(&mut self, value: f32) {
+        if let Some(sound_data) = &mut self.sound_data {
+            sound_data.sound.seek_to_second(value).unwrap();
         }
     }
 
-    fn set_volume(&self, states: &mut ElementStates, store_id: u64, value: f32) {
-        if let Some(sound_data) = self.sound_data {
-            sound_data.write_to(states, store_id).sound.set_volume(value / 100.0);
+    fn set_volume(&mut self, value: f32) {
+        if let Some(sound_data) = &mut self.sound_data {
+            sound_data.sound.set_volume(value / 100.0);
         }
     }
 
@@ -540,15 +550,13 @@ impl AudioElement {
         &self,
         elements: &mut RetainedElements,
         gummy_tree: &mut GummyTree,
-        states: &mut ElementStates,
         pending_resources: &mut VecDeque<(ResourceId, ResourceType)>,
     ) -> bool {
-        let Some(sound_data) = self.sound_data else {
+        let Some(sound_data) = &self.sound_data else {
             return false;
         };
         let mut ended = false;
         let (current_time, total_time) = {
-            let sound_data = sound_data.write_to(states, elements.store_id());
             let current_time = sound_data.sound.cursor_seconds().unwrap_or_default() as f64;
             let total_time = sound_data.sound.length_seconds().unwrap_or_default() as u32;
             sound_data.end_notifier.take_with(|| ended = true);

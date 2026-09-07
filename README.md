@@ -23,7 +23,7 @@ features = ["system_fonts", "vello_hybrid_renderer"]
 use retgui::elements::{Container, Element, State, Text, Window};
 use retgui::events::Event;
 use retgui::style::{AlignItems, FlexDirection, JustifyContent};
-use retgui::{App, Color, RetGuiOptions, pct, px, rgb};
+use retgui::{App, Color, RetGuiOptions, States, pct, px, rgb};
 
 fn create_button(
     app: &mut App,
@@ -45,11 +45,9 @@ fn create_button(
     button.set_padding(app, px(15), px(30), px(15), px(30));
     button.set_justify_content(app, JustifyContent::Center);
     button.set_background_color(app, base_color);
-    button.add_click_listener(app, move |event, app| {
-        let count = count.update(app, |count| {
-            *count += delta;
-            *count
-        });
+    button.add_click_listener(app, move |event, app, states| {
+        let count = count.write(states);
+        *count += delta;
         count_text.set_text(app, &format!("Count: {count}"));
         event.stop_propagation();
     });
@@ -59,7 +57,8 @@ fn create_button(
 
 fn main() {
     let mut app = App::new();
-    let count = app.insert_state(0_i64);
+    let mut states = States::new();
+    let count = states.insert(0_i64);
     let count_text = Text::new(&mut app, "Count: 0");
     let subtract = create_button(
         &mut app, "-", rgb(244, 67, 54), -1, count, count_text,
@@ -82,7 +81,7 @@ fn main() {
     window.push(&mut app, count_text);
     window.push(&mut app, buttons);
 
-    retgui::retgui_main(app, RetGuiOptions::basic("Counter"));
+    retgui::retgui_main(app, states, RetGuiOptions::basic("Counter"));
 }
 ```
 
@@ -121,7 +120,7 @@ fn main() {
 RetGui can run on those platforms, but they are not officially supported. We would like to support those platforms, but it requires a lot of platform integration. Please use SwiftUI, Jetpack Compose, Flutter, and etc.
 
 ### 2. Why do mutations need `App`?
-App owns all RetGUI data and an element is just a handle to some data in app.
+App owns RetGui elements, and each element is a handle to its data in App. Consumer state lives in a separate States store, so event handlers can borrow their state and mutate the UI at the same time using ordinary Rust references. Built-in widgets own their data directly: radio selection and audio playback do not use the consumer state store.
 
 ## License
 Distributed under the Unlicense License. See the [LICENSE](./LICENSE) for more information.

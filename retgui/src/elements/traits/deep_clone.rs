@@ -1,5 +1,11 @@
+use std::any::Any;
+
+use rustc_hash::FxHashMap;
+
 use crate::elements::element_id::create_unique_element_id;
-use crate::elements::{DynElement, ElementIds, ElementInternals, RetGuiAccessTree, RetainedElements};
+use crate::elements::radiogroup::RadioGroupElement;
+use crate::elements::{DropdownElement, DynElement, ElementIds, ElementInternals, Radio, RadioElement, RadioGroup, RetGuiAccessTree, RetainedElements};
+use crate::layout::GummyTree;
 
 pub fn clone_element<T, F>(
     source: &T,
@@ -85,4 +91,70 @@ where
     elements.get_mut(new_element).element_data_mut().children = children;
     gummy_tree.request_apply_layout(node_id);
     new_element
+}
+
+pub(crate) fn finish_clone(
+    elements: &mut RetainedElements,
+    source: DynElement,
+    cloned_root: DynElement,
+    gummy_tree: &mut GummyTree,
+    access_tree: &RetGuiAccessTree,
+    by_internal_id: &mut ElementIds,
+) {
+    let mut pairs = vec![(source, cloned_root)];
+    let mut index = 0;
+    while let Some(&(original, cloned)) = pairs.get(index) {
+        let original_children = &elements.get(original).element_data().children;
+        let cloned_children = &elements.get(cloned).element_data().children;
+        pairs.extend(original_children.iter().copied().zip(cloned_children.iter().copied()));
+        index += 1;
+    }
+    let cloned_by_source: FxHashMap<_, _> = pairs.iter().copied().collect();
+
+    // All children are restored to the store now, so groups in a different
+    // branch can be remapped without changing any original group's members.
+    for &(original, cloned) in &pairs {
+        let Some(group) = (elements.get(original) as &dyn Any).downcast_ref::<RadioGroupElement>() else {
+            continue;
+        };
+        let members = group
+            .members
+            .iter()
+            .filter_map(|member| cloned_by_source.get(&member.inner).map(|&inner| Radio { inner }))
+            .collect();
+        let selected = group
+            .selected
+            .and_then(|selected| cloned_by_source.get(&selected.inner).map(|&inner| Radio { inner }));
+        let group = elements.get_as_mut::<RadioGroupElement>(cloned);
+        group.members = members;
+        group.selected = selected;
+    }
+
+    for &(_, cloned) in &pairs {
+        let Some(radio) = (elements.get(cloned) as &dyn Any).downcast_ref::<RadioElement>() else {
+            continue;
+        };
+        let mut group = radio.group;
+        if let Some(&inner) = cloned_by_source.get(&group.inner) {
+            group = RadioGroup { inner };
+        } else if let Some(group) = elements.try_get_as_mut::<RadioGroupElement>(group.inner) {
+            group.members.push(Radio { inner: cloned });
+        }
+        let selected = elements
+            .try_get_as::<RadioGroupElement>(group.inner)
+            .is_some_and(|group| group.selected == Some(Radio { inner: cloned }));
+        let radio = elements.get_as_mut::<RadioElement>(cloned);
+        radio.group = group;
+        radio.set_accessibility_selection(selected);
+    }
+
+    // Previews clone their source children again, so create them only after
+    // those children reference the completed subtree's groups.
+    for (_, cloned) in pairs {
+        elements.dispatch_mut(cloned, |element, elements| {
+            if let Some(dropdown) = (element as &mut dyn Any).downcast_mut::<DropdownElement>() {
+                dropdown.restore_selected_element(elements, gummy_tree, access_tree, by_internal_id);
+            }
+        });
+    }
 }

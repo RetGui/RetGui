@@ -12,7 +12,7 @@ pub fn custom_event(app: &mut App) -> Container {
     let message = Text::new(app, "No event received yet");
 
     let receiver = Container::new(app);
-    receiver.add_custom_event_listener(app, move |event, app| {
+    receiver.add_custom_event_listener(app, move |event, app, _states| {
         if let Some(greeting) = event.data::<Greeting>() {
             message.set_text(app, &format!("Hello, {}!", greeting.name));
         }
@@ -24,7 +24,7 @@ pub fn custom_event(app: &mut App) -> Container {
     let button = Container::new(app);
     button.set_padding(app, px(12), px(20), px(12), px(20));
     button.set_background_color(app, rgb(59, 130, 246));
-    button.add_click_listener(app, move |_event, app| {
+    button.add_click_listener(app, move |_event, app, _states| {
         receiver.emit_custom_event(
             app,
             Greeting {
@@ -49,10 +49,11 @@ pub fn custom_event(app: &mut App) -> Container {
 pub fn main() {
     setup_logging();
     let mut app = App::new();
+    let states = retgui::States::new();
     let content = custom_event(&mut app);
     let window = Window::new(&mut app, "Custom Event");
     window.set_width(&mut app, pct(100));
     window.set_height(&mut app, pct(100));
     window.push(&mut app, content);
-    retgui_main(app, RetGuiOptions::basic("Custom Event"));
+    retgui_main(app, states, RetGuiOptions::basic("Custom Event"));
 }

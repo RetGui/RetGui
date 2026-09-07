@@ -3,9 +3,9 @@ use std::pin::Pin;
 use std::sync::{Arc, OnceLock};
 use std::task::{Context, Poll, Wake, Waker};
 
-use crate::App;
+use crate::{App, States};
 
-type GuiAction = Box<dyn FnOnce(&mut App) + 'static>;
+type GuiAction = Box<dyn FnOnce(&mut App, &mut States) + 'static>;
 type GuiFuture = Pin<Box<dyn Future<Output = GuiAction> + 'static>>;
 
 struct GuiWaker {
@@ -43,11 +43,11 @@ impl GuiActionQueue {
     where
         F: Future<Output = O> + 'static,
         O: 'static,
-        C: FnOnce(O, &mut App) + 'static,
+        C: FnOnce(O, &mut App, &mut States) + 'static,
     {
         self.futures.push(Box::pin(async move {
             let output = future.await;
-            Box::new(move |app: &mut App| on_complete(output, app)) as GuiAction
+            Box::new(move |app: &mut App, states: &mut States| on_complete(output, app, states)) as GuiAction
         }));
         self.waker.wake_by_ref();
     }

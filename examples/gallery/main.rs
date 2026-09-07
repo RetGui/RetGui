@@ -9,7 +9,7 @@ use retgui::elements::{Button, Calendar, Checkbox, CheckboxGroup, Container, Dro
 use retgui::events::Event;
 use retgui::geometry::Point;
 use retgui::style::{AlignItems, Animation, BoxShadow, Display, FlexDirection, FontFamily, FontStyle, FontWeight, JustifyContent, KeyFrame, Overflow, Position, Repeat, StyleVariant, TextAlign, TimingFunction};
-use retgui::{App, Brush, Color, ColorStop, Gradient, ResourceId, ResourceType, RetGuiOptions, auto, pct, px, retgui_main, rgb, rgba};
+use retgui::{App, Brush, Color, ColorStop, Gradient, ResourceId, ResourceType, RetGuiOptions, States, auto, pct, px, retgui_main, rgb, rgba};
 
 use serde::Deserialize;
 
@@ -20,7 +20,7 @@ pub fn title(app: &mut App, value: &str) -> Text {
     text.set_font_weight(app, FontWeight::BOLD);
     text.set_font_size(app, 20.0);
     text.set_margin(app, px(0.0), px(0.0), px(5.0), px(0.0));
-    text    
+    text
 }
 
 pub fn animations(app: &mut App) -> Text {
@@ -131,7 +131,7 @@ pub fn variable_fonts(app: &mut App) -> Container {
     weight.set_width(app, px(300.0));
     weight.set_height(app, px(10.0));
     weight.set_margin_vertical(app, px(10.0));
-    weight.add_slider_value_changed_listener(app, move |event, app| {
+    weight.add_slider_value_changed_listener(app, move |event, app, _| {
         let weight = event.value.round() as u16;
         preview.set_font_weight(app, FontWeight(weight));
         weight_label.set_text(app, &format!("Weight: {weight}"));
@@ -233,9 +233,9 @@ pub fn async_weather(app: &mut App) -> Container {
     button.set_border_radius_all(app, (4.0, 4.0));
     button.set_background_color(app, Color::from_rgb8(35, 127, 183));
     button.push(app, label);
-    button.add_click_listener(app, move |event, app| {
+    button.add_click_listener(app, move |event, app, _| {
         status.set_text(app, "Loading...");
-        app.spawn_local(fetch_amsterdam_weather(), move |weather, app| {
+        app.spawn_local(fetch_amsterdam_weather(), move |weather, app, _states| {
             let message = match weather {
                 Ok(weather) => format!(
                     "{}\n{:.1} °C (feels like {:.1} °C)\nHumidity: {}%\nWind: {:.1} km/h\nUpdated: {}",
@@ -360,7 +360,7 @@ pub fn overlay(app: &mut App) -> Container {
     floating.set_padding_all(app, px(10.0));
     floating.set_background_color(app, Color::from_rgb8(76, 175, 80));
     floating.push(app, overlay_label);
-    floating.add_click_listener(app, move |event, app| {
+    floating.add_click_listener(app, move |event, app, _| {
         status.set_text(app, "The overlay received the click");
         event.stop_propagation();
     });
@@ -375,7 +375,7 @@ pub fn overlay(app: &mut App) -> Container {
     normal.set_padding_all(app, px(10.0));
     normal.set_background_color(app, Color::from_rgb8(33, 150, 243));
     normal.push(app, normal_label);
-    normal.add_click_listener(app, move |event, app| {
+    normal.add_click_listener(app, move |event, app, _| {
         status.set_text(app, "The normal sibling received the click");
         event.stop_propagation();
     });
@@ -411,7 +411,7 @@ pub fn multiple_windows(app: &mut App) -> Container {
     button.set_border_radius(app, radius, radius, radius, radius);
     button.set_border_color(app, border, border, border, border);
     button.set_border_width(app, width, width, width, width);
-    button.add_click_listener(app, |_event, app| {
+    button.add_click_listener(app, |_event, app, _| {
         let greeting = Text::new(app, "Hi!");
         greeting.set_font_size(app, 32.0);
         greeting.set_font_weight(app, FontWeight::BOLD);
@@ -481,7 +481,7 @@ pub fn scrollable(app: &mut App) -> Container {
     let button = Button::new(app);
     button.set_width(app, px(120.0));
     button.set_background_color(app, Color::from_rgb8(35, 127, 183));
-    button.add_click_listener(app, move |_event, app| {
+    button.add_click_listener(app, move |_event, app, _| {
         scrollable.scroll_to_top(app);
     });
     button.push(app, label);
@@ -495,7 +495,7 @@ pub fn scrollable(app: &mut App) -> Container {
 }
 
 pub fn radio_buttons(app: &mut App) -> Container {
-    let active = app.insert_state("red".to_string());
+    let group = RadioGroup::new(app, "Pick a color");
     let green = Image::new(
         app,
         ResourceId::Url("https://www.iconsdb.com/icons/preview/green/square-xxl.png".to_string()),
@@ -503,22 +503,21 @@ pub fn radio_buttons(app: &mut App) -> Container {
     green.set_border_width_all(app, px(1));
     green.set_border_color_all(app, rgba(0, 0, 0, 0));
     let red_label = Text::new(app, "red");
-    let red = Radio::new(app, "red", "red", active);
+    let red = Radio::new(app, group, "red", "red", true);
     red.push(app, red_label);
-    let green_radio = Radio::new(app, "green", "green", active);
+    let green_radio = Radio::new(app, group, "green", "green", false);
     green_radio.push(app, green);
     green_radio.hide_radio(app);
     let blue_label = Text::new(app, "blue");
-    let blue = Radio::new(app, "blue", "blue", active);
+    let blue = Radio::new(app, group, "blue", "blue", false);
     blue.push(app, blue_label);
-    let group = RadioGroup::new(app, "Pick a color");
     group.set_display(app, Display::Flex);
     group.set_flex_direction(app, FlexDirection::Column);
     group.set_justify_content(app, JustifyContent::Center);
     group.push(app, red);
     group.push(app, green_radio);
     group.push(app, blue);
-    group.add_radio_value_changed_listener(app, move |event, app| {
+    group.add_radio_value_changed_listener(app, move |event, app, _| {
         green.set_border_color_all(
             app,
             if event.value.as_str() == "green" {
@@ -555,7 +554,7 @@ pub fn checkbox(app: &mut App) -> Container {
     let curry = Checkbox::new(app, "カツカレー", false);
     curry.push(app, curry_label);
     let group = CheckboxGroup::new(app, "Select your favorite foods");
-    group.add_checkbox_toggled_listener(app, move |event, _app| {
+    group.add_checkbox_toggled_listener(app, move |event, _, _| {
         println!("checkbox toggled: {} - {}", event.label, event.status);
     });
     group.set_flex_direction(app, FlexDirection::Column);
@@ -623,16 +622,17 @@ struct NavigationSelection {
 }
 
 impl NavigationSelection {
-    fn new(app: &mut App, active: DynElement) -> Self {
+    fn new(states: &mut States, active: DynElement) -> Self {
         Self {
-            active: app.insert_state(active),
+            active: states.insert(active),
         }
     }
 
-    fn select(&self, app: &mut App, target: DynElement) {
-        let previous = self.active.update(app, |active| std::mem::replace(active, target));
-        style_navigation_button(app, previous, false);
+    fn select(&self, app: &mut App, states: &mut States, target: DynElement) {
+        let active = self.active.borrow_mut(states);
+        style_navigation_button(app, *active, false);
         style_navigation_button(app, target, true);
+        *active = target;
     }
 }
 
@@ -752,7 +752,7 @@ fn select_example(app: &mut App, examples: &[GalleryExample], selected: usize) {
     }
 }
 
-fn gallery(app: &mut App) -> Container {
+fn gallery(app: &mut App, states: &mut States) -> Container {
     let examples = Rc::new(gallery_examples(app));
     let sidebar = sidebar(app);
     let content = content_pane(app);
@@ -762,7 +762,7 @@ fn gallery(app: &mut App) -> Container {
         .map(|(index, example)| navigation_button(app, example.label, index == 0))
         .collect::<Vec<_>>();
     let selection = NavigationSelection::new(
-        app,
+        states,
         buttons
             .first()
             .expect("the gallery must contain at least one example")
@@ -772,9 +772,9 @@ fn gallery(app: &mut App) -> Container {
 
     for (index, (example, button)) in examples.iter().zip(buttons).enumerate() {
         let examples = examples.clone();
-        button.add_click_listener(app, move |event, app| {
+        button.add_click_listener(app, move |event, app, states| {
             select_example(app, &examples, index);
-            selection.select(app, event.current_target());
+            selection.select(app, states, event.current_target());
             event.stop_propagation();
         });
         sidebar.push(app, button);
@@ -793,12 +793,13 @@ fn gallery(app: &mut App) -> Container {
 pub fn main() {
     setup_logging();
     let mut app = App::new();
-    let gallery = gallery(&mut app);
+    let mut states = States::new();
+    let gallery = gallery(&mut app, &mut states);
     let window = Window::new(&mut app, "Gallery");
     window.set_display(&mut app, Display::Flex);
     window.set_overflow(&mut app, Overflow::Clip, Overflow::Clip);
     window.set_width(&mut app, pct(100));
     window.set_height(&mut app, pct(100));
     window.push(&mut app, gallery);
-    retgui_main(app, RetGuiOptions::basic("Gallery"));
+    retgui_main(app, states, RetGuiOptions::basic("Gallery"));
 }

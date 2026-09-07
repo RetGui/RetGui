@@ -21,7 +21,7 @@ use crate::App;
 use crate::elements::element_data::ElementData;
 use crate::elements::text_input::text_input_state::TextInputState;
 use crate::elements::traits::clone_element;
-use crate::elements::{AnimationSchedule, DynElement, Element, ElementIds, ElementInternals, ElementStates, RetGuiAccessTree, RetainedElements, WindowElement, scrollable};
+use crate::elements::{AnimationSchedule, DynElement, Element, ElementIds, ElementInternals, RetGuiAccessTree, RetainedElements, WindowElement, scrollable};
 use crate::events::{Event, EventKind};
 use crate::layout::GummyTree;
 use crate::layout::layout_context::{GummyTextInputContext, LayoutContext, TextHashKey};
@@ -225,7 +225,6 @@ impl ElementInternals for TextInputElement {
     fn draw(
         &self,
         _elements: &RetainedElements,
-        _states: &ElementStates,
         _renderer: &mut dyn Renderer,
         _resource_manager: Arc<ResourceManager>,
         _scale_factor: f64,
@@ -289,7 +288,6 @@ impl ElementInternals for TextInputElement {
         focus: &mut Option<DynElement>,
         focus_outline_visible: bool,
         pending_animation_updates: &mut Vec<(DynElement, bool)>,
-        _states: &mut ElementStates,
         event: &mut EventKind,
         text_context: &mut TextContext,
     ) {
@@ -466,7 +464,6 @@ impl ElementInternals for TextInputElement {
         &mut self,
         _elements: &mut RetainedElements,
         gummy_tree: &mut GummyTree,
-        _states: &mut ElementStates,
         _pending_resources: &mut VecDeque<(
             retgui_resource_manager::ResourceId,
             retgui_resource_manager::resource_type::ResourceType,

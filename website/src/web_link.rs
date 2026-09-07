@@ -7,7 +7,7 @@ pub fn WebLink(app: &mut App, href: &str) -> Container {
     let href = href.to_string();
 
     let container = Container::new(app);
-    container.add_pointer_button_up_listener(app, move |event, _app| {
+    container.add_pointer_button_up_listener(app, move |event, _app, _states| {
         if event.button == Some(PointerButton::Left) {
             #[cfg(target_arch = "wasm32")]
             {

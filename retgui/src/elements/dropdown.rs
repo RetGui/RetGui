@@ -18,7 +18,7 @@ use winit::keyboard::KeyCode;
 use crate::elements::element_data::ElementData as ElementDataStruct;
 use crate::elements::scrollable::{apply_scroll_layout, draw_scrollbar, handle_scroll_logic_advance, set_scroll_y};
 use crate::elements::traits::clone_element;
-use crate::elements::{DynElement, Element, ElementIds, ElementInternals, ElementStates, HasElementData, RetGuiAccessTree, RetainedElements};
+use crate::elements::{DynElement, Element, ElementIds, ElementInternals, HasElementData, RetGuiAccessTree, RetainedElements};
 use crate::events::{DropdownItemSelectedEvent, DropdownToggledEvent, Event, EventKind, PointerButton, PointerId};
 use crate::layout::GummyTree;
 use crate::layout::layout::Layout;
@@ -32,7 +32,7 @@ use crate::{App, auto, px, rgba};
 ///
 /// ```no_run
 /// use retgui::elements::{Dropdown, Element, Text, Window};
-/// use retgui::{App, RetGuiOptions, px, retgui_main};
+/// use retgui::{App, RetGuiOptions, States, px, retgui_main};
 ///
 /// fn main() {
 ///     let mut app = App::new();
@@ -54,7 +54,7 @@ use crate::{App, auto, px, rgba};
 ///     dropdown.set_selected_item(&mut app, 0);
 ///     let window = Window::new(&mut app, "Dropdown");
 ///     window.push(&mut app, dropdown);
-///     retgui_main(app, RetGuiOptions::basic("Dropdown"));
+///     retgui_main(app, States::new(), RetGuiOptions::basic("Dropdown"));
 /// }
 /// ```
 #[derive(Clone, Copy)]
@@ -131,15 +131,6 @@ impl ElementInternals for DropdownElement {
                 Some(floating_window_node)
             },
         );
-        let selected_element_index = elements.get_as::<Self>(element).selected_element_index;
-        if let Some(index) = selected_element_index {
-            elements.dispatch_mut(element, |element, elements| {
-                (element as &mut dyn Any)
-                    .downcast_mut::<Self>()
-                    .unwrap()
-                    .set_selected_element(elements, gummy_tree, access_tree, by_internal_id, index)
-            });
-        }
         DynElement::new(element)
     }
 
@@ -190,7 +181,6 @@ impl ElementInternals for DropdownElement {
     fn draw(
         &self,
         elements: &RetainedElements,
-        states: &ElementStates,
         renderer: &mut dyn Renderer,
         resource_manager: Arc<ResourceManager>,
         scale_factor: f64,
@@ -208,14 +198,7 @@ impl ElementInternals for DropdownElement {
             self.add_hit_testable(renderer, true, scale_factor);
         }
 
-        self.draw_selected_element(
-            elements,
-            states,
-            renderer,
-            resource_manager.clone(),
-            text_context,
-            scale_factor,
-        );
+        self.draw_selected_element(elements, renderer, resource_manager.clone(), text_context, scale_factor);
 
         // Draw the arrow
         let arrow_rect = self
@@ -276,14 +259,7 @@ impl ElementInternals for DropdownElement {
                     .scale(scale_factor),
             );
 
-            self.draw_children(
-                elements,
-                states,
-                renderer,
-                resource_manager.clone(),
-                scale_factor,
-                text_context,
-            );
+            self.draw_children(elements, renderer, resource_manager.clone(), scale_factor, text_context);
 
             renderer.pop_layer();
 
@@ -333,7 +309,6 @@ impl ElementInternals for DropdownElement {
         focus: &mut Option<DynElement>,
         focus_outline_visible: bool,
         _pending_animation_updates: &mut Vec<(DynElement, bool)>,
-        _states: &mut ElementStates,
         event: &mut EventKind,
         _text_context: &mut TextContext,
     ) {
@@ -423,7 +398,6 @@ impl ElementInternals for DropdownElement {
     fn draw_children(
         &self,
         elements: &RetainedElements,
-        states: &ElementStates,
         renderer: &mut dyn Renderer,
         resource_manager: Arc<ResourceManager>,
         scale_factor: f64,
@@ -455,7 +429,6 @@ impl ElementInternals for DropdownElement {
 
             elements.get_for_draw(child).draw_transformed(
                 elements,
-                states,
                 renderer,
                 resource_manager.clone(),
                 scale_factor,
@@ -730,7 +703,6 @@ impl DropdownElement {
     fn draw_selected_element(
         &self,
         elements: &RetainedElements,
-        states: &ElementStates,
         renderer: &mut dyn Renderer,
         resource_manager: Arc<ResourceManager>,
         text_context: &mut TextContext,
@@ -742,13 +714,24 @@ impl DropdownElement {
             let target_count = renderer.render_list().targets.len();
             elements.get_for_draw(*selected_element).draw_transformed(
                 elements,
-                states,
                 renderer,
                 resource_manager.clone(),
                 scale_factor,
                 text_context,
             );
             renderer.render_list_mut().targets.truncate(target_count);
+        }
+    }
+
+    pub(crate) fn restore_selected_element(
+        &mut self,
+        elements: &mut RetainedElements,
+        gummy_tree: &mut GummyTree,
+        access_tree: &RetGuiAccessTree,
+        by_internal_id: &mut ElementIds,
+    ) {
+        if let Some(index) = self.selected_element_index {
+            self.set_selected_element(elements, gummy_tree, access_tree, by_internal_id, index);
         }
     }
 
@@ -776,9 +759,7 @@ impl DropdownElement {
             .get(child_index)
             .expect("There is no child at this index.");
         let child = *child;
-        self.selected_element = Some(elements.dispatch_mut(child, |child, elements| {
-            child.deep_clone(elements, gummy_tree, access_tree, by_internal_id)
-        }));
+        self.selected_element = Some(elements.deep_clone(child, gummy_tree, access_tree, by_internal_id));
         let selected = self.selected_element.unwrap();
         let scale = self.element_data.applied_scale_factor;
         elements.dispatch_mut(selected, |selected, elements| {

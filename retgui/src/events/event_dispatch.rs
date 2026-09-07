@@ -2,16 +2,21 @@ use std::collections::{HashMap, VecDeque};
 
 use retgui_primitives::geometry::Point;
 
-use crate::App;
 use crate::elements::{DynElement, WindowElement};
 use crate::events::helpers::{TargetSearchContext, call_user_event_handlers, find_target, freeze_target_list, nearest_common_ancestor};
 use crate::events::pointer_capture::PointerCapture;
 use crate::events::{ClickEvent, ClickTrigger, Event, EventKind, PointerButton, PointerEnterEvent, PointerId, PointerLeaveEvent};
+use crate::{App, States};
 
-pub(super) fn dispatch_event(event: &mut EventKind, targets: &VecDeque<DynElement>, app: &mut App) {
+pub(super) fn dispatch_event(
+    event: &mut EventKind,
+    targets: &VecDeque<DynElement>,
+    app: &mut App,
+    states: &mut States,
+) {
     for target in targets.iter().rev() {
         event.base_mut().current_target = *target;
-        call_user_event_handlers(event, true, app);
+        call_user_event_handlers(event, true, app, states);
         if event.is_propagation_stopped() {
             break;
         }
@@ -20,7 +25,7 @@ pub(super) fn dispatch_event(event: &mut EventKind, targets: &VecDeque<DynElemen
     if !event.is_propagation_stopped() {
         for target in targets {
             event.base_mut().current_target = *target;
-            call_user_event_handlers(event, false, app);
+            call_user_event_handlers(event, false, app, states);
             if event.is_propagation_stopped() {
                 break;
             }
@@ -40,7 +45,6 @@ pub(super) fn dispatch_event(event: &mut EventKind, targets: &VecDeque<DynElemen
                     &mut app.focus,
                     app.focus_outline_visible,
                     &mut app.pending_animation_updates,
-                    &mut app.states,
                     event,
                     &mut app.text_context,
                 );
@@ -52,10 +56,10 @@ pub(super) fn dispatch_event(event: &mut EventKind, targets: &VecDeque<DynElemen
     }
 }
 
-pub(super) fn dispatch_event_once(event: &mut EventKind, app: &mut App) {
-    call_user_event_handlers(event, true, app);
+pub(super) fn dispatch_event_once(event: &mut EventKind, app: &mut App, states: &mut States) {
+    call_user_event_handlers(event, true, app, states);
     if !event.is_propagation_stopped() {
-        call_user_event_handlers(event, false, app);
+        call_user_event_handlers(event, false, app, states);
     }
     if !event.is_default_prevented() {
         let target = event.target();
@@ -69,7 +73,6 @@ pub(super) fn dispatch_event_once(event: &mut EventKind, app: &mut App) {
                 &mut app.focus,
                 app.focus_outline_visible,
                 &mut app.pending_animation_updates,
-                &mut app.states,
                 event,
                 &mut app.text_context,
             );
@@ -90,30 +93,30 @@ impl EventDispatcher {
         }
     }
 
-    pub(crate) fn dispatch_queued_events(app: &mut App) {
+    pub(crate) fn dispatch_queued_events(app: &mut App, states: &mut States) {
         while let Some(mut event) = app.event_queue.pop_front() {
             if !app.elements.contains(event.target()) {
                 continue;
             }
             let targets = freeze_target_list(event.target(), &app.elements);
-            dispatch_event(&mut event, &targets, app);
+            dispatch_event(&mut event, &targets, app, states);
         }
     }
 
-    fn maybe_dispatch_pointer_leave(targets: &VecDeque<DynElement>, app: &mut App) {
+    fn maybe_dispatch_pointer_leave(targets: &VecDeque<DynElement>, app: &mut App, states: &mut States) {
         for previous in app.event_dispatcher.previous_targets.clone() {
             if app.elements.contains(previous) && !targets.contains(&previous) {
                 let mut event = EventKind::PointerLeave(PointerLeaveEvent::new(previous));
-                dispatch_event_once(&mut event, app);
+                dispatch_event_once(&mut event, app, states);
             }
         }
     }
 
-    fn maybe_dispatch_pointer_enter(targets: &VecDeque<DynElement>, app: &mut App) {
+    fn maybe_dispatch_pointer_enter(targets: &VecDeque<DynElement>, app: &mut App, states: &mut States) {
         for target in targets.iter().rev().copied() {
             if !app.event_dispatcher.previous_targets.contains(&target) {
                 let mut event = EventKind::PointerEnter(PointerEnterEvent::new(target));
-                dispatch_event_once(&mut event, app);
+                dispatch_event_once(&mut event, app, states);
             }
         }
     }
@@ -123,6 +126,7 @@ impl EventDispatcher {
         captured: bool,
         event_kind: &EventKind,
         app: &mut App,
+        states: &mut States,
     ) {
         match event_kind {
             EventKind::PointerDown(event)
@@ -152,7 +156,7 @@ impl EventDispatcher {
                         };
                         let mut click = EventKind::Click(ClickEvent::new(target, trigger));
                         let targets = freeze_target_list(target, &app.elements);
-                        dispatch_event(&mut click, &targets, app);
+                        dispatch_event(&mut click, &targets, app, states);
                     }
                 }
                 app.event_dispatcher.active_pointer_targets.remove(&pointer);
@@ -167,6 +171,7 @@ impl EventDispatcher {
         mouse_position: Option<Point>,
         root: DynElement,
         app: &mut App,
+        states: &mut States,
     ) -> bool {
         let window = app.elements.get(root).element_data().window.unwrap_or(root);
         let mut targets = VecDeque::new();
@@ -202,12 +207,12 @@ impl EventDispatcher {
             targets.push_back(root);
         }
         if event_kind.is_system_pointer_event() {
-            Self::maybe_dispatch_pointer_leave(&targets, app);
-            Self::maybe_dispatch_pointer_enter(&targets, app);
+            Self::maybe_dispatch_pointer_leave(&targets, app, states);
+            Self::maybe_dispatch_pointer_enter(&targets, app, states);
         }
 
         event_kind.retarget(targets[0]);
-        dispatch_event(event_kind, &targets, app);
+        dispatch_event(event_kind, &targets, app, states);
         let prevented = event_kind.is_default_prevented();
         let dispatched_target =
             matches!(event_kind, EventKind::PointerUp(_) | EventKind::PointerDown(_)).then(|| event_kind.target());
@@ -215,8 +220,13 @@ impl EventDispatcher {
         if event_kind.is_system_pointer_event()
             && let Some(pointer_id) = event_kind.pointer_id()
         {
-            let changed =
-                PointerCapture::maybe_handle_implicit_pointer_capture_release(app, window, event_kind, &pointer_id);
+            let changed = PointerCapture::maybe_handle_implicit_pointer_capture_release(
+                app,
+                window,
+                event_kind,
+                &pointer_id,
+                states,
+            );
             if changed {
                 let capture = &app.elements.get_as::<WindowElement>(window).pointer_capture;
                 let target = find_target(
@@ -233,16 +243,16 @@ impl EventDispatcher {
                     },
                 );
                 targets = freeze_target_list(target, &app.elements);
-                Self::maybe_dispatch_pointer_leave(&targets, app);
-                Self::maybe_dispatch_pointer_enter(&targets, app);
+                Self::maybe_dispatch_pointer_leave(&targets, app, states);
+                Self::maybe_dispatch_pointer_enter(&targets, app, states);
             }
         }
 
-        Self::maybe_dispatch_pointer_click(dispatched_target, captured, event_kind, app);
+        Self::maybe_dispatch_pointer_click(dispatched_target, captured, event_kind, app, states);
         if event_kind.is_system_pointer_event() {
             app.event_dispatcher.previous_targets = targets;
         }
-        Self::dispatch_queued_events(app);
+        Self::dispatch_queued_events(app, states);
         prevented
     }
 }

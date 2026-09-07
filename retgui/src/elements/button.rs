@@ -15,7 +15,7 @@ use crate::App;
 use crate::elements::element_data::ElementData;
 use crate::elements::internal_helpers::{apply_generic_container_layout, draw_generic_container};
 use crate::elements::traits::clone_element;
-use crate::elements::{DynElement, Element, ElementIds, ElementInternals, ElementStates, RetGuiAccessTree, RetainedElements};
+use crate::elements::{DynElement, Element, ElementIds, ElementInternals, RetGuiAccessTree, RetainedElements};
 use crate::events::{ClickEvent, ClickTrigger, EventKind};
 use crate::layout::GummyTree;
 use crate::text::text_context::TextContext;
@@ -88,21 +88,12 @@ impl ElementInternals for ButtonElement {
     fn draw(
         &self,
         elements: &RetainedElements,
-        states: &ElementStates,
         renderer: &mut dyn Renderer,
         resource_manager: Arc<ResourceManager>,
         scale_factor: f64,
         text_context: &mut TextContext,
     ) {
-        draw_generic_container(
-            self,
-            elements,
-            states,
-            renderer,
-            resource_manager,
-            text_context,
-            scale_factor,
-        );
+        draw_generic_container(self, elements, renderer, resource_manager, text_context, scale_factor);
     }
 
     fn on_event(
@@ -115,7 +106,6 @@ impl ElementInternals for ButtonElement {
         focus: &mut Option<DynElement>,
         focus_outline_visible: bool,
         _pending_animation_updates: &mut Vec<(DynElement, bool)>,
-        _states: &mut ElementStates,
         event: &mut EventKind,
         _text_context: &mut TextContext,
     ) {
@@ -143,7 +133,6 @@ impl ElementInternals for ButtonElement {
         &mut self,
         _elements: &mut RetainedElements,
         event_queue: &mut VecDeque<EventKind>,
-        _states: &mut ElementStates,
         event: AccessEvent,
     ) -> Result<(), IsshoError> {
         if let AccessEvent::Invoke = event {

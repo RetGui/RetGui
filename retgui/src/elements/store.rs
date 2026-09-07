@@ -8,15 +8,15 @@ use rustc_hash::{FxHashMap, FxHashSet};
 
 use slotmap::{DefaultKey, Key, SlotMap};
 
-use crate::App;
 use crate::accessibility::RetGuiAccessTree;
-use crate::elements::{DynElement, ElementIds, ElementInternals, WindowElement};
+use crate::elements::radiogroup::RadioGroupElement;
+use crate::elements::traits::finish_clone;
+use crate::elements::{DynElement, ElementIds, ElementInternals, Radio, RadioElement, WindowElement};
 use crate::events::EventKind;
 use crate::layout::GummyTree;
 
 static NEXT_STORE_ID: AtomicU64 = AtomicU64::new(1);
 
-/// Retained elements, kept separate from layout so both can be borrowed mutably.
 pub struct RetainedElements {
     id: u64,
     slots: SlotMap<DefaultKey, Option<Box<dyn ElementInternals>>>,
@@ -51,8 +51,6 @@ impl RetainedElements {
             .expect("element handle no longer belongs to this store")
     }
 
-    /// Returns a retained element mutably, or `None` when the handle is stale
-    /// or belongs to another store.
     pub fn try_get_mut(&mut self, element: DynElement) -> Option<&mut dyn ElementInternals> {
         if element.store_id() != self.id {
             return None;
@@ -105,8 +103,6 @@ impl RetainedElements {
         self.slots.get(element.key()).and_then(Option::as_deref)
     }
 
-    /// Fast retained-tree lookup for handles already validated when they were
-    /// attached to this store.
     pub fn get_for_draw(&self, element: DynElement) -> &dyn ElementInternals {
         debug_assert_eq!(element.store_id(), self.id);
         self.slots[element.key()]
@@ -126,6 +122,20 @@ impl RetainedElements {
                 .downcast_ref()
                 .expect("typed element handle changed type"),
         )
+    }
+
+    pub fn deep_clone(
+        &mut self,
+        source: DynElement,
+        gummy_tree: &mut GummyTree,
+        access_tree: &RetGuiAccessTree,
+        by_internal_id: &mut ElementIds,
+    ) -> DynElement {
+        let cloned = self.dispatch_mut(source, |source, elements| {
+            source.deep_clone(elements, gummy_tree, access_tree, by_internal_id)
+        });
+        finish_clone(self, source, cloned, gummy_tree, access_tree, by_internal_id);
+        cloned
     }
 
     pub(crate) fn delete_all_children(
@@ -186,6 +196,27 @@ impl RetainedElements {
             parent_data.access_tree.set_children(parent_key, &[]);
         }
 
+        for &handle in &subtree {
+            if let Some(radio) = (self.get(handle) as &dyn Any).downcast_ref::<RadioElement>() {
+                let group = radio.group;
+                if let Some(group) = self.try_get_as_mut::<RadioGroupElement>(group.inner) {
+                    group.members.retain(|member| member.inner != handle);
+                    if group.selected == Some(Radio { inner: handle }) {
+                        group.selected = None;
+                    }
+                }
+            } else if let Some(group) = (self.get(handle) as &dyn Any).downcast_ref::<RadioGroupElement>() {
+                let members = group.members.clone();
+                for member in members {
+                    if !seen.contains(&member.inner)
+                        && let Some(radio) = self.try_get_as_mut::<RadioElement>(member.inner)
+                    {
+                        radio.set_accessibility_selection(false);
+                    }
+                }
+            }
+        }
+
         for handle in subtree.into_iter().rev() {
             if let Some(element) = self.slots.remove(handle.key()).flatten() {
                 by_internal_id.remove(&element.element_data().internal_id);
@@ -195,8 +226,6 @@ impl RetainedElements {
         self.get(parent).request_window_redraw();
     }
 
-    /// Mutates one element while retaining exclusive access to the rest of the
-    /// store. This is used by tree algorithms that recurse through handles.
     pub fn dispatch_mut<R>(
         &mut self,
         handle: DynElement,
@@ -215,8 +244,6 @@ impl RetainedElements {
         result
     }
 
-    /// Mutates a retained element and returns `None` when its handle is stale or
-    /// belongs to another store.
     pub fn try_dispatch_mut<R>(
         &mut self,
         handle: DynElement,
@@ -238,25 +265,60 @@ impl RetainedElements {
     }
 }
 
-/// A copyable, type-safe handle to application state stored in [`App`].
-///
-/// Use [`State::update`] when a mutation should produce a value for a later UI
-/// update. The callback only borrows `T`; after it returns, `App` is
-/// available again for element mutation.
-///
-/// ```
-/// use retgui::App;
-///
-/// let mut app = App::new();
-/// let count = app.insert_state(0_i64);
-/// let next = count.update(&mut app, |count| {
-///     *count += 1;
-///     *count
-/// });
-///
-/// assert_eq!(next, 1);
-/// assert_eq!(*count.read(&app), 1);
-/// ```
+pub struct States {
+    id: u64,
+    slots: SlotMap<DefaultKey, Box<dyn Any>>,
+}
+
+impl Default for States {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl States {
+    pub fn new() -> Self {
+        Self {
+            id: NEXT_STORE_ID.fetch_add(1, Ordering::Relaxed),
+            slots: SlotMap::with_key(),
+        }
+    }
+
+    pub fn insert<T: 'static>(&mut self, value: T) -> State<T> {
+        State {
+            key: self.slots.insert(Box::new(value)),
+            store_id: self.id,
+            marker: PhantomData,
+        }
+    }
+
+    pub fn insert_with<T: 'static>(&mut self, create: impl FnOnce(State<T>) -> T) -> State<T> {
+        let store_id = self.id;
+        let key = self.slots.insert_with_key(|key| {
+            Box::new(create(State {
+                key,
+                store_id,
+                marker: PhantomData,
+            }))
+        });
+        State {
+            key,
+            store_id,
+            marker: PhantomData,
+        }
+    }
+
+    pub fn get<T: 'static>(&self, state: State<T>) -> &T {
+        assert_eq!(state.store_id, self.id, "state handle belongs to a different store");
+        self.slots[state.key].downcast_ref().expect("state handle changed type")
+    }
+
+    pub fn get_mut<T: 'static>(&mut self, state: State<T>) -> &mut T {
+        assert_eq!(state.store_id, self.id, "state handle belongs to a different store");
+        self.slots[state.key].downcast_mut().expect("state handle changed type")
+    }
+}
+
 pub struct State<T> {
     key: DefaultKey,
     store_id: u64,
@@ -289,43 +351,15 @@ impl<T> std::fmt::Debug for State<T> {
 }
 
 impl<T: 'static> State<T> {
-    pub(crate) fn insert(states: &mut SlotMap<DefaultKey, Box<dyn Any>>, store_id: u64, value: T) -> Self {
-        Self {
-            key: states.insert(Box::new(value)),
-            store_id,
-            marker: PhantomData,
-        }
+    pub fn borrow(self, states: &States) -> &T {
+        states.get(self)
     }
 
-    pub fn read_from(self, states: &SlotMap<DefaultKey, Box<dyn Any>>, store_id: u64) -> &T {
-        assert_eq!(self.store_id, store_id, "state handle belongs to a different store");
-        states[self.key]
-            .downcast_ref()
-            .expect("state handle was used with the wrong store")
+    pub fn borrow_mut(self, states: &mut States) -> &mut T {
+        states.get_mut(self)
     }
 
-    pub fn write_to(self, states: &mut SlotMap<DefaultKey, Box<dyn Any>>, store_id: u64) -> &mut T {
-        assert_eq!(self.store_id, store_id, "state handle belongs to a different store");
-        states[self.key]
-            .downcast_mut()
-            .expect("state handle was used with the wrong store")
-    }
-
-    /// Borrows this state value from its arena.
-    pub fn read(self, app: &App) -> &T {
-        app.state(self)
-    }
-
-    /// Mutably borrows this state value from its arena.
-    pub fn write(self, app: &mut App) -> &mut T {
-        app.state_mut(self)
-    }
-
-    /// Applies a scoped state mutation.
-    ///
-    /// The callback intentionally receives only the state value. Any UI work
-    /// happens after it returns, when the exclusive state borrow has ended.
-    pub fn update<R>(self, app: &mut App, callback: impl FnOnce(&mut T) -> R) -> R {
-        callback(app.state_mut(self))
+    pub fn with_mut<R>(self, states: &mut States, callback: impl FnOnce(&mut T) -> R) -> R {
+        callback(states.get_mut(self))
     }
 }

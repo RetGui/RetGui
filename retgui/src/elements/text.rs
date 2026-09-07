@@ -30,7 +30,7 @@ use winit::dpi;
 use crate::App;
 use crate::elements::element_data::ElementData;
 use crate::elements::traits::clone_element;
-use crate::elements::{DynElement, Element, ElementIds, ElementInternals, ElementStates, RetGuiAccessTree, RetainedElements};
+use crate::elements::{DynElement, Element, ElementIds, ElementInternals, RetGuiAccessTree, RetainedElements};
 use crate::events::{Event, EventKind, PointerButton};
 use crate::layout::GummyTree;
 use crate::layout::layout_context::{GummyTextContext, LayoutContext, TextHashKey};
@@ -215,7 +215,6 @@ impl ElementInternals for TextElement {
     fn draw(
         &self,
         _elements: &RetainedElements,
-        _states: &ElementStates,
         _renderer: &mut dyn Renderer,
         _resource_manager: Arc<ResourceManager>,
         _scale_factor: f64,
@@ -249,7 +248,6 @@ impl ElementInternals for TextElement {
         _focus: &mut Option<DynElement>,
         _focus_outline_visible: bool,
         _pending_animation_updates: &mut Vec<(DynElement, bool)>,
-        _states: &mut ElementStates,
         event: &mut EventKind,
         _text_context: &mut TextContext,
     ) {
@@ -707,7 +705,6 @@ mod animation_tests {
             text.animation_tick(
                 arena,
                 &mut app.gummy_tree,
-                &mut app.states,
                 &mut app.pending_resources,
                 Duration::from_millis(500),
             );

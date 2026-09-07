@@ -3,6 +3,7 @@ use retgui_primitives::geometry::{Point, Size};
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::event::{ButtonSource, ElementState, Ime, KeyEvent, MouseButton, PointerSource, WindowEvent};
 
+use crate::States;
 use crate::app::{App, WindowEventResult};
 use crate::drivers::Driver;
 use crate::elements::{Element, Window, WindowElement};
@@ -19,15 +20,17 @@ pub struct HeadlessDriver {
     event_receiver: std::sync::mpsc::Receiver<HeadlessEvent>,
     event_sender: std::sync::mpsc::Sender<HeadlessEvent>,
     app: App,
+    states: States,
 }
 
 impl HeadlessDriver {
-    pub fn new(app: App) -> Self {
+    pub fn new(app: App, states: States) -> Self {
         let (tx, rx) = std::sync::mpsc::channel();
         Self {
             event_receiver: rx,
             event_sender: tx,
             app,
+            states,
         }
     }
 
@@ -47,12 +50,15 @@ impl HeadlessDriver {
             self.dispatch_event(event);
         }
 
-        let _ = self.app.on_about_to_wait(None);
+        let _ = self.app.on_about_to_wait(None, &mut self.states);
         events_processed
     }
 
     pub fn dispatch_event(&mut self, event: HeadlessEvent) {
-        match self.app.on_window_event(event.window, event.winit_event) {
+        match self
+            .app
+            .on_window_event(event.window, event.winit_event, &mut self.states)
+        {
             WindowEventResult::Continue => {}
             WindowEventResult::ExitRequested => {
                 self.app.close_requested = true;
@@ -62,8 +68,8 @@ impl HeadlessDriver {
 }
 
 impl Driver for HeadlessDriver {
-    fn new(app: App) -> Self {
-        Self::new(app)
+    fn new(app: App, states: States) -> Self {
+        Self::new(app, states)
     }
 
     fn run(mut self) {
@@ -77,13 +83,14 @@ pub struct HeadlessApp {
     windows: Vec<Window>,
 }
 
-pub fn run<T, F>(_name: &str, build: impl FnOnce(&mut App) -> T, test: F)
+pub fn run<T, F>(_name: &str, build: impl FnOnce(&mut App, &mut States) -> T, test: F)
 where
     F: FnOnce(&mut HeadlessApp, T),
 {
     let mut app = App::new();
-    let test_state = build(&mut app);
-    HeadlessApp::run_with_app(app, |app| test(app, test_state));
+    let mut states = States::new();
+    let test_state = build(&mut app, &mut states);
+    HeadlessApp::run_with_app(app, states, |app| test(app, test_state));
 }
 
 impl HeadlessApp {
@@ -95,8 +102,20 @@ impl HeadlessApp {
         &mut self.driver.app
     }
 
-    pub(crate) fn new(app: App) -> Self {
-        let mut driver = HeadlessDriver::new(app);
+    pub fn states(&self) -> &States {
+        &self.driver.states
+    }
+
+    pub fn states_mut(&mut self) -> &mut States {
+        &mut self.driver.states
+    }
+
+    pub fn parts_mut(&mut self) -> (&mut App, &mut States) {
+        (&mut self.driver.app, &mut self.driver.states)
+    }
+
+    pub(crate) fn new(app: App, states: States) -> Self {
+        let mut driver = HeadlessDriver::new(app, states);
         driver.app.on_resume(None);
         Self {
             driver,
@@ -104,11 +123,11 @@ impl HeadlessApp {
         }
     }
 
-    fn run_with_app<F>(app: App, test: F)
+    fn run_with_app<F>(app: App, states: States, test: F)
     where
         F: FnOnce(&mut Self),
     {
-        let mut headless_app = Self::new(app);
+        let mut headless_app = Self::new(app, states);
         test(&mut headless_app);
         headless_app.drive();
     }
@@ -176,7 +195,9 @@ impl HeadlessApp {
     }
 
     pub fn keyboard_input(&mut self, window: &Window, event: KeyEvent) {
-        self.driver.app.on_keyboard_input(*window, event);
+        self.driver
+            .app
+            .on_keyboard_input(*window, event, &mut self.driver.states);
         self.drive();
     }
 

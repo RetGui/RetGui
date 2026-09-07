@@ -5,7 +5,7 @@ use retgui_renderer::renderer::Renderer;
 use retgui_resource_manager::ResourceManager;
 
 use crate::elements::element_data::ElementData;
-use crate::elements::{DynElement, ElementInternals, ElementStates, RetainedElements};
+use crate::elements::{DynElement, ElementInternals, RetainedElements};
 use crate::layout::GummyTree;
 use crate::text::text_context::TextContext;
 
@@ -135,7 +135,6 @@ pub fn apply_generic_leaf_layout(
 pub fn draw_generic_container(
     element: &dyn ElementInternals,
     elements: &RetainedElements,
-    states: &ElementStates,
     renderer: &mut dyn Renderer,
     resource_manager: Arc<ResourceManager>,
     text_context: &mut TextContext,
@@ -150,14 +149,7 @@ pub fn draw_generic_container(
     element.add_hit_testable(renderer, true, scale_factor);
     element.draw_borders(renderer, scale_factor);
     element.maybe_start_layer(renderer, scale_factor);
-    element.draw_children(
-        elements,
-        states,
-        renderer,
-        resource_manager.clone(),
-        scale_factor,
-        text_context,
-    );
+    element.draw_children(elements, renderer, resource_manager.clone(), scale_factor, text_context);
     element.maybe_end_layer(renderer);
     element.draw_scrollbar(renderer, scale_factor);
 

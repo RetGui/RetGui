@@ -3,7 +3,7 @@ use std::rc::Rc;
 use retgui::elements::{Container, Element, State, Text};
 use retgui::events::PointerButton;
 use retgui::style::{Display, FlexDirection, FontWeight, Overflow};
-use retgui::{App, palette, pct, px};
+use retgui::{App, States, palette, pct, px};
 
 use crate::WebsiteGlobalState;
 use crate::router::NavigateFn;
@@ -38,6 +38,7 @@ fn show_example(app: &mut App, examples: &[Container], selected: usize) {
 
 fn example_link(
     app: &mut App,
+    states: &States,
     label: &str,
     route: &'static str,
     index: usize,
@@ -45,7 +46,7 @@ fn example_link(
     examples: Rc<Vec<Container>>,
     navigate: NavigateFn,
 ) -> Text {
-    let color = if *selected.read(app) == index {
+    let color = if *selected.borrow(states) == index {
         ACTIVE_LINK_COLOR
     } else {
         DEFAULT_LINK_COLOR
@@ -53,19 +54,24 @@ fn example_link(
     let text = Text::new(app, label);
     text.set_color(app, color);
     text.set_selectable(app, false);
-    text.add_pointer_button_up_listener(app, move |event, app| {
+    text.add_pointer_button_up_listener(app, move |event, app, states| {
         if event.button == Some(PointerButton::Left) {
-            *selected.write(app) = index;
+            *selected.borrow_mut(states) = index;
             show_example(app, &examples, index);
-            navigate(route, app);
+            navigate(route, app, states);
         }
     });
     text
 }
 
-pub fn examples(app: &mut App, global_state: State<WebsiteGlobalState>, navigate: NavigateFn) -> Container {
-    let route = global_state.read(app).get_route();
-    let counter = counter::counter(app);
+pub fn examples(
+    app: &mut App,
+    states: &mut States,
+    global_state: State<WebsiteGlobalState>,
+    navigate: NavigateFn,
+) -> Container {
+    let route = global_state.borrow(states).get_route();
+    let counter = counter::counter(app, states);
     counter.set_id(app, COUNTER);
     let pointer = pointer_events::pointer_events(app);
     pointer.set_id(app, POINTER_EVENTS);
@@ -76,7 +82,7 @@ pub fn examples(app: &mut App, global_state: State<WebsiteGlobalState>, navigate
         .iter()
         .position(|candidate| *candidate == route)
         .unwrap_or(0);
-    let selected = app.insert_state(selected_index);
+    let selected = states.insert(selected_index);
     show_example(app, &examples, selected_index);
 
     let heading = Text::new(app, "Examples");
@@ -93,7 +99,16 @@ pub fn examples(app: &mut App, global_state: State<WebsiteGlobalState>, navigate
         .into_iter()
         .enumerate()
     {
-        let link = example_link(app, label, route, index, selected, examples.clone(), navigate.clone());
+        let link = example_link(
+            app,
+            states,
+            label,
+            route,
+            index,
+            selected,
+            examples.clone(),
+            navigate.clone(),
+        );
         sidebar.push(app, link);
     }
 

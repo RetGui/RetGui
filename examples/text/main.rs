@@ -34,11 +34,12 @@ pub fn text(app: &mut App) -> Container {
 
 pub fn main() {
     let mut app = App::new();
+    let states = retgui::States::new();
     let content = text(&mut app);
     let window = Window::new(&mut app, "Text");
     window.push(&mut app, content);
     use retgui::RetGuiOptions;
 
     util::setup_logging();
-    retgui::retgui_main(app, RetGuiOptions::basic("text"));
+    retgui::retgui_main(app, states, RetGuiOptions::basic("text"));
 }

@@ -13,7 +13,7 @@ use retgui_resource_manager::ResourceManager;
 use crate::elements::element_data::ElementData;
 use crate::elements::internal_helpers::{apply_generic_container_layout, draw_generic_container, push_child_to_element};
 use crate::elements::traits::clone_element;
-use crate::elements::{Container, ContainerElement, Dropdown, DropdownElement, DynElement, Element, ElementIds, ElementInternals, ElementStates, RetGuiAccessTree, RetainedElements, Text, TextElement};
+use crate::elements::{Container, ContainerElement, Dropdown, DropdownElement, DynElement, Element, ElementIds, ElementInternals, RetGuiAccessTree, RetainedElements, Text, TextElement};
 use crate::events::{Event, EventKind};
 use crate::layout::GummyTree;
 use crate::style::{AlignItems, Display, FlexDirection, JustifyContent, Unit};
@@ -96,21 +96,12 @@ impl ElementInternals for CalendarElement {
     fn draw(
         &self,
         elements: &RetainedElements,
-        states: &ElementStates,
         renderer: &mut dyn Renderer,
         resource_manager: Arc<ResourceManager>,
         scale_factor: f64,
         text_context: &mut TextContext,
     ) {
-        draw_generic_container(
-            self,
-            elements,
-            states,
-            renderer,
-            resource_manager,
-            text_context,
-            scale_factor,
-        );
+        draw_generic_container(self, elements, renderer, resource_manager, text_context, scale_factor);
     }
 
     fn on_event(
@@ -123,7 +114,6 @@ impl ElementInternals for CalendarElement {
         _focus: &mut Option<DynElement>,
         _focus_outline_visible: bool,
         _pending_animation_updates: &mut Vec<(DynElement, bool)>,
-        _states: &mut ElementStates,
         event: &mut EventKind,
         _text_context: &mut TextContext,
     ) {
@@ -462,11 +452,13 @@ impl CalendarElement {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::States;
     use crate::events::{DropdownItemSelectedEvent, EventDispatcher};
 
     #[test]
     fn calendar_rebuilds_years_and_updates_days_from_dropdown_events() {
         let mut app = App::new();
+        let mut states = States::new();
         let calendar = Calendar::new(&mut app);
         let year_dropdown = app.get_as::<CalendarElement>(calendar.inner).year_dropdown;
         let month_dropdown = app.get_as::<CalendarElement>(calendar.inner).month_dropdown;
@@ -488,7 +480,7 @@ mod tests {
                     index,
                 )));
         }
-        EventDispatcher::dispatch_queued_events(&mut app);
+        EventDispatcher::dispatch_queued_events(&mut app, &mut states);
         let calendar_element = app.get_as::<CalendarElement>(calendar.inner);
         assert_eq!((calendar_element.focus_year, calendar_element.focus_month), (2024, 1));
         let days = calendar_element.days.clone();
@@ -501,7 +493,7 @@ mod tests {
                 month_dropdown.inner,
                 1,
             )));
-        EventDispatcher::dispatch_queued_events(&mut app);
+        EventDispatcher::dispatch_queued_events(&mut app, &mut states);
         assert_eq!(app.get_as::<CalendarElement>(calendar.inner).focus_month, 2);
         assert_ne!(january, days.iter().map(|day| day.text(&app)).collect::<Vec<_>>());
     }

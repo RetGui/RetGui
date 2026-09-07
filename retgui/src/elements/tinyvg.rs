@@ -24,7 +24,7 @@ use tinyvg_rs::common::Unit;
 use crate::elements::element_data::ElementData;
 use crate::elements::internal_helpers::apply_generic_leaf_layout;
 use crate::elements::traits::clone_element;
-use crate::elements::{DynElement, Element, ElementIds, ElementInternals, ElementStates, RetGuiAccessTree, RetainedElements};
+use crate::elements::{DynElement, Element, ElementIds, ElementInternals, RetGuiAccessTree, RetainedElements};
 use crate::layout::GummyTree;
 use crate::layout::layout_context::{LayoutContext, TinyVgContext};
 use crate::text::text_context::TextContext;
@@ -90,7 +90,6 @@ impl ElementInternals for TinyVgElement {
     fn draw(
         &self,
         _elements: &RetainedElements,
-        _states: &ElementStates,
         renderer: &mut dyn Renderer,
         resource_manager: Arc<ResourceManager>,
         scale_factor: f64,

@@ -10,8 +10,9 @@ use retgui_resource_manager::ResourceId;
 use retgui_resource_manager::resource_type::ResourceType;
 
 use crate::elements::codeeditor::CodeEditorElement;
+use crate::elements::image::ImageElement;
 use crate::elements::internal_helpers::push_child_to_element;
-use crate::elements::{ContainerElement, DynElement, ElementIds, ElementInternals, ImageElement, RetGuiAccessTree, RetainedElements, TextElement, TextInputElement};
+use crate::elements::{ContainerElement, DynElement, ElementIds, ElementInternals, RetGuiAccessTree, RetainedElements, TextElement, TextInputElement};
 use crate::layout::GummyTree;
 use crate::style::{Display, FlexDirection, FontStyle, FontWeight, TextStyleProperty, Unit};
 use crate::text::RangedStyles;

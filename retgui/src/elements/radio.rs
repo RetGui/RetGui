@@ -18,15 +18,16 @@ use winit::keyboard::KeyCode;
 use crate::elements::element_data::ElementData;
 use crate::elements::element_id::create_unique_element_id;
 use crate::elements::internal_helpers::{apply_generic_container_layout, apply_generic_container_layout_non_dom};
+use crate::elements::radiogroup::RadioGroupElement;
 use crate::elements::traits::clone_element;
-use crate::elements::{DynElement, Element, ElementIds, ElementInternals, ElementStates, RetGuiAccessTree, RetainedElements, State, scrollable};
+use crate::elements::{DynElement, Element, ElementIds, ElementInternals, RadioGroup, RetGuiAccessTree, RetainedElements, scrollable};
 use crate::events::{Event, EventKind, RadioValueChangedEvent};
 use crate::layout::GummyTree;
 use crate::style::Unit;
 use crate::text::text_context::TextContext;
 use crate::{App, auto, px, rgb};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Radio {
     pub(crate) inner: DynElement,
 }
@@ -39,10 +40,10 @@ pub(crate) struct RadioElement {
     element_data: ElementData,
     circle_layout: ElementData,
     circle: Circle,
-    value: String,
+    pub(super) value: String,
     label: String,
     hide_radio: bool,
-    pub(super) active_value: State<String>,
+    pub(crate) group: RadioGroup,
 }
 
 impl Element for Radio {
@@ -107,7 +108,6 @@ impl ElementInternals for RadioElement {
     fn draw(
         &self,
         elements: &RetainedElements,
-        states: &ElementStates,
         renderer: &mut dyn Renderer,
         resource_manager: Arc<ResourceManager>,
         _scale_factor: f64,
@@ -128,7 +128,7 @@ impl ElementInternals for RadioElement {
         renderer.set_transform(container_transform * Affine::translate((0.0, -scroll_y)));
 
         if !self.hide_radio {
-            if self.is_selected(elements.store_id(), states) {
+            if self.is_selected(elements) {
                 renderer.draw_circle_outline(
                     self.circle.scale(_scale_factor),
                     Brush::Color(rgb(0, 100, 255)),
@@ -149,14 +149,7 @@ impl ElementInternals for RadioElement {
 
         renderer.set_transform(container_transform);
 
-        self.draw_children(
-            elements,
-            states,
-            renderer,
-            resource_manager,
-            _scale_factor,
-            _text_context,
-        );
+        self.draw_children(elements, renderer, resource_manager, _scale_factor, _text_context);
         self.maybe_end_layer(renderer);
         self.draw_scrollbar(renderer, _scale_factor);
 
@@ -173,22 +166,33 @@ impl ElementInternals for RadioElement {
         focus: &mut Option<DynElement>,
         focus_outline_visible: bool,
         _pending_animation_updates: &mut Vec<(DynElement, bool)>,
-        states: &mut ElementStates,
         event: &mut EventKind,
         _text_context: &mut TextContext,
     ) {
         scrollable::handle_scroll_logic(elements, event_queue, focus, focus_outline_visible, self, event);
         if let EventKind::PointerUp(_) = event {
             self.focus(elements, event_queue, focus, focus_outline_visible);
-            self.set_value(elements, event_queue, states);
+            self.select(elements, event_queue);
         } else if self.is_focused()
             && let EventKind::KeyDown(keyboard_event) = event
-            && keyboard_event.code == KeyCode::Space
-            && !keyboard_event.repeat
         {
-            self.set_value(elements, event_queue, states);
-            keyboard_event.stop_propagation();
-            keyboard_event.prevent_default();
+            let handled = match keyboard_event.code {
+                KeyCode::Space if !keyboard_event.repeat => {
+                    self.select(elements, event_queue);
+                    true
+                }
+                KeyCode::ArrowDown | KeyCode::ArrowRight => {
+                    self.move_selection(elements, event_queue, focus, focus_outline_visible, 1)
+                }
+                KeyCode::ArrowUp | KeyCode::ArrowLeft => {
+                    self.move_selection(elements, event_queue, focus, focus_outline_visible, -1)
+                }
+                _ => false,
+            };
+            if handled {
+                keyboard_event.stop_propagation();
+                keyboard_event.prevent_default();
+            }
         }
     }
 
@@ -196,73 +200,120 @@ impl ElementInternals for RadioElement {
         &mut self,
         elements: &mut RetainedElements,
         event_queue: &mut VecDeque<EventKind>,
-        states: &mut ElementStates,
         event: AccessEvent,
     ) -> Result<(), IsshoError> {
-        if matches!(event, AccessEvent::Select | AccessEvent::AddToSelection)
-            && !self.is_selected(elements.store_id(), states)
-        {
-            self.set_value(elements, event_queue, states);
+        if matches!(event, AccessEvent::Select | AccessEvent::AddToSelection) {
+            self.select(elements, event_queue);
         }
         Ok(())
     }
 }
 
 impl RadioElement {
-    fn set_value(
+    fn is_selected(&self, elements: &RetainedElements) -> bool {
+        elements
+            .try_get_as::<RadioGroupElement>(self.group.inner)
+            .is_some_and(|group| {
+                group
+                    .selected
+                    .is_some_and(|selected| selected.inner == self.element_data.me)
+            })
+    }
+
+    fn select(&mut self, elements: &mut RetainedElements, event_queue: &mut VecDeque<EventKind>) {
+        if self.select_in_group(elements) {
+            event_queue.push_back(EventKind::RadioValueChanged(RadioValueChangedEvent::new(
+                self.group.inner,
+                self.value.clone(),
+            )));
+        }
+    }
+
+    fn select_in_group(&mut self, elements: &mut RetainedElements) -> bool {
+        let Some(group) = elements.try_get_as_mut::<RadioGroupElement>(self.group.inner) else {
+            return false;
+        };
+        let me = Radio {
+            inner: self.element_data.me,
+        };
+        if group.selected == Some(me) {
+            return false;
+        }
+        let previous = group.selected.replace(me);
+        if let Some(previous) = previous
+            && let Some(previous) = elements.try_get_as_mut::<RadioElement>(previous.inner)
+        {
+            previous.set_accessibility_selection(false);
+        }
+        self.set_accessibility_selection(true);
+        true
+    }
+
+    fn move_selection(
         &mut self,
         elements: &mut RetainedElements,
         event_queue: &mut VecDeque<EventKind>,
-        states: &mut ElementStates,
-    ) {
-        self.set_value_from_group(elements.store_id(), event_queue, states);
+        focus: &mut Option<DynElement>,
+        focus_outline_visible: bool,
+        direction: isize,
+    ) -> bool {
+        let Some(group) = elements.try_get_as::<RadioGroupElement>(self.group.inner) else {
+            return false;
+        };
+        let Some(root) = self.tree_root(elements, self.element_data.me) else {
+            return false;
+        };
+        let members = group
+            .members
+            .iter()
+            .copied()
+            .filter(|radio| self.tree_root(elements, radio.inner) == Some(root))
+            .collect::<Vec<_>>();
+        let Some(current) = members.iter().position(|radio| radio.inner == self.element_data.me) else {
+            return false;
+        };
+        let next_index = if direction < 0 {
+            (current + members.len() - 1) % members.len()
+        } else {
+            (current + 1) % members.len()
+        };
+        let next = members[next_index];
+        if next.inner == self.element_data.me {
+            self.select(elements, event_queue);
+        } else {
+            // This radio is temporarily outside the store while handling its
+            // event. Release its focus and update its node before visiting the next.
+            self.unfocus(event_queue, focus);
+            self.set_accessibility_selection(false);
+            elements.dispatch_mut(next.inner, |next, elements| {
+                let next = (next as &mut dyn Any).downcast_mut::<RadioElement>().unwrap();
+                next.focus(elements, event_queue, focus, focus_outline_visible);
+                next.select(elements, event_queue);
+            });
+        }
+        true
+    }
 
-        let me = self.element_data.me;
-        let parent = self.element_data.parent;
-        if let Some(parent) = parent {
-            for sibling in elements.get(parent).element_data().children.clone() {
-                if me == sibling {
-                    continue;
-                }
-                if (elements.get(sibling) as &dyn Any).is::<RadioElement>() {
-                    let selected = self.active_value.read_from(states, elements.store_id()).clone();
-                    elements
-                        .get_as_mut::<RadioElement>(sibling)
-                        .set_accessibility_selection(&selected);
-                }
+    fn tree_root(&self, elements: &RetainedElements, mut element: DynElement) -> Option<DynElement> {
+        loop {
+            let parent = if element == self.element_data.me {
+                self.element_data.parent
+            } else {
+                elements.try_get(element)?.parent()
+            };
+            match parent {
+                Some(parent) => element = parent,
+                None => return Some(element),
             }
         }
     }
 
-    pub(super) fn set_value_from_group(
-        &mut self,
-        store_id: u64,
-        event_queue: &mut VecDeque<EventKind>,
-        states: &mut ElementStates,
-    ) {
-        let selection_changed = !self.is_selected(store_id, states);
-        *self.active_value.write_to(states, store_id) = self.value.clone();
-        let selected = self.active_value.read_from(states, store_id).clone();
-        self.set_accessibility_selection(&selected);
-        let target = self.element_data.me;
-        event_queue.push_back(EventKind::RadioValueChanged(RadioValueChangedEvent::new(
-            target, selected,
-        )));
-        if selection_changed {
-            self.request_window_redraw();
-        }
-    }
-
-    fn is_selected(&self, store_id: u64, states: &ElementStates) -> bool {
-        self.active_value.read_from(states, store_id).as_str() == self.value
-    }
-
-    pub(super) fn set_accessibility_selection(&mut self, selected: &str) {
-        let is_selected = selected == self.value;
+    pub(crate) fn set_accessibility_selection(&mut self, selected: bool) {
         self.element_data
             .set_accessibility_selection_data(Some(SelectionData::SelectionGroupItem(SelectionGroupItem {
-                is_selected,
+                is_selected: selected,
             })));
+        self.request_window_redraw();
     }
 
     pub(crate) fn insert(
@@ -270,11 +321,11 @@ impl RadioElement {
         gummy_tree: &mut GummyTree,
         access_tree: &RetGuiAccessTree,
         by_internal_id: &mut ElementIds,
-        states: &ElementStates,
+        group: RadioGroup,
         value: &str,
         label: &str,
-        active_value: State<String>,
     ) -> DynElement {
+        elements.get_as::<RadioGroupElement>(group.inner);
         let radius = 7.0;
         let inner = elements.insert_with(access_tree, by_internal_id, |me, access_tree| {
             Box::new(RadioElement {
@@ -284,10 +335,9 @@ impl RadioElement {
                 value: value.to_string(),
                 label: label.to_string(),
                 hide_radio: false,
-                active_value,
+                group,
             })
         });
-        let selected = active_value.read_from(states, elements.store_id()).clone();
         {
             let inner_mut = elements.get_as_mut::<RadioElement>(inner);
             inner_mut.circle_layout.style.set_min_width(Unit::Px(radius * 2.0));
@@ -298,7 +348,7 @@ impl RadioElement {
                 .set_margin(TrblRectangle::new(auto(), px(5), auto(), px(0)));
             inner_mut.element_data.set_accessibility_role(issho::Role::RadioButton);
             inner_mut.element_data.set_accessibility_name(label.to_string());
-            inner_mut.set_accessibility_selection(&selected);
+            inner_mut.set_accessibility_selection(false);
             inner_mut.element_data.create_layout_node(gummy_tree, None);
             inner_mut.circle_layout.create_layout_node(gummy_tree, None);
             let node_id = inner_mut.circle_layout.layout.gummy_node_id();
@@ -306,24 +356,51 @@ impl RadioElement {
             gummy_tree.register_owner(node_id, inner_mut.element_data.internal_id, inner);
         }
 
+        elements
+            .get_as_mut::<RadioGroupElement>(group.inner)
+            .members
+            .push(Radio { inner });
         inner
     }
 }
 
 impl Radio {
-    pub fn new(app: &mut App, value: &str, label: &str, active_value: State<String>) -> Self {
-        Self {
+
+    pub fn new(app: &mut App, group: RadioGroup, value: &str, label: &str, selected: bool) -> Self {
+        let radio = Self {
             inner: RadioElement::insert(
                 &mut app.elements,
                 &mut app.gummy_tree,
                 &app.access_tree,
                 &mut app.by_internal_id,
-                &app.states,
+                group,
                 value,
                 label,
-                active_value,
             ),
+        };
+        if selected {
+            app.elements.dispatch_mut(radio.inner, |radio, elements| {
+                (radio as &mut dyn Any)
+                    .downcast_mut::<RadioElement>()
+                    .unwrap()
+                    .select_in_group(elements);
+            });
         }
+        radio
+    }
+    
+    pub fn is_selected(&self, app: &App) -> bool {
+        app.try_get_as::<RadioElement>(self.inner)
+            .is_some_and(|radio| radio.is_selected(&app.elements))
+    }
+
+    pub fn select(&self, app: &mut App) {
+        app.elements.try_dispatch_mut(self.inner, |radio, elements| {
+            (radio as &mut dyn Any)
+                .downcast_mut::<RadioElement>()
+                .unwrap()
+                .select(elements, &mut app.event_queue);
+        });
     }
 
     /// Hide the default circle radio button.

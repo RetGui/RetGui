@@ -17,7 +17,7 @@ use winit::keyboard::KeyCode;
 
 use crate::elements::element_data::ElementData;
 use crate::elements::traits::clone_element;
-use crate::elements::{DynElement, Element, ElementIds, ElementInternals, ElementStates, HasElementData, RetGuiAccessTree, RetainedElements};
+use crate::elements::{DynElement, Element, ElementIds, ElementInternals, HasElementData, RetGuiAccessTree, RetainedElements};
 use crate::events::{Event, EventKind, SliderValueChangedEvent};
 use crate::layout::GummyTree;
 use crate::layout::layout::{CssComputedBorder, draw_borders_generic};
@@ -590,7 +590,6 @@ impl ElementInternals for SliderElement {
     fn draw(
         &self,
         _elements: &RetainedElements,
-        _states: &ElementStates,
         _renderer: &mut dyn Renderer,
         _resource_manager: Arc<ResourceManager>,
         _scale_factor: f64,
@@ -644,7 +643,6 @@ impl ElementInternals for SliderElement {
         focus: &mut Option<DynElement>,
         focus_outline_visible: bool,
         _pending_animation_updates: &mut Vec<(DynElement, bool)>,
-        _states: &mut ElementStates,
         event: &mut EventKind,
         _text_context: &mut TextContext,
     ) {

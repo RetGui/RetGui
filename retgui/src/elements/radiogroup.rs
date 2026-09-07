@@ -1,6 +1,5 @@
-//! Stores one or more elements.
+//! A group of radios.
 
-use std::any::Any;
 use std::collections::VecDeque;
 use std::sync::Arc;
 
@@ -10,18 +9,16 @@ use retgui_renderer::renderer::Renderer;
 
 use retgui_resource_manager::ResourceManager;
 
-use winit::keyboard::KeyCode;
-
 use crate::App;
 use crate::elements::element_data::ElementData;
 use crate::elements::internal_helpers::{apply_generic_container_layout, draw_generic_container};
 use crate::elements::traits::clone_element;
-use crate::elements::{DynElement, Element, ElementIds, ElementInternals, ElementStates, RadioElement, RetGuiAccessTree, RetainedElements, scrollable};
-use crate::events::{Event, EventKind};
+use crate::elements::{DynElement, Element, ElementIds, ElementInternals, Radio, RadioElement, RetGuiAccessTree, RetainedElements, scrollable};
+use crate::events::EventKind;
 use crate::layout::GummyTree;
 use crate::text::text_context::TextContext;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct RadioGroup {
     pub(crate) inner: DynElement,
 }
@@ -32,6 +29,8 @@ pub struct RadioGroup {
 #[derive(Clone)]
 pub(crate) struct RadioGroupElement {
     element_data: ElementData,
+    pub(crate) selected: Option<Radio>,
+    pub(crate) members: Vec<Radio>,
 }
 
 impl Element for RadioGroup {
@@ -81,21 +80,12 @@ impl ElementInternals for RadioGroupElement {
     fn draw(
         &self,
         elements: &RetainedElements,
-        states: &ElementStates,
         renderer: &mut dyn Renderer,
         resource_manager: Arc<ResourceManager>,
         scale_factor: f64,
         text_context: &mut TextContext,
     ) {
-        draw_generic_container(
-            self,
-            elements,
-            states,
-            renderer,
-            resource_manager,
-            text_context,
-            scale_factor,
-        );
+        draw_generic_container(self, elements, renderer, resource_manager, text_context, scale_factor);
     }
 
     fn on_event(
@@ -108,73 +98,14 @@ impl ElementInternals for RadioGroupElement {
         focus: &mut Option<DynElement>,
         focus_outline_visible: bool,
         _pending_animation_updates: &mut Vec<(DynElement, bool)>,
-        states: &mut ElementStates,
         event: &mut EventKind,
         _text_context: &mut TextContext,
     ) {
         scrollable::handle_scroll_logic(elements, event_queue, focus, focus_outline_visible, self, event);
-
-        if let EventKind::KeyDown(keyboard_event) = event {
-            let direction = match keyboard_event.code {
-                KeyCode::ArrowDown | KeyCode::ArrowRight => Some(1),
-                KeyCode::ArrowUp | KeyCode::ArrowLeft => Some(-1),
-                _ => None,
-            };
-
-            if direction.is_some_and(|direction| {
-                self.move_selection(elements, event_queue, focus, focus_outline_visible, states, direction)
-            }) {
-                keyboard_event.stop_propagation();
-                keyboard_event.prevent_default();
-            }
-        }
     }
 }
 
 impl RadioGroupElement {
-    fn move_selection(
-        &mut self,
-        elements: &mut RetainedElements,
-        event_queue: &mut VecDeque<EventKind>,
-        focus: &mut Option<DynElement>,
-        focus_outline_visible: bool,
-        states: &mut ElementStates,
-        direction: isize,
-    ) -> bool {
-        let radios = self
-            .element_data
-            .children
-            .iter()
-            .filter(|child| (elements.get(**child) as &dyn Any).is::<RadioElement>())
-            .copied()
-            .collect::<Vec<_>>();
-        let Some(current_index) = radios.iter().position(|radio| elements.get(*radio).is_focused()) else {
-            return false;
-        };
-
-        let next_index = if direction < 0 {
-            (current_index + radios.len() - 1) % radios.len()
-        } else {
-            (current_index + 1) % radios.len()
-        };
-        {
-            let next_handle = radios[next_index];
-            elements.dispatch_mut(next_handle, |next, elements| {
-                let next = (next as &mut dyn Any).downcast_mut::<RadioElement>().unwrap();
-                next.focus(elements, event_queue, focus, focus_outline_visible);
-                next.set_value_from_group(elements.store_id(), event_queue, states);
-            });
-        }
-        for radio in radios {
-            let state = elements.get_as::<RadioElement>(radio).active_value;
-            let selected = state.read_from(states, elements.store_id()).clone();
-            elements
-                .get_as_mut::<RadioElement>(radio)
-                .set_accessibility_selection(&selected);
-        }
-        true
-    }
-
     pub(crate) fn insert(
         elements: &mut RetainedElements,
         gummy_tree: &mut GummyTree,
@@ -185,6 +116,8 @@ impl RadioGroupElement {
         let inner = elements.insert_with(access_tree, by_internal_id, |me, access_tree| {
             Box::new(RadioGroupElement {
                 element_data: ElementData::new(me, true, access_tree),
+                selected: None,
+                members: Vec::new(),
             })
         });
         let inner_mut = elements.get_as_mut::<RadioGroupElement>(inner);
@@ -213,6 +146,27 @@ impl RadioGroup {
                 &mut app.by_internal_id,
                 label,
             ),
+        }
+    }
+
+    pub fn value(&self, app: &App) -> Option<String> {
+        let selected = app.try_get_as::<RadioGroupElement>(self.inner)?.selected?;
+        Some(app.try_get_as::<RadioElement>(selected.inner)?.value.clone())
+    }
+
+    pub fn set_value(&self, app: &mut App, value: &str) -> bool {
+        let Some(group) = app.try_get_as::<RadioGroupElement>(self.inner) else {
+            return false;
+        };
+        let selected = group.members.iter().copied().find(|member| {
+            app.try_get_as::<RadioElement>(member.inner)
+                .is_some_and(|radio| radio.value == value)
+        });
+        if let Some(radio) = selected {
+            radio.select(app);
+            true
+        } else {
+            false
         }
     }
 }

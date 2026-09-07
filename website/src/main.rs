@@ -1,4 +1,4 @@
-use retgui::{App, RetGuiOptions, retgui_main};
+use retgui::{App, RetGuiOptions, States, retgui_main};
 
 use crate::router::Router;
 
@@ -81,10 +81,11 @@ impl Default for WebsiteGlobalState {
 fn main() {
     util::setup_logging();
     let mut app = App::new();
+    let mut states = States::new();
     let mut global_state = WebsiteGlobalState::default();
     global_state.load_route();
-    let global_state = app.insert_state(global_state);
-    let router = Router::new(&mut app, global_state);
-    router.navigate(&mut app);
-    retgui_main(app, RetGuiOptions::default());
+    let global_state = states.insert(global_state);
+    let router = Router::new(&mut app, &mut states, global_state);
+    router.navigate(&mut app, &mut states);
+    retgui_main(app, states, RetGuiOptions::default());
 }

@@ -42,7 +42,7 @@ fn event_log(app: &mut App) -> EventLog {
     clear_log.set_border_radius_all(app, (6.0, 6.0));
     clear_log.set_padding(app, Unit::Px(10.0), Unit::Px(25.0), Unit::Px(10.0), Unit::Px(25.0));
     clear_log.set_width(app, Unit::Px(90.0));
-    clear_log.add_click_listener(app, move |_event, app| {
+    clear_log.add_click_listener(app, move |_event, app, _states| {
         entries.delete_all_children(app);
     });
 
@@ -69,12 +69,12 @@ fn pointer_capture_example(app: &mut App) -> Container {
     draggable_text.set_width(app, Unit::Px(100.0));
     draggable_text.set_color(app, Color::WHITE);
     draggable_text.set_background_color(app, Color::from_rgba8(40, 40, 255, 100));
-    draggable_text.add_pointer_button_down_listener(app, |event, app| {
+    draggable_text.add_pointer_button_down_listener(app, |event, app, _states| {
         event
             .target()
             .set_pointer_capture(app, event.pointer.pointer_id.unwrap());
     });
-    draggable_text.add_pointer_moved_listener(app, move |event, app| {
+    draggable_text.add_pointer_moved_listener(app, move |event, app, _states| {
         let mouse_x = event.current.logical_position().x as f32;
         let half_width = draggable_text.computed_box_transformed(app).size.width / 2.0;
         if draggable_text.has_pointer_capture(app, event.pointer.pointer_id.unwrap()) {
@@ -89,10 +89,10 @@ fn pointer_capture_example(app: &mut App) -> Container {
         }
         event.prevent_default();
     });
-    draggable_text.add_lost_pointer_capture_listener(app, move |_event, app| {
+    draggable_text.add_lost_pointer_capture_listener(app, move |_event, app, _states| {
         event_log.push(app, "Lost Pointer Capture");
     });
-    draggable_text.add_got_pointer_capture_listener(app, move |_event, app| {
+    draggable_text.add_got_pointer_capture_listener(app, move |_event, app, _states| {
         event_log.push(app, "Got Pointer Capture");
     });
 
@@ -111,12 +111,12 @@ fn pointer_enter_leave_example(app: &mut App) -> Container {
     let event_log = event_log(app);
 
     let pointer_enter_log = move |element_name: &'static str| {
-        move |_event: &mut PointerEnterEvent, app: &mut App| {
+        move |_event: &mut PointerEnterEvent, app: &mut App, _states: &mut retgui::States| {
             event_log.push(app, format!("Pointer Enter: {element_name}"));
         }
     };
     let pointer_leave_log = move |element_name: &'static str| {
-        move |_event: &mut PointerLeaveEvent, app: &mut App| {
+        move |_event: &mut PointerLeaveEvent, app: &mut App, _states: &mut retgui::States| {
             event_log.push(app, format!("Pointer Leave: {element_name}"));
         }
     };
@@ -172,6 +172,7 @@ pub fn pointer_events(app: &mut App) -> Container {
 #[cfg(not(target_os = "android"))]
 fn main() {
     let mut app = App::new();
+    let states = retgui::States::new();
     let content = pointer_events(&mut app);
     let window = Window::new(&mut app, "Pointer Events");
     window.set_width(&mut app, pct(100));
@@ -181,5 +182,5 @@ fn main() {
     use retgui::RetGuiOptions;
 
     //util::setup_logging();
-    retgui::retgui_main(app, RetGuiOptions::basic("Pointer Events"));
+    retgui::retgui_main(app, states, RetGuiOptions::basic("Pointer Events"));
 }

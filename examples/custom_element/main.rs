@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 use std::sync::Arc;
 
-use retgui::elements::{DynElement, Element, ElementData, ElementIds, ElementInternals, ElementStates, HasElementData, RetGuiAccessTree, RetainedElements, Text, Window, clone_element};
+use retgui::elements::{DynElement, Element, ElementData, ElementIds, ElementInternals, HasElementData, RetGuiAccessTree, RetainedElements, Text, Window, clone_element};
 use retgui::events::EventKind;
 use retgui::layout::GummyTree;
 use retgui::style::AlignSelf;
@@ -53,7 +53,6 @@ impl ElementInternals for ColorTileElement {
     fn draw(
         &self,
         elements: &RetainedElements,
-        states: &ElementStates,
         renderer: &mut dyn Renderer,
         resource_manager: Arc<ResourceManager>,
         scale_factor: f64,
@@ -67,7 +66,7 @@ impl ElementInternals for ColorTileElement {
         self.draw_borders(renderer, scale_factor);
         let bounds = self.computed_box().content_rectangle().scale(scale_factor);
         renderer.draw_rect(bounds, Brush::Color(self.color));
-        self.draw_children(elements, states, renderer, resource_manager, scale_factor, text_context);
+        self.draw_children(elements, renderer, resource_manager, scale_factor, text_context);
     }
 
     fn on_event(
@@ -80,7 +79,6 @@ impl ElementInternals for ColorTileElement {
         _focus: &mut Option<DynElement>,
         _focus_outline_visible: bool,
         _pending_animation_updates: &mut Vec<(DynElement, bool)>,
-        _states: &mut ElementStates,
         event: &mut EventKind,
         _text_context: &mut TextContext,
     ) {
@@ -119,6 +117,7 @@ fn main() {
     setup_logging();
 
     let mut app = App::new();
+    let states = retgui::States::new();
     let label = Text::new(&mut app, "Click the custom Element");
     label.set_font_size(&mut app, 20.0);
     label.set_selectable(&mut app, false);
@@ -139,5 +138,5 @@ fn main() {
     window.set_height(&mut app, pct(100));
     window.push(&mut app, tile);
 
-    retgui_main(app, RetGuiOptions::basic("Custom Element"));
+    retgui_main(app, states, RetGuiOptions::basic("Custom Element"));
 }
