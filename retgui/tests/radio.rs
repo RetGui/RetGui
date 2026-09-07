@@ -14,28 +14,20 @@ fn switches_from_red_to_green() {
         |app| {
             let active_color = app.insert_state("red".to_string());
             let red_label = Text::new(app, "Red");
-            let red = Radio::new(app, "red", "red", active_color)
-                .edit(app)
-                .push(red_label)
-                .finish();
+            let red = Radio::new(app, "red", "red", active_color);
+            red.push(app, red_label);
             let green_label = Text::new(app, "Green");
-            let green = Radio::new(app, "green", "green", active_color)
-                .edit(app)
-                .push(green_label)
-                .finish();
-            let group = RadioGroup::new(app, "Color")
-                .edit(app)
-                .flex_direction(FlexDirection::Column)
-                .gap(px(8), px(8))
-                .push(red)
-                .push(green)
-                .finish();
-            let window = Window::new_with_renderer(app, "Radio buttons", RendererType::VelloCPU)
-                .edit(app)
-                .width(px(240))
-                .height(px(120))
-                .push(group)
-                .finish();
+            let green = Radio::new(app, "green", "green", active_color);
+            green.push(app, green_label);
+            let group = RadioGroup::new(app, "Color");
+            group.set_flex_direction(app, FlexDirection::Column);
+            group.set_gap(app, px(8), px(8));
+            group.push(app, red);
+            group.push(app, green);
+            let window = Window::new_with_renderer(app, "Radio buttons", RendererType::VelloCPU);
+            window.set_width(app, px(240));
+            window.set_height(app, px(120));
+            window.push(app, group);
             (active_color, green, window)
         },
         |test, (active_color, green, window)| {

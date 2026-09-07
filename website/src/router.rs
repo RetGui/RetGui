@@ -39,15 +39,13 @@ impl Router {
         });
 
         let navigation = navbar(app, navigate.clone());
-        let root = Window::new(app, "RetGui GUI")
-            .edit(app)
-            .display(Display::Flex)
-            .flex_direction(FlexDirection::Column)
-            .width(pct(100))
-            .height(pct(100))
-            .background_color(BODY_BACKGROUND_COLOR)
-            .push(navigation)
-            .finish();
+        let root = Window::new(app, "RetGui GUI");
+        root.set_display(app, Display::Flex);
+        root.set_flex_direction(app, FlexDirection::Column);
+        root.set_width(app, pct(100));
+        root.set_height(app, pct(100));
+        root.set_background_color(app, BODY_BACKGROUND_COLOR);
+        root.push(app, navigation);
         let index = index_page(app, navigate.clone());
         let docs = docs(app, navigate.clone());
         let examples = examples(app, global_state, navigate);
@@ -84,5 +82,5 @@ fn navigate_to(state: State<RouterState>, app: &mut App, route: &str) {
     if let Some(current) = root.children(app).get(1).copied() {
         root.remove_child(app, current).expect("failed to remove routed page");
     }
-    root.edit(app).push(page).finish();
+    root.push(app, page);
 }

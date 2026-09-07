@@ -10,7 +10,7 @@ use smol_str::SmolStr;
 
 use crate::elements::internal_helpers::push_child_to_element;
 use crate::elements::scrollable::{ScrollOptions, ScrollState};
-use crate::elements::{DynElement, ElementEditor, ElementInternals, RetainedElements};
+use crate::elements::{DynElement, ElementInternals, RetainedElements};
 use crate::events::{CheckboxToggledEvent, ClickEvent, CustomEvent, EventCallbackKind, EventKind, EventListenerOptions, FocusEvent, KeyboardEvent, PointerButtonEvent, PointerCaptureEvent, PointerEnterEvent, PointerId, PointerLeaveEvent, PointerMovedEvent, RadioValueChangedEvent, ScrollEvent, SliderValueChangedEvent, TextInputChangedEvent, UnfocusEvent};
 use crate::style::{AlignContent, AlignItems, AlignSelf, Animation, BoxShadow, BoxSizing, Display, FlexDirection, FlexWrap, FontFamily, FontStyle, FontWeight, JustifyContent, Overflow, Position, ScrollbarColor, TextAlign, Underline, Unit};
 use crate::{App, RetGuiError};
@@ -35,14 +35,6 @@ fn with_element_mut<R>(
 pub trait Element: Copy {
     /// Returns an element as a DynElement.
     fn as_dyn_element(&self) -> DynElement;
-
-    /// Bind elements while building.
-    fn edit<'a>(&self, app: &'a mut App) -> ElementEditor<'a, Self>
-    where
-        Self: Sized,
-    {
-        ElementEditor::new(*self, app)
-    }
 
     /// Requests a redraw of this element's owning window.
     fn request_redraw(&self, app: &App) {

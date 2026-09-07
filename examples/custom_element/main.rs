@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 use std::sync::Arc;
 
-use retgui::elements::{DynElement, Element, ElementData, ElementEditor, ElementIds, ElementInternals, ElementStates, HasElementData, RetGuiAccessTree, RetainedElements, Text, Window, clone_element};
+use retgui::elements::{DynElement, Element, ElementData, ElementIds, ElementInternals, ElementStates, HasElementData, RetGuiAccessTree, RetainedElements, Text, Window, clone_element};
 use retgui::events::EventKind;
 use retgui::layout::GummyTree;
 use retgui::style::AlignSelf;
@@ -115,47 +115,29 @@ impl ColorTile {
     }
 }
 
-trait ColorTileEditorExt: Sized {
-    fn fill_color(self, color: Color) -> Self;
-}
-
-impl ColorTileEditorExt for ElementEditor<'_, ColorTile> {
-    fn fill_color(self, color: Color) -> Self {
-        self.apply(|tile, app| {
-            tile.fill_color(app, color);
-        })
-    }
-}
-
 fn main() {
     setup_logging();
 
     let mut app = App::new();
-    let label = Text::new(&mut app, "Click the custom Element")
-        .edit(&mut app)
-        .font_size(20.0)
-        .selectable(false)
-        .finish();
+    let label = Text::new(&mut app, "Click the custom Element");
+    label.set_font_size(&mut app, 20.0);
+    label.set_selectable(&mut app, false);
 
-    let tile = ColorTile::new(&mut app)
-        .edit(&mut app)
-        .fill_color(rgb(37, 99, 235))
-        .align_self(AlignSelf::Start)
-        .width(px(320))
-        .height(px(180))
-        .padding_all(px(24))
-        .border_radius_all((16.0, 16.0))
-        .push(label)
-        .finish();
+    let tile = ColorTile::new(&mut app);
+    tile.fill_color(&mut app, rgb(37, 99, 235));
+    tile.set_align_self(&mut app, AlignSelf::Start);
+    tile.set_width(&mut app, px(320));
+    tile.set_height(&mut app, px(180));
+    tile.set_padding_all(&mut app, px(24));
+    tile.set_border_radius_all(&mut app, (16.0, 16.0));
+    tile.push(&mut app, label);
 
     assert_eq!(tile.click_count(&app), 0);
 
-    Window::new(&mut app, "Custom Element")
-        .edit(&mut app)
-        .width(pct(100))
-        .height(pct(100))
-        .push(tile)
-        .finish();
+    let window = Window::new(&mut app, "Custom Element");
+    window.set_width(&mut app, pct(100));
+    window.set_height(&mut app, pct(100));
+    window.push(&mut app, tile);
 
     retgui_main(app, RetGuiOptions::basic("Custom Element"));
 }

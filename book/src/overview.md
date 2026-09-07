@@ -39,10 +39,9 @@ use retgui::{App, RetGuiOptions, retgui_main};
 
 fn main() {
     let mut app = App::new();
-    Window::new(&mut app, "Hello World App")
-        .edit(&mut app)
-        .push_with(|app| Text::new(app, "Hello World!"))
-        .finish();
+    let window = Window::new(&mut app, "Hello World App");
+    let text = Text::new(&mut app, "Hello World!");
+    window.push(&mut app, text);
     retgui_main(app, RetGuiOptions::basic("hello_world_app"));
 }
 ```

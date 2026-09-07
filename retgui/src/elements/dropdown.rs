@@ -36,34 +36,24 @@ use crate::{App, auto, px, rgba};
 ///
 /// fn main() {
 ///     let mut app = App::new();
-///     let item_1 = Text::new(&mut app, "Item 1")
-///         .edit(&mut app)
-///         .font_size(20.0)
-///         .selectable(false)
-///         .finish();
-///     let item_2 = Text::new(&mut app, "Item 2")
-///         .edit(&mut app)
-///         .font_size(20.0)
-///         .selectable(false)
-///         .finish();
-///     let item_3 = Text::new(&mut app, "Item 3")
-///         .edit(&mut app)
-///         .font_size(20.0)
-///         .selectable(false)
-///         .finish();
+///     let item_1 = Text::new(&mut app, "Item 1");
+///     item_1.set_font_size(&mut app, 20.0);
+///     item_1.set_selectable(&mut app, false);
+///     let item_2 = Text::new(&mut app, "Item 2");
+///     item_2.set_font_size(&mut app, 20.0);
+///     item_2.set_selectable(&mut app, false);
+///     let item_3 = Text::new(&mut app, "Item 3");
+///     item_3.set_font_size(&mut app, 20.0);
+///     item_3.set_selectable(&mut app, false);
 ///
-///     let dropdown = Dropdown::new(&mut app)
-///         .edit(&mut app)
-///         .width(px(100))
-///         .push(item_1)
-///         .push(item_2)
-///         .push(item_3)
-///         .selected_item(0)
-///         .finish();
-///     Window::new(&mut app, "Dropdown")
-///         .edit(&mut app)
-///         .push(dropdown)
-///         .finish();
+///     let dropdown = Dropdown::new(&mut app);
+///     dropdown.set_width(&mut app, px(100));
+///     dropdown.push(&mut app, item_1);
+///     dropdown.push(&mut app, item_2);
+///     dropdown.push(&mut app, item_3);
+///     dropdown.set_selected_item(&mut app, 0);
+///     let window = Window::new(&mut app, "Dropdown");
+///     window.push(&mut app, dropdown);
 ///     retgui_main(app, RetGuiOptions::basic("Dropdown"));
 /// }
 /// ```

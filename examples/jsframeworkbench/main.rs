@@ -123,21 +123,17 @@ impl State {
 
     fn create_row(app: &mut App, data: &Data) -> Row {
         let label = Text::new(app, &data.label);
-        let id = Text::new(app, &data.id.to_string())
-            .edit(app)
-            .width(Unit::Px(60.0))
-            .margin(Unit::Px(0.0), Unit::Px(12.0), Unit::Px(0.0), Unit::Px(0.0))
-            .finish();
-        let element = Container::new(app)
-            .edit(app)
-            .display(Display::Flex)
-            .flex_direction(FlexDirection::Row)
-            .width(Unit::Auto)
-            .padding(Unit::Px(4.0), Unit::Px(4.0), Unit::Px(4.0), Unit::Px(4.0))
-            .border_color_all(Color::from_rgb8(230, 230, 230))
-            .push(id)
-            .push(label)
-            .finish();
+        let id = Text::new(app, &data.id.to_string());
+        id.set_width(app, Unit::Px(60.0));
+        id.set_margin(app, Unit::Px(0.0), Unit::Px(12.0), Unit::Px(0.0), Unit::Px(0.0));
+        let element = Container::new(app);
+        element.set_display(app, Display::Flex);
+        element.set_flex_direction(app, FlexDirection::Row);
+        element.set_width(app, Unit::Auto);
+        element.set_padding(app, Unit::Px(4.0), Unit::Px(4.0), Unit::Px(4.0), Unit::Px(4.0));
+        element.set_border_color_all(app, Color::from_rgb8(230, 230, 230));
+        element.push(app, id);
+        element.push(app, label);
         Row { element, label }
     }
 
@@ -156,15 +152,13 @@ impl State {
 
 fn attach_rows(app: &mut App, state: StateHandle<State>, element: Container, data: Vec<Data>, replace: bool) {
     if replace {
-        element.edit(app).delete_all_children().finish();
+        element.delete_all_children(app);
     }
 
     let rows: Vec<Row> = data.iter().map(|data| State::create_row(app, data)).collect();
-    let mut editor = element.edit(app);
     for row in &rows {
-        editor = editor.push(row.element);
+        element.push(app, row.element);
     }
-    editor.finish();
 
     state.update(app, |state| state.finish_rows(data, rows));
 }
@@ -181,7 +175,7 @@ fn append_rows(app: &mut App, state: StateHandle<State>) {
 
 fn clear_rows(app: &mut App, state: StateHandle<State>) {
     let element = state.update(app, State::prepare_clear);
-    element.edit(app).delete_all_children().finish();
+    element.delete_all_children(app);
 }
 
 fn swap_rows(app: &mut App, state: StateHandle<State>) {
@@ -195,7 +189,7 @@ fn swap_rows(app: &mut App, state: StateHandle<State>) {
 fn update_rows(app: &mut App, state: StateHandle<State>) {
     let updates = state.update(app, State::prepare_update);
     for (label, text) in updates {
-        label.edit(app).text(&text).finish();
+        label.set_text(app, &text);
     }
 }
 
@@ -294,12 +288,10 @@ fn main() {
     let state = app.insert_state(State::new(data_list));
 
     let body = build_body(&mut app, state);
-    Window::new(&mut app, "JsFrameworkBench")
-        .edit(&mut app)
-        .width(Unit::Percentage(100.0))
-        .height(Unit::Percentage(100.0))
-        .push(body)
-        .finish();
+    let window = Window::new(&mut app, "JsFrameworkBench");
+    window.set_width(&mut app, Unit::Percentage(100.0));
+    window.set_height(&mut app, Unit::Percentage(100.0));
+    window.push(&mut app, body);
 
     use retgui::RetGuiOptions;
 
@@ -309,66 +301,57 @@ fn main() {
 fn build_body(app: &mut App, state: StateHandle<State>) -> Container {
     let buttons = build_buttons(app, state);
 
-    let body = Container::new(app)
-        .edit(app)
-        .overflow(Overflow::Visible, Overflow::Scroll)
-        .width(Unit::Percentage(100.0))
-        .height(Unit::Percentage(100.0))
-        .flex_direction(FlexDirection::Column)
-        .align_items(AlignItems::Start)
-        .padding_all(Unit::Px(15.0))
-        .finish();
+    let body = Container::new(app);
+    body.set_overflow(app, Overflow::Visible, Overflow::Scroll);
+    body.set_width(app, Unit::Percentage(100.0));
+    body.set_height(app, Unit::Percentage(100.0));
+    body.set_flex_direction(app, FlexDirection::Column);
+    body.set_align_items(app, AlignItems::Start);
+    body.set_padding_all(app, Unit::Px(15.0));
 
-    let text = Text::new(app, r#"RetGui-"keyed""#)
-        .edit(app)
-        .font_size(32.0)
-        .color(Color::BLACK)
-        .finish();
+    let text = Text::new(app, r#"RetGui-"keyed""#);
+    text.set_font_size(app, 32.0);
+    text.set_color(app, Color::BLACK);
 
-    let text_container = Container::new(app)
-        .edit(app)
-        .display(Display::Flex)
-        .flex_direction(FlexDirection::Row)
-        .width(Unit::Percentage(50.0))
-        .justify_content(JustifyContent::Center)
-        .align_items(AlignItems::Center)
-        .push(text)
-        .finish();
+    let text_container = Container::new(app);
+    text_container.set_display(app, Display::Flex);
+    text_container.set_flex_direction(app, FlexDirection::Row);
+    text_container.set_width(app, Unit::Percentage(50.0));
+    text_container.set_justify_content(app, JustifyContent::Center);
+    text_container.set_align_items(app, AlignItems::Center);
+    text_container.push(app, text);
 
-    let header = Container::new(app)
-        .edit(app)
-        .background_color(rgb(238, 238, 238))
-        .display(Display::Flex)
-        .flex_direction(FlexDirection::Row)
-        .border_radius_all((6.0, 6.0))
-        .padding(Unit::Px(10.0), Unit::Px(60.0), Unit::Px(10.0), Unit::Px(60.0))
-        .push(text_container)
-        .width(Unit::Percentage(100.0))
-        .push(buttons)
-        .finish();
+    let header = Container::new(app);
+    header.set_background_color(app, rgb(238, 238, 238));
+    header.set_display(app, Display::Flex);
+    header.set_flex_direction(app, FlexDirection::Row);
+    header.set_border_radius_all(app, (6.0, 6.0));
+    header.set_padding(app, Unit::Px(10.0), Unit::Px(60.0), Unit::Px(10.0), Unit::Px(60.0));
+    header.push(app, text_container);
+    header.set_width(app, Unit::Percentage(100.0));
+    header.push(app, buttons);
 
     let data_list = state.read(app).element;
-    body.edit(app).push(header).push(data_list).finish()
+    body.push(app, header);
+    body.push(app, data_list);
+    body
 }
 
 fn build_data_list(app: &mut App) -> Container {
-    Container::new(app)
-        .edit(app)
-        .flex_direction(FlexDirection::Column)
-        .width(Unit::Percentage(100.0))
-        .finish()
+    let container = Container::new(app);
+    container.set_flex_direction(app, FlexDirection::Column);
+    container.set_width(app, Unit::Percentage(100.0));
+    container
 }
 
 fn build_buttons(app: &mut App, state: StateHandle<State>) -> Container {
-    let buttons = Container::new(app)
-        .edit(app)
-        .flex_direction(FlexDirection::Column)
-        .justify_content(JustifyContent::FlexEnd)
-        .align_items(AlignItems::Start)
-        .gap(Unit::Px(12.0), Unit::Px(12.0))
-        .wrap(FlexWrap::Wrap)
-        .max_height(Unit::Px(150.0))
-        .finish();
+    let buttons = Container::new(app);
+    buttons.set_flex_direction(app, FlexDirection::Column);
+    buttons.set_justify_content(app, JustifyContent::FlexEnd);
+    buttons.set_align_items(app, AlignItems::Start);
+    buttons.set_gap(app, Unit::Px(12.0), Unit::Px(12.0));
+    buttons.set_wrap(app, FlexWrap::Wrap);
+    buttons.set_max_height(app, Unit::Px(150.0));
 
     let btn_create_1k = build_button(app, "Create 1,000 rows", move |_event, app| {
         rebuild_rows(app, state, false);
@@ -391,40 +374,35 @@ fn build_buttons(app: &mut App, state: StateHandle<State>) -> Container {
         swap_rows(app, state);
     });
 
+    buttons.push(app, btn_create_1k);
+    buttons.push(app, btn_create_10k);
+    buttons.push(app, btn_append_1k);
+    buttons.push(app, btn_update_10th_row);
+    buttons.push(app, btn_clear);
+    buttons.push(app, btn_swap);
     buttons
-        .edit(app)
-        .push(btn_create_1k)
-        .push(btn_create_10k)
-        .push(btn_append_1k)
-        .push(btn_update_10th_row)
-        .push(btn_clear)
-        .push(btn_swap)
-        .finish()
 }
 
 fn build_button<F>(app: &mut App, label: &str, callback: F) -> Button
 where
     F: Fn(&mut ClickEvent, &mut App) + 'static,
 {
-    let label = Text::new(app, label)
-        .edit(app)
-        .selectable(false)
-        .color(Color::WHITE)
-        .finish();
-    Button::new(app)
-        .edit(app)
-        .background_color(Color::from_rgb8(211, 211, 211))
-        .border_color_all(Color::from_rgb8(111, 111, 111))
-        .flex_direction(FlexDirection::Row)
-        .justify_content(JustifyContent::Center)
-        .align_items(AlignItems::Center)
-        .gap(Unit::Px(12.0), Unit::Px(12.0))
-        .width(Unit::Px(250.0))
-        .height(Unit::Px(35.0))
-        .background_color(Color::from_rgb8(51, 122, 183))
-        .color(WHITE)
-        .border_radius_all((4.0, 4.0))
-        .push(label)
-        .add_click_listener(callback)
-        .finish()
+    let label = Text::new(app, label);
+    label.set_selectable(app, false);
+    label.set_color(app, Color::WHITE);
+    let button = Button::new(app);
+    button.set_background_color(app, Color::from_rgb8(211, 211, 211));
+    button.set_border_color_all(app, Color::from_rgb8(111, 111, 111));
+    button.set_flex_direction(app, FlexDirection::Row);
+    button.set_justify_content(app, JustifyContent::Center);
+    button.set_align_items(app, AlignItems::Center);
+    button.set_gap(app, Unit::Px(12.0), Unit::Px(12.0));
+    button.set_width(app, Unit::Px(250.0));
+    button.set_height(app, Unit::Px(35.0));
+    button.set_background_color(app, Color::from_rgb8(51, 122, 183));
+    button.set_color(app, WHITE);
+    button.set_border_radius_all(app, (4.0, 4.0));
+    button.push(app, label);
+    button.add_click_listener(app, callback);
+    button
 }

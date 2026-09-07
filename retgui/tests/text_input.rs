@@ -12,19 +12,15 @@ fn type_hello() {
     run(
         "text_input_hello_test",
         |app| {
-            let text_input = TextInput::new(app, "")
-                .edit(app)
-                .font_size(32.0)
-                .width(px(300))
-                .finish();
-            let window = Window::new_with_renderer(app, "Text input", RendererType::VelloCPU)
-                .edit(app)
-                .justify_content(JustifyContent::Center)
-                .align_items(AlignItems::Center)
-                .width(pct(100))
-                .height(pct(100))
-                .push(text_input)
-                .finish();
+            let text_input = TextInput::new(app, "");
+            text_input.set_font_size(app, 32.0);
+            text_input.set_width(app, px(300));
+            let window = Window::new_with_renderer(app, "Text input", RendererType::VelloCPU);
+            window.set_justify_content(app, JustifyContent::Center);
+            window.set_align_items(app, AlignItems::Center);
+            window.set_width(app, pct(100));
+            window.set_height(app, pct(100));
+            window.push(app, text_input);
             (text_input, window)
         },
         |test, (text_input, window)| {
@@ -43,19 +39,15 @@ fn set_cursor_after_ll() {
     run(
         "text_input_set_cursor_after_ll_test",
         |app| {
-            let text_input = TextInput::new(app, "Hello")
-                .edit(app)
-                .font_size(32.0)
-                .width(px(300))
-                .finish();
-            let window = Window::new_with_renderer(app, "Text input cursor", RendererType::VelloCPU)
-                .edit(app)
-                .justify_content(JustifyContent::Center)
-                .align_items(AlignItems::Center)
-                .width(pct(100))
-                .height(pct(100))
-                .push(text_input)
-                .finish();
+            let text_input = TextInput::new(app, "Hello");
+            text_input.set_font_size(app, 32.0);
+            text_input.set_width(app, px(300));
+            let window = Window::new_with_renderer(app, "Text input cursor", RendererType::VelloCPU);
+            window.set_justify_content(app, JustifyContent::Center);
+            window.set_align_items(app, AlignItems::Center);
+            window.set_width(app, pct(100));
+            window.set_height(app, pct(100));
+            window.push(app, text_input);
             (text_input, window)
         },
         |test, (text_input, window)| {
@@ -84,19 +76,15 @@ fn select_ll() {
     run(
         "text_input_select_ll_test",
         |app| {
-            let text_input = TextInput::new(app, "Hello")
-                .edit(app)
-                .font_size(32.0)
-                .width(px(300))
-                .finish();
-            let window = Window::new_with_renderer(app, "Text input selection", RendererType::VelloCPU)
-                .edit(app)
-                .justify_content(JustifyContent::Center)
-                .align_items(AlignItems::Center)
-                .width(pct(100))
-                .height(pct(100))
-                .push(text_input)
-                .finish();
+            let text_input = TextInput::new(app, "Hello");
+            text_input.set_font_size(app, 32.0);
+            text_input.set_width(app, px(300));
+            let window = Window::new_with_renderer(app, "Text input selection", RendererType::VelloCPU);
+            window.set_justify_content(app, JustifyContent::Center);
+            window.set_align_items(app, AlignItems::Center);
+            window.set_width(app, pct(100));
+            window.set_height(app, pct(100));
+            window.push(app, text_input);
             (text_input, window)
         },
         |test, (text_input, window)| {

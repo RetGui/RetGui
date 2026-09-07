@@ -16,12 +16,11 @@ use serde::Deserialize;
 use util::setup_logging;
 
 pub fn title(app: &mut App, value: &str) -> Text {
-    Text::new(app, value)
-        .edit(app)
-        .font_weight(FontWeight::BOLD)
-        .font_size(20.0)
-        .margin(px(0.0), px(0.0), px(5.0), px(0.0))
-        .finish()
+    let text = Text::new(app, value);
+    text.set_font_weight(app, FontWeight::BOLD);
+    text.set_font_size(app, 20.0);
+    text.set_margin(app, px(0.0), px(0.0), px(5.0), px(0.0));
+    text    
 }
 
 pub fn animations(app: &mut App) -> Text {
@@ -41,91 +40,73 @@ pub fn animations(app: &mut App) -> Text {
         .push(KeyFrame::new(0.0).push(StyleVariant::TextBrush(Brush::Gradient(start.clone()))))
         .push(KeyFrame::new(50.0).push(StyleVariant::TextBrush(Brush::Gradient(end))))
         .push(KeyFrame::new(100.0).push(StyleVariant::TextBrush(Brush::Gradient(start))));
-    Text::new(app, "Animations")
-        .edit(app)
-        .font_size(64.0)
-        .font_weight(FontWeight::BOLD)
-        .animations(vec![animation])
-        .finish()
+    let text = Text::new(app, "Animations");
+    text.set_font_size(app, 64.0);
+    text.set_font_weight(app, FontWeight::BOLD);
+    text.set_animations(app, vec![animation]);
+    text
 }
 
 pub fn text_input(app: &mut App) -> Container {
-    let input = TextInput::new(app, "An element for text input")
-        .edit(app)
-        .width(px(200.0))
-        .height(px(200.0))
-        .finish();
+    let input = TextInput::new(app, "An element for text input");
+    input.set_width(app, px(200.0));
+    input.set_height(app, px(200.0));
     let heading = title(app, "Text Input");
-    Container::new(app)
-        .edit(app)
-        .display(Display::Block)
-        .push(heading)
-        .push(input)
-        .finish()
+    let container = Container::new(app);
+    container.set_display(app, Display::Block);
+    container.push(app, heading);
+    container.push(app, input);
+    container
 }
 
 pub fn dropdown(app: &mut App) -> Container {
     let cat = Text::new(app, "Cat");
     let dog = Text::new(app, "Dog");
-    let dropdown = Dropdown::new(app)
-        .edit(app)
-        .width(px(100.0))
-        .push(cat)
-        .push(dog)
-        .selected_item(0)
-        .finish();
+    let dropdown = Dropdown::new(app);
+    dropdown.set_width(app, px(100.0));
+    dropdown.push(app, cat);
+    dropdown.push(app, dog);
+    dropdown.set_selected_item(app, 0);
     let heading = title(app, "Dropdown");
-    Container::new(app)
-        .edit(app)
-        .min_width(px(200.0))
-        .display(Display::Block)
-        .push(heading)
-        .push(dropdown)
-        .finish()
+    let container = Container::new(app);
+    container.set_min_width(app, px(200.0));
+    container.set_display(app, Display::Block);
+    container.push(app, heading);
+    container.push(app, dropdown);
+    container
 }
 
 pub fn text(app: &mut App) -> Container {
-    let normal = Text::new(app, "Normal Text with a Color")
-        .edit(app)
-        .color(Color::from_rgb8(0, 0, 255))
-        .finish();
-    let bold = Text::new(app, "Bold Text")
-        .edit(app)
-        .font_weight(FontWeight::BOLD)
-        .finish();
-    let italic = Text::new(app, "Italic Text")
-        .edit(app)
-        .font_style(FontStyle::Italic)
-        .finish();
-    let bold_italic = Text::new(app, "Bold & Italic Text")
-        .edit(app)
-        .font_weight(FontWeight::BOLD)
-        .font_style(FontStyle::Italic)
-        .finish();
-    let underlined = Text::new(app, "Underlined Text")
-        .edit(app)
-        .underline(Some(2.0), Color::from_rgb8(0, 255, 0), None)
-        .finish();
-    let left = Text::new(app, "Left").edit(app).text_align(TextAlign::Left).finish();
-    let center = Text::new(app, "Center")
-        .edit(app)
-        .text_align(TextAlign::Center)
-        .finish();
-    let right = Text::new(app, "Right").edit(app).text_align(TextAlign::Right).finish();
+    let normal = Text::new(app, "Normal Text with a Color");
+    normal.set_color(app, Color::from_rgb8(0, 0, 255));
+    let bold = Text::new(app, "Bold Text");
+    bold.set_font_weight(app, FontWeight::BOLD);
+    let italic = Text::new(app, "Italic Text");
+    italic.set_font_style(app, FontStyle::Italic);
+    let bold_italic = Text::new(app, "Bold & Italic Text");
+    bold_italic.set_font_weight(app, FontWeight::BOLD);
+    bold_italic.set_font_style(app, FontStyle::Italic);
+    let underlined = Text::new(app, "Underlined Text");
+    underlined.set_underline(app, Some(2.0), Color::from_rgb8(0, 255, 0), None);
+    let left = Text::new(app, "Left");
+    left.set_text_align(app, TextAlign::Left);
+    let center = Text::new(app, "Center");
+    center.set_text_align(app, TextAlign::Center);
+    let right = Text::new(app, "Right");
+    right.set_text_align(app, TextAlign::Right);
     let heading = title(app, "Text");
-    Container::new(app)
-        .edit(app)
-        .display(Display::Block)
-        .push(heading)
-        .push(normal)
-        .push(bold)
-        .push(italic)
-        .push(bold_italic)
-        .push(underlined)
-        .push(left)
-        .push(center)
-        .push(right)
-        .finish()
+    let container = Container::new(app);
+    container.set_display(app, Display::Block);
+    container.push(app, heading);
+    container.push(app, normal);
+    container.push(app, bold);
+    container.push(app, italic);
+    container.push(app, bold_italic);
+    container.push(app, underlined);
+    container.push(app, left);
+    container.push(app, center);
+    container.push(app, right);
+    container
 }
 
 pub fn variable_fonts(app: &mut App) -> Container {
@@ -134,73 +115,65 @@ pub fn variable_fonts(app: &mut App) -> Container {
         .expect("gallery font must load");
     let heading = title(app, "Variable Fonts");
     let description = Text::new(app, "Roboto: drag the slider to explore font weights from 100 to 900.");
-    let preview = Text::new(app, "The quick brown fox jumps over the lazy dog.\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz 0123456789")
-        .edit(app)
-        .font_family(FontFamily::new("Roboto"))
-        .font_size(36.0)
-        .font_weight(FontWeight::NORMAL)
-        .finish();
+    let preview = Text::new(
+        app,
+        "The quick brown fox jumps over the lazy dog.\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz 0123456789",
+    );
+    preview.set_font_family(app, FontFamily::new("Roboto"));
+    preview.set_font_size(app, 36.0);
+    preview.set_font_weight(app, FontWeight::NORMAL);
     let weight_label = Text::new(app, "Weight: 400");
-    let weight = Slider::new(app, 20.0)
-        .edit(app)
-        .min(100.0)
-        .max(900.0)
-        .step(1.0)
-        .value(400.0)
-        .width(px(300.0))
-        .height(px(10.0))
-        .margin_vertical(px(10.0))
-        .add_slider_value_changed_listener(move |event, app| {
-            let weight = event.value.round() as u16;
-            preview.edit(app).font_weight(FontWeight(weight)).finish();
-            weight_label.edit(app).text(&format!("Weight: {weight}")).finish();
-        })
-        .finish();
+    let weight = Slider::new(app, 20.0);
+    weight.set_min(app, 100.0);
+    weight.set_max(app, 900.0);
+    weight.set_step(app, 1.0);
+    weight.set_value(app, 400.0);
+    weight.set_width(app, px(300.0));
+    weight.set_height(app, px(10.0));
+    weight.set_margin_vertical(app, px(10.0));
+    weight.add_slider_value_changed_listener(app, move |event, app| {
+        let weight = event.value.round() as u16;
+        preview.set_font_weight(app, FontWeight(weight));
+        weight_label.set_text(app, &format!("Weight: {weight}"));
+    });
 
-    Container::new(app)
-        .edit(app)
-        .display(Display::Flex)
-        .flex_direction(FlexDirection::Column)
-        .row_gap(px(12.0))
-        .push(heading)
-        .push(description)
-        .push(weight_label)
-        .push(weight)
-        .push(preview)
-        .finish()
+    let container = Container::new(app);
+    container.set_display(app, Display::Flex);
+    container.set_flex_direction(app, FlexDirection::Column);
+    container.set_row_gap(app, px(12.0));
+    container.push(app, heading);
+    container.push(app, description);
+    container.push(app, weight_label);
+    container.push(app, weight);
+    container.push(app, preview);
+    container
 }
 
 pub fn tinyvg(app: &mut App) -> Container {
     let tiger = include_bytes!("tiger.tvg");
     app.upload_resource(ResourceId::StaticBytes(tiger), ResourceType::TinyVg, tiger.as_slice())
         .expect("gallery image must load");
-    let image = TinyVg::new(app, ResourceId::StaticBytes(include_bytes!("tiger.tvg")))
-        .edit(app)
-        .width(px(250.0))
-        .height(px(250.0))
-        .finish();
+    let image = TinyVg::new(app, ResourceId::StaticBytes(include_bytes!("tiger.tvg")));
+    image.set_width(app, px(250.0));
+    image.set_height(app, px(250.0));
     let heading = title(app, "TinyVG");
-    Container::new(app)
-        .edit(app)
-        .display(Display::Block)
-        .push(heading)
-        .push(image)
-        .finish()
+    let container = Container::new(app);
+    container.set_display(app, Display::Block);
+    container.push(app, heading);
+    container.push(app, image);
+    container
 }
 
 pub fn images(app: &mut App) -> Container {
-    let image = Image::new(app, ResourceId::Url("https://picsum.photos/300/200".to_string()))
-        .edit(app)
-        .width(px(300.0))
-        .height(px(200.0))
-        .finish();
+    let image = Image::new(app, ResourceId::Url("https://picsum.photos/300/200".to_string()));
+    image.set_width(app, px(300.0));
+    image.set_height(app, px(200.0));
     let heading = title(app, "Image");
-    Container::new(app)
-        .edit(app)
-        .display(Display::Block)
-        .push(heading)
-        .push(image)
-        .finish()
+    let container = Container::new(app);
+    container.set_display(app, Display::Block);
+    container.push(app, heading);
+    container.push(app, image);
+    container
 }
 
 #[derive(Deserialize)]
@@ -249,57 +222,48 @@ fn weather_description(code: u8) -> &'static str {
 }
 
 pub fn async_weather(app: &mut App) -> Container {
-    let status = Text::new(app, "Click the button for the current conditions.")
-        .edit(app)
-        .width(px(280.0))
-        .font_size(14.0)
-        .finish();
-    let label = Text::new(app, "Refresh Weather")
-        .edit(app)
-        .color(Color::WHITE)
-        .selectable(false)
-        .finish();
-    let button = Button::new(app)
-        .edit(app)
-        .padding(px(5.0), px(15.0), px(5.0), px(15.0))
-        .border_radius_all((4.0, 4.0))
-        .background_color(Color::from_rgb8(35, 127, 183))
-        .push(label)
-        .add_click_listener(move |event, app| {
-            status.edit(app).text("Loading...").finish();
-            app.spawn_local(fetch_amsterdam_weather(), move |weather, app| {
-                let message = match weather {
-                    Ok(weather) => format!(
-                        "{}\n{:.1} °C (feels like {:.1} °C)\nHumidity: {}%\nWind: {:.1} km/h\nUpdated: {}",
-                        weather_description(weather.weather_code),
-                        weather.temperature_2m,
-                        weather.apparent_temperature,
-                        weather.relative_humidity_2m,
-                        weather.wind_speed_10m,
-                        weather.time,
-                    ),
-                    Err(error) => format!("Request failed: {error}"),
-                };
-                status.edit(app).text(&message).finish();
-            });
-            event.stop_propagation();
-        })
-        .finish();
+    let status = Text::new(app, "Click the button for the current conditions.");
+    status.set_width(app, px(280.0));
+    status.set_font_size(app, 14.0);
+    let label = Text::new(app, "Refresh Weather");
+    label.set_color(app, Color::WHITE);
+    label.set_selectable(app, false);
+    let button = Button::new(app);
+    button.set_padding(app, px(5.0), px(15.0), px(5.0), px(15.0));
+    button.set_border_radius_all(app, (4.0, 4.0));
+    button.set_background_color(app, Color::from_rgb8(35, 127, 183));
+    button.push(app, label);
+    button.add_click_listener(app, move |event, app| {
+        status.set_text(app, "Loading...");
+        app.spawn_local(fetch_amsterdam_weather(), move |weather, app| {
+            let message = match weather {
+                Ok(weather) => format!(
+                    "{}\n{:.1} °C (feels like {:.1} °C)\nHumidity: {}%\nWind: {:.1} km/h\nUpdated: {}",
+                    weather_description(weather.weather_code),
+                    weather.temperature_2m,
+                    weather.apparent_temperature,
+                    weather.relative_humidity_2m,
+                    weather.wind_speed_10m,
+                    weather.time,
+                ),
+                Err(error) => format!("Request failed: {error}"),
+            };
+            status.set_text(app, &message);
+        });
+        event.stop_propagation();
+    });
     let heading = title(app, "Amsterdam Weather");
-    let attribution = Text::new(app, "Weather data by Open-Meteo")
-        .edit(app)
-        .font_size(12.0)
-        .finish();
-    Container::new(app)
-        .edit(app)
-        .display(Display::Flex)
-        .flex_direction(FlexDirection::Column)
-        .row_gap(px(8.0))
-        .push(heading)
-        .push(button)
-        .push(status)
-        .push(attribution)
-        .finish()
+    let attribution = Text::new(app, "Weather data by Open-Meteo");
+    attribution.set_font_size(app, 12.0);
+    let container = Container::new(app);
+    container.set_display(app, Display::Flex);
+    container.set_flex_direction(app, FlexDirection::Column);
+    container.set_row_gap(app, px(8.0));
+    container.push(app, heading);
+    container.push(app, button);
+    container.push(app, status);
+    container.push(app, attribution);
+    container
 }
 
 pub fn gradient(app: &mut App) -> Container {
@@ -319,145 +283,121 @@ pub fn gradient(app: &mut App) -> Container {
         ColorStop::new(0.66, Color::from_rgb8(33, 150, 243)),
         ColorStop::new(1.0, Color::from_rgb8(244, 67, 54)),
     ]);
-    let linear_box = Container::new(app)
-        .edit(app)
-        .width(px(140.0))
-        .height(px(90.0))
-        .border_radius_all((8.0, 8.0))
-        .background_gradient(linear.clone())
-        .finish();
-    let radial_box = Container::new(app)
-        .edit(app)
-        .width(px(140.0))
-        .height(px(90.0))
-        .border_radius_all((8.0, 8.0))
-        .background_gradient(radial)
-        .finish();
-    let sweep_box = Container::new(app)
-        .edit(app)
-        .width(px(140.0))
-        .height(px(90.0))
-        .border_radius_all((8.0, 8.0))
-        .background_gradient(sweep)
-        .finish();
-    let gradient_text = Text::new(app, "Gradient Text")
-        .edit(app)
-        .font_weight(FontWeight::BOLD)
-        .text_gradient(linear.clone())
-        .finish();
-    let underline = Text::new(app, "Gradient Underline")
-        .edit(app)
-        .underline_gradient(Some(3.0), linear, None)
-        .finish();
-    let boxes = Container::new(app)
-        .edit(app)
-        .display(Display::Flex)
-        .gap(px(10.0), px(10.0))
-        .push(linear_box)
-        .push(radial_box)
-        .push(sweep_box)
-        .finish();
+    let linear_box = Container::new(app);
+    linear_box.set_width(app, px(140.0));
+    linear_box.set_height(app, px(90.0));
+    linear_box.set_border_radius_all(app, (8.0, 8.0));
+    linear_box.set_background_gradient(app, linear.clone());
+    let radial_box = Container::new(app);
+    radial_box.set_width(app, px(140.0));
+    radial_box.set_height(app, px(90.0));
+    radial_box.set_border_radius_all(app, (8.0, 8.0));
+    radial_box.set_background_gradient(app, radial);
+    let sweep_box = Container::new(app);
+    sweep_box.set_width(app, px(140.0));
+    sweep_box.set_height(app, px(90.0));
+    sweep_box.set_border_radius_all(app, (8.0, 8.0));
+    sweep_box.set_background_gradient(app, sweep);
+    let gradient_text = Text::new(app, "Gradient Text");
+    gradient_text.set_font_weight(app, FontWeight::BOLD);
+    gradient_text.set_text_gradient(app, linear.clone());
+    let underline = Text::new(app, "Gradient Underline");
+    underline.set_underline_gradient(app, Some(3.0), linear, None);
+    let boxes = Container::new(app);
+    boxes.set_display(app, Display::Flex);
+    boxes.set_gap(app, px(10.0), px(10.0));
+    boxes.push(app, linear_box);
+    boxes.push(app, radial_box);
+    boxes.push(app, sweep_box);
     let heading = title(app, "Gradients");
-    Container::new(app)
-        .edit(app)
-        .display(Display::Flex)
-        .flex_direction(FlexDirection::Column)
-        .row_gap(px(10.0))
-        .push(heading)
-        .push(gradient_text)
-        .push(underline)
-        .push(boxes)
-        .finish()
+    let container = Container::new(app);
+    container.set_display(app, Display::Flex);
+    container.set_flex_direction(app, FlexDirection::Column);
+    container.set_row_gap(app, px(10.0));
+    container.push(app, heading);
+    container.push(app, gradient_text);
+    container.push(app, underline);
+    container.push(app, boxes);
+    container
 }
 
 pub fn box_shadows(app: &mut App) -> Container {
     let border_color = rgb(0, 0, 0);
-    let shadow = Container::new(app)
-        .edit(app)
-        .box_shadows(vec![
+    let shadow = Container::new(app);
+    shadow.set_box_shadows(
+        app,
+        vec![
             BoxShadow::new(false, 0.0, 5.0, 5.0, 0.0, rgba(0, 0, 0, 200)),
             BoxShadow::new(false, 0.0, 25.0, 35.0, 0.0, rgba(0, 0, 0, 150)),
             BoxShadow::new(true, 0.0, 4.0, 4.0, 0.0, rgba(255, 255, 255, 120)),
-        ])
-        .border_width(px(0), px(0), px(0), px(0))
-        .border_color(border_color, border_color, border_color, border_color)
-        .border_radius((8.0, 8.0), (8.0, 8.0), (8.0, 8.0), (8.0, 8.0))
-        .padding(px(15), px(30), px(15), px(30))
-        .justify_content(JustifyContent::Center)
-        .background_color(Color::from_rgb8(255, 0, 0))
-        .finish();
+        ],
+    );
+    shadow.set_border_width(app, px(0), px(0), px(0), px(0));
+    shadow.set_border_color(app, border_color, border_color, border_color, border_color);
+    shadow.set_border_radius(app, (8.0, 8.0), (8.0, 8.0), (8.0, 8.0), (8.0, 8.0));
+    shadow.set_padding(app, px(15), px(30), px(15), px(30));
+    shadow.set_justify_content(app, JustifyContent::Center);
+    shadow.set_background_color(app, Color::from_rgb8(255, 0, 0));
     let heading = title(app, "Box Shadows");
-    Container::new(app)
-        .edit(app)
-        .display(Display::Block)
-        .push(heading)
-        .push(shadow)
-        .finish()
+    let container = Container::new(app);
+    container.set_display(app, Display::Block);
+    container.push(app, heading);
+    container.push(app, shadow);
+    container
 }
 
 pub fn overlay(app: &mut App) -> Container {
     let status = Text::new(app, "Click where the cards overlap");
-    let overlay_label = Text::new(app, "Overlay")
-        .edit(app)
-        .color(Color::WHITE)
-        .selectable(false)
-        .finish();
-    let floating = Container::new(app)
-        .edit(app)
-        .overlay(true)
-        .position(Position::Absolute)
-        .inset(px(20.0), auto(), auto(), px(20.0))
-        .width(px(150.0))
-        .height(px(100.0))
-        .padding_all(px(10.0))
-        .background_color(Color::from_rgb8(76, 175, 80))
-        .push(overlay_label)
-        .add_click_listener(move |event, app| {
-            status.edit(app).text("The overlay received the click").finish();
-            event.stop_propagation();
-        })
-        .finish();
-    let normal_label = Text::new(app, "Normal sibling")
-        .edit(app)
-        .color(Color::WHITE)
-        .selectable(false)
-        .finish();
-    let normal = Container::new(app)
-        .edit(app)
-        .position(Position::Absolute)
-        .inset(px(65.0), auto(), auto(), px(90.0))
-        .width(px(120.0))
-        .height(px(70.0))
-        .padding_all(px(10.0))
-        .background_color(Color::from_rgb8(33, 150, 243))
-        .push(normal_label)
-        .add_click_listener(move |event, app| {
-            status.edit(app).text("The normal sibling received the click").finish();
-            event.stop_propagation();
-        })
-        .finish();
-    let cards = Container::new(app)
-        .edit(app)
-        .position(Position::Relative)
-        .width(px(230.0))
-        .height(px(155.0))
-        .background_color(Color::from_rgb8(238, 238, 238))
-        .push(floating)
-        .push(normal)
-        .finish();
+    let overlay_label = Text::new(app, "Overlay");
+    overlay_label.set_color(app, Color::WHITE);
+    overlay_label.set_selectable(app, false);
+    let floating = Container::new(app);
+    floating.set_overlay(app, true);
+    floating.set_position(app, Position::Absolute);
+    floating.set_inset(app, px(20.0), auto(), auto(), px(20.0));
+    floating.set_width(app, px(150.0));
+    floating.set_height(app, px(100.0));
+    floating.set_padding_all(app, px(10.0));
+    floating.set_background_color(app, Color::from_rgb8(76, 175, 80));
+    floating.push(app, overlay_label);
+    floating.add_click_listener(app, move |event, app| {
+        status.set_text(app, "The overlay received the click");
+        event.stop_propagation();
+    });
+    let normal_label = Text::new(app, "Normal sibling");
+    normal_label.set_color(app, Color::WHITE);
+    normal_label.set_selectable(app, false);
+    let normal = Container::new(app);
+    normal.set_position(app, Position::Absolute);
+    normal.set_inset(app, px(65.0), auto(), auto(), px(90.0));
+    normal.set_width(app, px(120.0));
+    normal.set_height(app, px(70.0));
+    normal.set_padding_all(app, px(10.0));
+    normal.set_background_color(app, Color::from_rgb8(33, 150, 243));
+    normal.push(app, normal_label);
+    normal.add_click_listener(app, move |event, app| {
+        status.set_text(app, "The normal sibling received the click");
+        event.stop_propagation();
+    });
+    let cards = Container::new(app);
+    cards.set_position(app, Position::Relative);
+    cards.set_width(app, px(230.0));
+    cards.set_height(app, px(155.0));
+    cards.set_background_color(app, Color::from_rgb8(238, 238, 238));
+    cards.push(app, floating);
+    cards.push(app, normal);
     let heading = title(app, "Overlay");
-    Container::new(app)
-        .edit(app)
-        .display(Display::Flex)
-        .flex_direction(FlexDirection::Column)
-        .row_gap(px(8.0))
-        .width(px(280.0))
-        .min_width(auto())
-        .push(heading)
-        .margin_horizontal(auto())
-        .push(cards)
-        .push(status)
-        .finish()
+    let container = Container::new(app);
+    container.set_display(app, Display::Flex);
+    container.set_flex_direction(app, FlexDirection::Column);
+    container.set_row_gap(app, px(8.0));
+    container.set_width(app, px(280.0));
+    container.set_min_width(app, auto());
+    container.push(app, heading);
+    container.set_margin_horizontal(app, auto());
+    container.push(app, cards);
+    container.push(app, status);
+    container
 }
 
 pub fn multiple_windows(app: &mut App) -> Container {
@@ -465,115 +405,93 @@ pub fn multiple_windows(app: &mut App) -> Container {
     let border = Color::BLACK;
     let width = px(1.0);
     let label = Text::new(app, "Open a new window");
-    let button = Button::new(app)
-        .edit(app)
-        .push(label)
-        .padding(px(5.0), px(15.0), px(5.0), px(15.0))
-        .border_radius(radius, radius, radius, radius)
-        .border_color(border, border, border, border)
-        .border_width(width, width, width, width)
-        .add_click_listener(|_event, app| {
-            let greeting = Text::new(app, "Hi!")
-                .edit(app)
-                .font_size(32.0)
-                .font_weight(FontWeight::BOLD)
-                .finish();
-            Window::new(app, "A new window!").edit(app).push(greeting).finish();
-        })
-        .finish();
+    let button = Button::new(app);
+    button.push(app, label);
+    button.set_padding(app, px(5.0), px(15.0), px(5.0), px(15.0));
+    button.set_border_radius(app, radius, radius, radius, radius);
+    button.set_border_color(app, border, border, border, border);
+    button.set_border_width(app, width, width, width, width);
+    button.add_click_listener(app, |_event, app| {
+        let greeting = Text::new(app, "Hi!");
+        greeting.set_font_size(app, 32.0);
+        greeting.set_font_weight(app, FontWeight::BOLD);
+        let window = Window::new(app, "A new window!");
+        window.push(app, greeting);
+    });
     let heading = title(app, "Multiple Windows");
-    Container::new(app)
-        .edit(app)
-        .display(Display::Block)
-        .push(heading)
-        .push(button)
-        .finish()
+    let container = Container::new(app);
+    container.set_display(app, Display::Block);
+    container.push(app, heading);
+    container.push(app, button);
+    container
 }
 
 pub fn sliders(app: &mut App) -> Container {
-    let first = Slider::new(app, 20.0)
-        .edit(app)
-        .value(70.0)
-        .width(px(100.0))
-        .height(px(10.0))
-        .finish();
+    let first = Slider::new(app, 20.0);
+    first.set_value(app, 70.0);
+    first.set_width(app, px(100.0));
+    first.set_height(app, px(10.0));
     let br = (0.0, 0.0);
-    let second = Slider::new(app, 14.0)
-        .edit(app)
-        .value(20.0)
-        .width(px(100.0))
-        .height(px(10.0))
-        .track_color(Color::from_rgb8(120, 150, 0))
-        .border_radius(br, br, br, br)
-        .thumb_border_radius(br, br, br, br)
-        .finish();
-    let third = Slider::new(app, 20.0)
-        .edit(app)
-        .value(70.0)
-        .width(px(10.0))
-        .height(px(100.0))
-        .direction(SliderDirection::Vertical)
-        .finish();
+    let second = Slider::new(app, 14.0);
+    second.set_value(app, 20.0);
+    second.set_width(app, px(100.0));
+    second.set_height(app, px(10.0));
+    second.set_track_color(app, Color::from_rgb8(120, 150, 0));
+    second.set_border_radius(app, br, br, br, br);
+    second.set_thumb_border_radius(app, br, br, br, br);
+    let third = Slider::new(app, 20.0);
+    third.set_value(app, 70.0);
+    third.set_width(app, px(10.0));
+    third.set_height(app, px(100.0));
+    third.set_direction(app, SliderDirection::Vertical);
     let heading = title(app, "Sliders");
-    Container::new(app)
-        .edit(app)
-        .display(Display::Flex)
-        .flex_direction(FlexDirection::Column)
-        .row_gap(px(15.0))
-        .push(heading)
-        .push(first)
-        .push(second)
-        .push(third)
-        .finish()
+    let container = Container::new(app);
+    container.set_display(app, Display::Flex);
+    container.set_flex_direction(app, FlexDirection::Column);
+    container.set_row_gap(app, px(15.0));
+    container.push(app, heading);
+    container.push(app, first);
+    container.push(app, second);
+    container.push(app, third);
+    container
 }
 
 pub fn scrollable(app: &mut App) -> Container {
     let start = Text::new(app, "The Start");
-    let middle = Text::new(app, "The Middle")
-        .edit(app)
-        .margin(px(50.0), px(0.0), px(250.0), px(0.0))
-        .finish();
-    let end = Text::new(app, "The End")
-        .edit(app)
-        .padding(px(0.0), px(0.0), px(10.0), px(0.0))
-        .finish();
-    let scrollable = Container::new(app)
-        .edit(app)
-        .display(Display::Block)
-        .overflow_y(Overflow::Scroll)
-        .width(px(200.0))
-        .max_height(px(150.0))
-        .padding(px(5.0), px(15.0), px(5.0), px(15.0))
-        .border_radius_all((1.0, 1.0))
-        .border_color_all(Color::BLACK)
-        .border_width_all(px(1.0))
-        .push(start)
-        .push(middle)
-        .push(end)
-        .finish();
-    let label = Text::new(app, "Scroll to the top")
-        .edit(app)
-        .color(Color::WHITE)
-        .font_size(14.0)
-        .padding(px(3.0), px(5.0), px(3.0), px(5.0))
-        .finish();
-    let button = Button::new(app)
-        .edit(app)
-        .width(px(120.0))
-        .background_color(Color::from_rgb8(35, 127, 183))
-        .add_click_listener(move |_event, app| {
-            scrollable.scroll_to_top(app);
-        })
-        .push(label)
-        .finish();
+    let middle = Text::new(app, "The Middle");
+    middle.set_margin(app, px(50.0), px(0.0), px(250.0), px(0.0));
+    let end = Text::new(app, "The End");
+    end.set_padding(app, px(0.0), px(0.0), px(10.0), px(0.0));
+    let scrollable = Container::new(app);
+    scrollable.set_display(app, Display::Block);
+    scrollable.set_overflow_y(app, Overflow::Scroll);
+    scrollable.set_width(app, px(200.0));
+    scrollable.set_max_height(app, px(150.0));
+    scrollable.set_padding(app, px(5.0), px(15.0), px(5.0), px(15.0));
+    scrollable.set_border_radius_all(app, (1.0, 1.0));
+    scrollable.set_border_color_all(app, Color::BLACK);
+    scrollable.set_border_width_all(app, px(1.0));
+    scrollable.push(app, start);
+    scrollable.push(app, middle);
+    scrollable.push(app, end);
+    let label = Text::new(app, "Scroll to the top");
+    label.set_color(app, Color::WHITE);
+    label.set_font_size(app, 14.0);
+    label.set_padding(app, px(3.0), px(5.0), px(3.0), px(5.0));
+    let button = Button::new(app);
+    button.set_width(app, px(120.0));
+    button.set_background_color(app, Color::from_rgb8(35, 127, 183));
+    button.add_click_listener(app, move |_event, app| {
+        scrollable.scroll_to_top(app);
+    });
+    button.push(app, label);
     let heading = title(app, "Scrollable");
-    Container::new(app)
-        .edit(app)
-        .display(Display::Block)
-        .push(heading)
-        .push(scrollable)
-        .push(button)
-        .finish()
+    let container = Container::new(app);
+    container.set_display(app, Display::Block);
+    container.push(app, heading);
+    container.push(app, scrollable);
+    container.push(app, button);
+    container
 }
 
 pub fn radio_buttons(app: &mut App) -> Container {
@@ -581,84 +499,78 @@ pub fn radio_buttons(app: &mut App) -> Container {
     let green = Image::new(
         app,
         ResourceId::Url("https://www.iconsdb.com/icons/preview/green/square-xxl.png".to_string()),
-    )
-    .edit(app)
-    .border_width_all(px(1))
-    .border_color_all(rgba(0, 0, 0, 0))
-    .finish();
+    );
+    green.set_border_width_all(app, px(1));
+    green.set_border_color_all(app, rgba(0, 0, 0, 0));
     let red_label = Text::new(app, "red");
-    let red = Radio::new(app, "red", "red", active).edit(app).push(red_label).finish();
-    let green_radio = Radio::new(app, "green", "green", active)
-        .edit(app)
-        .push(green)
-        .hide_radio()
-        .finish();
+    let red = Radio::new(app, "red", "red", active);
+    red.push(app, red_label);
+    let green_radio = Radio::new(app, "green", "green", active);
+    green_radio.push(app, green);
+    green_radio.hide_radio(app);
     let blue_label = Text::new(app, "blue");
-    let blue = Radio::new(app, "blue", "blue", active)
-        .edit(app)
-        .push(blue_label)
-        .finish();
-    let group = RadioGroup::new(app, "Pick a color")
-        .edit(app)
-        .display(Display::Flex)
-        .flex_direction(FlexDirection::Column)
-        .justify_content(JustifyContent::Center)
-        .push(red)
-        .push(green_radio)
-        .push(blue)
-        .add_radio_value_changed_listener(move |event, app| {
-            green
-                .edit(app)
-                .border_color_all(if event.value.as_str() == "green" {
-                    rgb(0, 100, 255)
-                } else {
-                    rgba(0, 0, 0, 0)
-                })
-                .finish();
-        })
-        .finish();
+    let blue = Radio::new(app, "blue", "blue", active);
+    blue.push(app, blue_label);
+    let group = RadioGroup::new(app, "Pick a color");
+    group.set_display(app, Display::Flex);
+    group.set_flex_direction(app, FlexDirection::Column);
+    group.set_justify_content(app, JustifyContent::Center);
+    group.push(app, red);
+    group.push(app, green_radio);
+    group.push(app, blue);
+    group.add_radio_value_changed_listener(app, move |event, app| {
+        green.set_border_color_all(
+            app,
+            if event.value.as_str() == "green" {
+                rgb(0, 100, 255)
+            } else {
+                rgba(0, 0, 0, 0)
+            },
+        );
+    });
     let heading = title(app, "Radio Button");
-    Container::new(app)
-        .edit(app)
-        .display(Display::Flex)
-        .flex_direction(FlexDirection::Column)
-        .push(heading)
-        .push(group)
-        .finish()
+    let container = Container::new(app);
+    container.set_display(app, Display::Flex);
+    container.set_flex_direction(app, FlexDirection::Column);
+    container.push(app, heading);
+    container.push(app, group);
+    container
 }
 
 pub fn checkbox(app: &mut App) -> Container {
-    let coffee_label = Text::new(app, "Coffee").edit(app).selectable(false).finish();
-    let coffee = Checkbox::new(app, "coffee", true).edit(app).push(coffee_label).finish();
-    let tea_label = Text::new(app, "Tea").edit(app).selectable(false).finish();
-    let tea = Checkbox::new(app, "tea", false).edit(app).push(tea_label).finish();
-    let pork_label = Text::new(app, "红烧肉").edit(app).selectable(false).finish();
-    let pork = Checkbox::new(app, "红烧肉", false).edit(app).push(pork_label).finish();
-    let curry_label = Text::new(app, "カツカレー").edit(app).selectable(false).finish();
-    let curry = Checkbox::new(app, "カツカレー", false)
-        .edit(app)
-        .push(curry_label)
-        .finish();
-    let group = CheckboxGroup::new(app, "Select your favorite foods")
-        .edit(app)
-        .add_checkbox_toggled_listener(move |event, _app| {
-            println!("checkbox toggled: {} - {}", event.label, event.status);
-        })
-        .flex_direction(FlexDirection::Column)
-        .gap(px(15.0), px(15.0))
-        .push(coffee)
-        .push(tea)
-        .push(pork)
-        .push(curry)
-        .finish();
+    let coffee_label = Text::new(app, "Coffee");
+    coffee_label.set_selectable(app, false);
+    let coffee = Checkbox::new(app, "coffee", true);
+    coffee.push(app, coffee_label);
+    let tea_label = Text::new(app, "Tea");
+    tea_label.set_selectable(app, false);
+    let tea = Checkbox::new(app, "tea", false);
+    tea.push(app, tea_label);
+    let pork_label = Text::new(app, "红烧肉");
+    pork_label.set_selectable(app, false);
+    let pork = Checkbox::new(app, "红烧肉", false);
+    pork.push(app, pork_label);
+    let curry_label = Text::new(app, "カツカレー");
+    curry_label.set_selectable(app, false);
+    let curry = Checkbox::new(app, "カツカレー", false);
+    curry.push(app, curry_label);
+    let group = CheckboxGroup::new(app, "Select your favorite foods");
+    group.add_checkbox_toggled_listener(app, move |event, _app| {
+        println!("checkbox toggled: {} - {}", event.label, event.status);
+    });
+    group.set_flex_direction(app, FlexDirection::Column);
+    group.set_gap(app, px(15.0), px(15.0));
+    group.push(app, coffee);
+    group.push(app, tea);
+    group.push(app, pork);
+    group.push(app, curry);
     let heading = title(app, "Checkbox");
-    Container::new(app)
-        .edit(app)
-        .display(Display::Flex)
-        .flex_direction(FlexDirection::Column)
-        .push(heading)
-        .push(group)
-        .finish()
+    let container = Container::new(app);
+    container.set_display(app, Display::Flex);
+    container.set_flex_direction(app, FlexDirection::Column);
+    container.push(app, heading);
+    container.push(app, group);
+    container
 }
 
 #[cfg(feature = "audio")]
@@ -681,30 +593,26 @@ struct GalleryExample {
 
 impl GalleryExample {
     fn new(app: &mut App, label: &'static str, child: impl Element) -> Self {
-        let section = Container::new(app)
-            .edit(app)
-            .display(Display::Flex)
-            .flex_direction(FlexDirection::Column)
-            .flex_grow(1.0)
-            .width(pct(100))
-            .height(pct(100))
-            .padding_all(px(32.0))
-            .overflow(Overflow::Clip, Overflow::Scroll)
-            .push(child)
-            .finish();
+        let section = Container::new(app);
+        section.set_display(app, Display::Flex);
+        section.set_flex_direction(app, FlexDirection::Column);
+        section.set_flex_grow(app, 1.0);
+        section.set_width(app, pct(100));
+        section.set_height(app, pct(100));
+        section.set_padding_all(app, px(32.0));
+        section.set_overflow(app, Overflow::Clip, Overflow::Scroll);
+        section.push(app, child);
         Self { label, section }
     }
 
     fn titled(app: &mut App, label: &'static str, child: impl Element) -> Self {
         let heading = title(app, label);
-        let content = Container::new(app)
-            .edit(app)
-            .display(Display::Flex)
-            .flex_direction(FlexDirection::Column)
-            .row_gap(px(12.0))
-            .push(heading)
-            .push(child)
-            .finish();
+        let content = Container::new(app);
+        content.set_display(app, Display::Flex);
+        content.set_flex_direction(app, FlexDirection::Column);
+        content.set_row_gap(app, px(12.0));
+        content.push(app, heading);
+        content.push(app, child);
         Self::new(app, label, content)
     }
 }
@@ -731,7 +639,8 @@ impl NavigationSelection {
 fn gallery_examples(app: &mut App) -> Vec<GalleryExample> {
     let animations = animations(app);
     let audio = audio(app);
-    let calendar = Calendar::new(app).edit(app).start_year(1950).finish();
+    let calendar = Calendar::new(app);
+    calendar.set_start_year(app, 1950);
     let text_input = text_input(app);
     let dropdown = dropdown(app);
     let text = text(app);
@@ -779,63 +688,55 @@ fn navigation_background(selected: bool) -> Color {
 }
 
 fn style_navigation_button(app: &mut App, button: impl Element, selected: bool) {
-    button
-        .edit(app)
-        .background_color(navigation_background(selected))
-        .outline_color_all(retgui::palette::css::DODGER_BLUE)
-        .outline_width_all(px(if selected { 2.0 } else { 0.0 }))
-        .finish();
+    button.set_background_color(app, navigation_background(selected));
+    button.set_outline_color_all(app, retgui::palette::css::DODGER_BLUE);
+    button.set_outline_width_all(app, px(if selected { 2.0 } else { 0.0 }));
 }
 
 fn navigation_button(app: &mut App, label: &str, selected: bool) -> Button {
-    let label = Text::new(app, label)
-        .edit(app)
-        .font_size(15.0)
-        .selectable(false)
-        .finish();
-    Button::new(app)
-        .edit(app)
-        .display(Display::Flex)
-        .align_items(AlignItems::Center)
-        .width(pct(100))
-        .min_height(px(38.0))
-        .padding_horizontal(px(14.0))
-        .border_width_all(px(0.0))
-        .border_radius_all((5.0, 5.0))
-        .background_color(navigation_background(selected))
-        .outline_color_all(retgui::palette::css::DODGER_BLUE)
-        .outline_width_all(px(if selected { 2.0 } else { 0.0 }))
-        .push(label)
-        .finish()
+    let label = Text::new(app, label);
+    label.set_font_size(app, 15.0);
+    label.set_selectable(app, false);
+    let button = Button::new(app);
+    button.set_display(app, Display::Flex);
+    button.set_align_items(app, AlignItems::Center);
+    button.set_width(app, pct(100));
+    button.set_min_height(app, px(38.0));
+    button.set_padding_horizontal(app, px(14.0));
+    button.set_border_width_all(app, px(0.0));
+    button.set_border_radius_all(app, (5.0, 5.0));
+    button.set_background_color(app, navigation_background(selected));
+    button.set_outline_color_all(app, retgui::palette::css::DODGER_BLUE);
+    button.set_outline_width_all(app, px(if selected { 2.0 } else { 0.0 }));
+    button.push(app, label);
+    button
 }
 
 fn sidebar(app: &mut App) -> Container {
-    Container::new(app)
-        .edit(app)
-        .display(Display::Flex)
-        .flex_direction(FlexDirection::Column)
-        .flex_shrink(0.0)
-        .width(px(220.0))
-        .height(pct(100))
-        .padding(px(12.0), px(8.0), px(12.0), px(8.0))
-        .row_gap(px(3.0))
-        .border_width(px(0.0), px(1.0), px(0.0), px(0.0))
-        .border_color_all(Color::from_rgb8(210, 214, 220))
-        .background_color(navigation_background(false))
-        .overflow(Overflow::Clip, Overflow::Scroll)
-        .finish()
+    let container = Container::new(app);
+    container.set_display(app, Display::Flex);
+    container.set_flex_direction(app, FlexDirection::Column);
+    container.set_flex_shrink(app, 0.0);
+    container.set_width(app, px(220.0));
+    container.set_height(app, pct(100));
+    container.set_padding(app, px(12.0), px(8.0), px(12.0), px(8.0));
+    container.set_row_gap(app, px(3.0));
+    container.set_border_width(app, px(0.0), px(1.0), px(0.0), px(0.0));
+    container.set_border_color_all(app, Color::from_rgb8(210, 214, 220));
+    container.set_background_color(app, navigation_background(false));
+    container.set_overflow(app, Overflow::Clip, Overflow::Scroll);
+    container
 }
 
 fn content_pane(app: &mut App) -> Container {
-    Container::new(app)
-        .edit(app)
-        .display(Display::Flex)
-        .flex_direction(FlexDirection::Column)
-        .flex_grow(1.0)
-        .width(pct(100))
-        .height(pct(100))
-        .overflow(Overflow::Clip, Overflow::Clip)
-        .finish()
+    let container = Container::new(app);
+    container.set_display(app, Display::Flex);
+    container.set_flex_direction(app, FlexDirection::Column);
+    container.set_flex_grow(app, 1.0);
+    container.set_width(app, pct(100));
+    container.set_height(app, pct(100));
+    container.set_overflow(app, Overflow::Clip, Overflow::Clip);
+    container
 }
 
 fn select_example(app: &mut App, examples: &[GalleryExample], selected: usize) {
@@ -871,39 +772,33 @@ fn gallery(app: &mut App) -> Container {
 
     for (index, (example, button)) in examples.iter().zip(buttons).enumerate() {
         let examples = examples.clone();
-        let button = button
-            .edit(app)
-            .add_click_listener(move |event, app| {
-                select_example(app, &examples, index);
-                selection.select(app, event.current_target());
-                event.stop_propagation();
-            })
-            .finish();
+        button.add_click_listener(app, move |event, app| {
+            select_example(app, &examples, index);
+            selection.select(app, event.current_target());
+            event.stop_propagation();
+        });
         sidebar.push(app, button);
         content.push(app, example.section);
     }
 
-    Container::new(app)
-        .edit(app)
-        .display(Display::Flex)
-        .width(pct(100))
-        .height(pct(100))
-        .push(sidebar)
-        .push(content)
-        .finish()
+    let container = Container::new(app);
+    container.set_display(app, Display::Flex);
+    container.set_width(app, pct(100));
+    container.set_height(app, pct(100));
+    container.push(app, sidebar);
+    container.push(app, content);
+    container
 }
 
 pub fn main() {
     setup_logging();
     let mut app = App::new();
     let gallery = gallery(&mut app);
-    Window::new(&mut app, "Gallery")
-        .edit(&mut app)
-        .display(Display::Flex)
-        .overflow(Overflow::Clip, Overflow::Clip)
-        .width(pct(100))
-        .height(pct(100))
-        .push(gallery)
-        .finish();
+    let window = Window::new(&mut app, "Gallery");
+    window.set_display(&mut app, Display::Flex);
+    window.set_overflow(&mut app, Overflow::Clip, Overflow::Clip);
+    window.set_width(&mut app, pct(100));
+    window.set_height(&mut app, pct(100));
+    window.push(&mut app, gallery);
     retgui_main(app, RetGuiOptions::basic("Gallery"));
 }

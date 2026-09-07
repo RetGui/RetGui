@@ -11,12 +11,11 @@ where
 {
     let on_click = Rc::new(on_click);
 
-    Container::new(app)
-        .edit(app)
-        .add_pointer_button_up_listener(move |event, app| {
-            if event.button == Some(PointerButton::Left) {
-                on_click(app);
-            }
-        })
-        .finish()
+    let container = Container::new(app);
+    container.add_pointer_button_up_listener(app, move |event, app| {
+        if event.button == Some(PointerButton::Left) {
+            on_click(app);
+        }
+    });
+    container
 }

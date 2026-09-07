@@ -50,28 +50,27 @@ fn example_link(
     } else {
         DEFAULT_LINK_COLOR
     };
-    Text::new(app, label)
-        .edit(app)
-        .color(color)
-        .selectable(false)
-        .add_pointer_button_up_listener(move |event, app| {
-            if event.button == Some(PointerButton::Left) {
-                *selected.write(app) = index;
-                show_example(app, &examples, index);
-                navigate(route, app);
-            }
-        })
-        .finish()
+    let text = Text::new(app, label);
+    text.set_color(app, color);
+    text.set_selectable(app, false);
+    text.add_pointer_button_up_listener(app, move |event, app| {
+        if event.button == Some(PointerButton::Left) {
+            *selected.write(app) = index;
+            show_example(app, &examples, index);
+            navigate(route, app);
+        }
+    });
+    text
 }
 
 pub fn examples(app: &mut App, global_state: State<WebsiteGlobalState>, navigate: NavigateFn) -> Container {
     let route = global_state.read(app).get_route();
-    let counter = counter::counter(app).edit(app).id(COUNTER).finish();
-    let pointer = pointer_events::pointer_events(app)
-        .edit(app)
-        .id(POINTER_EVENTS)
-        .finish();
-    let text = text::text(app).edit(app).id(TEXT).finish();
+    let counter = counter::counter(app);
+    counter.set_id(app, COUNTER);
+    let pointer = pointer_events::pointer_events(app);
+    pointer.set_id(app, POINTER_EVENTS);
+    let text = text::text(app);
+    text.set_id(app, TEXT);
     let examples = Rc::new(vec![counter, pointer, text]);
     let selected_index = [COUNTER, POINTER_EVENTS, TEXT]
         .iter()
@@ -80,20 +79,16 @@ pub fn examples(app: &mut App, global_state: State<WebsiteGlobalState>, navigate
     let selected = app.insert_state(selected_index);
     show_example(app, &examples, selected_index);
 
-    let heading = Text::new(app, "Examples")
-        .edit(app)
-        .selectable(false)
-        .font_weight(FontWeight::MEDIUM)
-        .font_size(20.0)
-        .finish();
-    let sidebar = Container::new(app)
-        .edit(app)
-        .display(Display::Flex)
-        .flex_direction(FlexDirection::Column)
-        .gap(px(12), px(12))
-        .min_width(px(210))
-        .push(heading)
-        .finish();
+    let heading = Text::new(app, "Examples");
+    heading.set_selectable(app, false);
+    heading.set_font_weight(app, FontWeight::MEDIUM);
+    heading.set_font_size(app, 20.0);
+    let sidebar = Container::new(app);
+    sidebar.set_display(app, Display::Flex);
+    sidebar.set_flex_direction(app, FlexDirection::Column);
+    sidebar.set_gap(app, px(12), px(12));
+    sidebar.set_min_width(app, px(210));
+    sidebar.push(app, heading);
     for (index, (label, route)) in [("Counter", COUNTER), ("Pointer events", POINTER_EVENTS), ("Text", TEXT)]
         .into_iter()
         .enumerate()
@@ -102,25 +97,20 @@ pub fn examples(app: &mut App, global_state: State<WebsiteGlobalState>, navigate
         sidebar.push(app, link);
     }
 
-    let content = Container::new(app)
-        .edit(app)
-        .width(pct(100))
-        .height(px(600))
-        .background_color(palette::css::WHITE)
-        .finish();
+    let content = Container::new(app);
+    content.set_width(app, pct(100));
+    content.set_height(app, px(600));
+    content.set_background_color(app, palette::css::WHITE);
     for example in examples.iter() {
         content.push(app, *example);
     }
-    let page = wrapper(app)
-        .edit(app)
-        .padding_all(px(40))
-        .gap(px(24), px(24))
-        .push(sidebar)
-        .push(content)
-        .finish();
-    Container::new(app)
-        .edit(app)
-        .overflow(Overflow::Visible, Overflow::Scroll)
-        .push(page)
-        .finish()
+    let page = wrapper(app);
+    page.set_padding_all(app, px(40));
+    page.set_gap(app, px(24), px(24));
+    page.push(app, sidebar);
+    page.push(app, content);
+    let container = Container::new(app);
+    container.set_overflow(app, Overflow::Visible, Overflow::Scroll);
+    container.push(app, page);
+    container
 }

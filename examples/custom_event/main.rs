@@ -11,57 +11,48 @@ struct Greeting {
 pub fn custom_event(app: &mut App) -> Container {
     let message = Text::new(app, "No event received yet");
 
-    let receiver = Container::new(app)
-        .edit(app)
-        .add_custom_event_listener(move |event, app| {
-            if let Some(greeting) = event.data::<Greeting>() {
-                message.edit(app).text(&format!("Hello, {}!", greeting.name)).finish();
-            }
-        })
-        .push(message)
-        .finish();
+    let receiver = Container::new(app);
+    receiver.add_custom_event_listener(app, move |event, app| {
+        if let Some(greeting) = event.data::<Greeting>() {
+            message.set_text(app, &format!("Hello, {}!", greeting.name));
+        }
+    });
+    receiver.push(app, message);
 
-    let button_label = Text::new(app, "Send custom event")
-        .edit(app)
-        .color(Color::WHITE)
-        .finish();
-    let button = Container::new(app)
-        .edit(app)
-        .padding(px(12), px(20), px(12), px(20))
-        .background_color(rgb(59, 130, 246))
-        .add_click_listener(move |_event, app| {
-            receiver.emit_custom_event(
-                app,
-                Greeting {
-                    name: "Mary".to_string(),
-                },
-            );
-        })
-        .push(button_label)
-        .finish();
+    let button_label = Text::new(app, "Send custom event");
+    button_label.set_color(app, Color::WHITE);
+    let button = Container::new(app);
+    button.set_padding(app, px(12), px(20), px(12), px(20));
+    button.set_background_color(app, rgb(59, 130, 246));
+    button.add_click_listener(app, move |_event, app| {
+        receiver.emit_custom_event(
+            app,
+            Greeting {
+                name: "Mary".to_string(),
+            },
+        );
+    });
+    button.push(app, button_label);
 
-    Container::new(app)
-        .edit(app)
-        .flex_direction(FlexDirection::Column)
-        .justify_content(JustifyContent::Center)
-        .align_items(AlignItems::Center)
-        .width(pct(100))
-        .height(pct(100))
-        .row_gap(px(20))
-        .push(receiver)
-        .push(button)
-        .finish()
+    let container = Container::new(app);
+    container.set_flex_direction(app, FlexDirection::Column);
+    container.set_justify_content(app, JustifyContent::Center);
+    container.set_align_items(app, AlignItems::Center);
+    container.set_width(app, pct(100));
+    container.set_height(app, pct(100));
+    container.set_row_gap(app, px(20));
+    container.push(app, receiver);
+    container.push(app, button);
+    container
 }
 
 pub fn main() {
     setup_logging();
     let mut app = App::new();
     let content = custom_event(&mut app);
-    Window::new(&mut app, "Custom Event")
-        .edit(&mut app)
-        .width(pct(100))
-        .height(pct(100))
-        .push(content)
-        .finish();
+    let window = Window::new(&mut app, "Custom Event");
+    window.set_width(&mut app, pct(100));
+    window.set_height(&mut app, pct(100));
+    window.push(&mut app, content);
     retgui_main(app, RetGuiOptions::basic("Custom Event"));
 }

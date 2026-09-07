@@ -17,48 +17,41 @@ impl EventLog {
 }
 
 fn title(app: &mut App, txt: &str) -> Text {
-    Text::new(app, txt)
-        .edit(app)
-        .font_size(24.0)
-        .padding(Unit::Px(0.0), Unit::Px(0.0), Unit::Px(25.0), Unit::Px(0.0))
-        .finish()
+    let text = Text::new(app, txt);
+    text.set_font_size(app, 24.0);
+    text.set_padding(app, Unit::Px(0.0), Unit::Px(0.0), Unit::Px(25.0), Unit::Px(0.0));
+    text
 }
 
 fn event_log(app: &mut App) -> EventLog {
-    let entries = Container::new(app)
-        .edit(app)
-        .display(Display::Flex)
-        .flex_direction(FlexDirection::Column)
-        .overflow(Overflow::Visible, Overflow::Scroll)
-        .width(Unit::Px(300.0))
-        .height(Unit::Px(200.0))
-        .max_width(Unit::Px(300.0))
-        .max_height(Unit::Px(200.0))
-        .border_width_all(Unit::Px(1.0))
-        .margin(Unit::Px(25.0), Unit::Px(0.0), Unit::Px(0.0), Unit::Px(0.0))
-        .border_color_all(Color::from_rgb8(99, 99, 99))
-        .finish();
+    let entries = Container::new(app);
+    entries.set_display(app, Display::Flex);
+    entries.set_flex_direction(app, FlexDirection::Column);
+    entries.set_overflow(app, Overflow::Visible, Overflow::Scroll);
+    entries.set_width(app, Unit::Px(300.0));
+    entries.set_height(app, Unit::Px(200.0));
+    entries.set_max_width(app, Unit::Px(300.0));
+    entries.set_max_height(app, Unit::Px(200.0));
+    entries.set_border_width_all(app, Unit::Px(1.0));
+    entries.set_margin(app, Unit::Px(25.0), Unit::Px(0.0), Unit::Px(0.0), Unit::Px(0.0));
+    entries.set_border_color_all(app, Color::from_rgb8(99, 99, 99));
 
-    let clear_log = Text::new(app, "Clear")
-        .edit(app)
-        .background_color(Color::from_rgb8(210, 210, 215))
-        .border_width_all(Unit::Px(1.0))
-        .border_radius_all((6.0, 6.0))
-        .padding(Unit::Px(10.0), Unit::Px(25.0), Unit::Px(10.0), Unit::Px(25.0))
-        .width(Unit::Px(90.0))
-        .add_click_listener(move |_event, app| {
-            entries.delete_all_children(app);
-        })
-        .finish();
+    let clear_log = Text::new(app, "Clear");
+    clear_log.set_background_color(app, Color::from_rgb8(210, 210, 215));
+    clear_log.set_border_width_all(app, Unit::Px(1.0));
+    clear_log.set_border_radius_all(app, (6.0, 6.0));
+    clear_log.set_padding(app, Unit::Px(10.0), Unit::Px(25.0), Unit::Px(10.0), Unit::Px(25.0));
+    clear_log.set_width(app, Unit::Px(90.0));
+    clear_log.add_click_listener(app, move |_event, app| {
+        entries.delete_all_children(app);
+    });
 
-    let container = Container::new(app)
-        .edit(app)
-        .display(Display::Flex)
-        .flex_direction(FlexDirection::Column)
-        .row_gap(Unit::Px(20.0))
-        .push(entries)
-        .push(clear_log)
-        .finish();
+    let container = Container::new(app);
+    container.set_display(app, Display::Flex);
+    container.set_flex_direction(app, FlexDirection::Column);
+    container.set_row_gap(app, Unit::Px(20.0));
+    container.push(app, entries);
+    container.push(app, clear_log);
 
     EventLog {
         view: container,
@@ -72,52 +65,46 @@ fn pointer_capture_example(app: &mut App) -> Container {
     let draggable_text = Text::new(app, "Draggable");
     let event_log = event_log(app);
 
-    let draggable_text = draggable_text
-        .edit(app)
-        .display(Display::Flex)
-        .width(Unit::Px(100.0))
-        .color(Color::WHITE)
-        .background_color(Color::from_rgba8(40, 40, 255, 100))
-        .add_pointer_button_down_listener(|event, app| {
-            event
-                .target()
-                .set_pointer_capture(app, event.pointer.pointer_id.unwrap());
-        })
-        .add_pointer_moved_listener(move |event, app| {
-            let mouse_x = event.current.logical_position().x as f32;
-            let half_width = draggable_text.computed_box_transformed(app).size.width / 2.0;
-            if draggable_text.has_pointer_capture(app, event.pointer.pointer_id.unwrap()) {
-                draggable_text
-                    .edit(app)
-                    .position(Position::Relative)
-                    .inset(
-                        Unit::Px(0.0),
-                        Unit::Px(0.0),
-                        Unit::Px(0.0),
-                        Unit::Px(mouse_x - half_width - container_padding),
-                    )
-                    .finish();
-            }
-            event.prevent_default();
-        })
-        .add_lost_pointer_capture_listener(move |_event, app| {
-            event_log.push(app, "Lost Pointer Capture");
-        })
-        .add_got_pointer_capture_listener(move |_event, app| {
-            event_log.push(app, "Got Pointer Capture");
-        })
-        .finish();
+    draggable_text.set_display(app, Display::Flex);
+    draggable_text.set_width(app, Unit::Px(100.0));
+    draggable_text.set_color(app, Color::WHITE);
+    draggable_text.set_background_color(app, Color::from_rgba8(40, 40, 255, 100));
+    draggable_text.add_pointer_button_down_listener(app, |event, app| {
+        event
+            .target()
+            .set_pointer_capture(app, event.pointer.pointer_id.unwrap());
+    });
+    draggable_text.add_pointer_moved_listener(app, move |event, app| {
+        let mouse_x = event.current.logical_position().x as f32;
+        let half_width = draggable_text.computed_box_transformed(app).size.width / 2.0;
+        if draggable_text.has_pointer_capture(app, event.pointer.pointer_id.unwrap()) {
+            draggable_text.set_position(app, Position::Relative);
+            draggable_text.set_inset(
+                app,
+                Unit::Px(0.0),
+                Unit::Px(0.0),
+                Unit::Px(0.0),
+                Unit::Px(mouse_x - half_width - container_padding),
+            );
+        }
+        event.prevent_default();
+    });
+    draggable_text.add_lost_pointer_capture_listener(app, move |_event, app| {
+        event_log.push(app, "Lost Pointer Capture");
+    });
+    draggable_text.add_got_pointer_capture_listener(app, move |_event, app| {
+        event_log.push(app, "Got Pointer Capture");
+    });
 
     let heading = title(app, "Pointer Capture");
-    Container::new(app)
-        .edit(app)
-        .display(Display::Flex)
-        .flex_direction(FlexDirection::Column)
-        .padding_all(Unit::Px(container_padding))
-        .push(heading)
-        .push(draggable_text)
-        .push(event_log.view)
-        .finish()
+    let container = Container::new(app);
+    container.set_display(app, Display::Flex);
+    container.set_flex_direction(app, FlexDirection::Column);
+    container.set_padding_all(app, Unit::Px(container_padding));
+    container.push(app, heading);
+    container.push(app, draggable_text);
+    container.push(app, event_log.view);
+    container
 }
 
 fn pointer_enter_leave_example(app: &mut App) -> Container {
@@ -134,57 +121,51 @@ fn pointer_enter_leave_example(app: &mut App) -> Container {
         }
     };
 
-    let parent = Container::new(app)
-        .edit(app)
-        .display(Display::Flex)
-        .flex_direction(FlexDirection::Row)
-        .align_items(AlignItems::Center)
-        .justify_content(JustifyContent::Center)
-        .width(Unit::Px(250.0))
-        .height(Unit::Px(250.0))
-        .background_color(Color::from_rgba8(10, 10, 255, 150))
-        .add_pointer_enter_listener(pointer_enter_log("Parent"))
-        .add_pointer_leave_listener(pointer_leave_log("Parent"))
-        .finish();
+    let parent = Container::new(app);
+    parent.set_display(app, Display::Flex);
+    parent.set_flex_direction(app, FlexDirection::Row);
+    parent.set_align_items(app, AlignItems::Center);
+    parent.set_justify_content(app, JustifyContent::Center);
+    parent.set_width(app, Unit::Px(250.0));
+    parent.set_height(app, Unit::Px(250.0));
+    parent.set_background_color(app, Color::from_rgba8(10, 10, 255, 150));
+    parent.add_pointer_enter_listener(app, pointer_enter_log("Parent"));
+    parent.add_pointer_leave_listener(app, pointer_leave_log("Parent"));
 
-    let child_container = Container::new(app)
-        .edit(app)
-        .width(Unit::Px(125.0))
-        .height(Unit::Px(125.0))
-        .background_color(Color::from_rgba8(255, 10, 10, 150))
-        .add_pointer_enter_listener(pointer_enter_log("Child"))
-        .add_pointer_leave_listener(pointer_leave_log("Child"))
-        .finish();
+    let child_container = Container::new(app);
+    child_container.set_width(app, Unit::Px(125.0));
+    child_container.set_height(app, Unit::Px(125.0));
+    child_container.set_background_color(app, Color::from_rgba8(255, 10, 10, 150));
+    child_container.add_pointer_enter_listener(app, pointer_enter_log("Child"));
+    child_container.add_pointer_leave_listener(app, pointer_leave_log("Child"));
 
     parent.push(app, child_container);
     let heading = title(app, "Pointer Enter + Leave");
 
-    Container::new(app)
-        .edit(app)
-        .display(Display::Flex)
-        .flex_direction(FlexDirection::Column)
-        .padding_all(Unit::Px(20.0))
-        .push(heading)
-        .push(parent)
-        .push(event_log.view)
-        .finish()
+    let container = Container::new(app);
+    container.set_display(app, Display::Flex);
+    container.set_flex_direction(app, FlexDirection::Column);
+    container.set_padding_all(app, Unit::Px(20.0));
+    container.push(app, heading);
+    container.push(app, parent);
+    container.push(app, event_log.view);
+    container
 }
 
 pub fn pointer_events(app: &mut App) -> Container {
     let capture = pointer_capture_example(app);
     let enter_leave = pointer_enter_leave_example(app);
-    Container::new(app)
-        .edit(app)
-        .display(Display::Flex)
-        .flex_direction(FlexDirection::Column)
-        .overflow_y(Overflow::Scroll)
-        .max_height(Unit::Percentage(100.0))
-        .width(pct(100))
-        .height(pct(100))
-        .row_gap(Unit::Px(50.0))
-        .push(capture)
-        .push(enter_leave)
-        .finish()
+    let container = Container::new(app);
+    container.set_display(app, Display::Flex);
+    container.set_flex_direction(app, FlexDirection::Column);
+    container.set_overflow_y(app, Overflow::Scroll);
+    container.set_max_height(app, Unit::Percentage(100.0));
+    container.set_width(app, pct(100));
+    container.set_height(app, pct(100));
+    container.set_row_gap(app, Unit::Px(50.0));
+    container.push(app, capture);
+    container.push(app, enter_leave);
+    container
 }
 
 #[allow(unused)]
@@ -192,12 +173,10 @@ pub fn pointer_events(app: &mut App) -> Container {
 fn main() {
     let mut app = App::new();
     let content = pointer_events(&mut app);
-    Window::new(&mut app, "Pointer Events")
-        .edit(&mut app)
-        .width(pct(100))
-        .height(pct(100))
-        .push(content)
-        .finish();
+    let window = Window::new(&mut app, "Pointer Events");
+    window.set_width(&mut app, pct(100));
+    window.set_height(&mut app, pct(100));
+    window.push(&mut app, content);
 
     use retgui::RetGuiOptions;
 
