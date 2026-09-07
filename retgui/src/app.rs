@@ -22,7 +22,7 @@ use retgui_renderer::renderer::Renderer;
 use retgui_resource_manager::resource_type::ResourceType;
 use retgui_resource_manager::{ResourceError, ResourceId, ResourceManager};
 
-use retgui_runtime::RetGuiRuntime;
+use retgui_runtime::{RetGuiRuntime, RetGuiRuntimeHandle};
 #[cfg(not(target_arch = "wasm32"))]
 use retgui_runtime::task::yield_now;
 
@@ -699,5 +699,9 @@ impl App {
 
     pub fn state_mut<T: 'static>(&mut self, state: State<T>) -> &mut T {
         state.write_to(&mut self.states, self.elements.store_id())
+    }
+
+    pub fn get_runtime_handle(&self) -> RetGuiRuntimeHandle {
+        self.runtime.handle()
     }
 }
