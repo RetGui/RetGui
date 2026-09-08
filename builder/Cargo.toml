@@ -1,0 +1,15 @@
+[package]
+name = "retgui_builder"
+version = "0.1.1"
+edition.workspace = true
+license-file = "../LICENSE"
+homepage = "https://retguigui.com/"
+repository = "https://github.com/RetGui/retgui"
+
+[features]
+default = []
+audio = ["retgui/audio"]
+
+[dependencies]
+retgui = { path = "../retgui", version = "0.1.1", default-features = false }
+smol_str = "0.3.6"

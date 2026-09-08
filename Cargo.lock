@@ -355,6 +355,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "builder"
+version = "0.1.0"
+dependencies = [
+ "retgui",
+ "retgui_builder",
+ "util",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3708,6 +3717,14 @@ dependencies = [
  "web-time",
  "windows 0.62.2",
  "winit",
+]
+
+[[package]]
+name = "retgui_builder"
+version = "0.1.1"
+dependencies = [
+ "retgui",
+ "smol_str",
 ]
 
 [[package]]

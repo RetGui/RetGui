@@ -3,10 +3,12 @@ resolver = "2"
 
 members = [
     "retgui",
+    "builder",
     "calendar",
     "logger",
     "xtask",
     "examples/util",
+    "examples/builder",
     "examples/counter",
     "examples/custom_event",
     "examples/custom_element",
