@@ -329,7 +329,7 @@ impl CalendarElement {
     }
 
     fn select_year(&mut self, elements: &mut RetainedElements, gummy_tree: &mut GummyTree, year: usize) {
-        self.focus_year = self.end_year - (year as i32);
+        self.focus_year = self.start_year + (year as i32);
         self.update_calendar(elements, gummy_tree);
     }
 
@@ -351,7 +351,7 @@ impl CalendarElement {
         elements.dispatch_mut(dropdown, |dropdown, elements| {
             dropdown.remove_all_children(elements, gummy_tree, event_queue, focus);
         });
-        for year in (self.start_year..(self.end_year + 1)).rev() {
+        for year in self.start_year..=self.end_year {
             let text = TextElement::insert(
                 elements,
                 gummy_tree,
@@ -372,7 +372,7 @@ impl CalendarElement {
                             gummy_tree,
                             access_tree,
                             by_internal_id,
-                            (self.end_year - year) as usize,
+                            (year - self.start_year) as usize,
                         );
                 });
             }
@@ -472,7 +472,7 @@ mod tests {
                 .all(|year| app.contains(*year) && year.parent(&app).is_err())
         );
 
-        for (dropdown, index) in [(year_dropdown, 6), (month_dropdown, 0)] {
+        for (dropdown, index) in [(year_dropdown, 4), (month_dropdown, 0)] {
             app.event_queue
                 .push_back(EventKind::DropdownItemSelected(DropdownItemSelectedEvent::new(
                     dropdown.inner,
