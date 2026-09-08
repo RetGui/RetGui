@@ -11,7 +11,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   MDBOOK_VERSION: "0.5.4"
-  RUST_STABLE_VER: "1.91"
+  RUST_STABLE_VER: "stable"
 
 jobs:
   clippy:
