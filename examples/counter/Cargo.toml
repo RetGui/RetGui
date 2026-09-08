@@ -14,6 +14,7 @@ path = "counter_android.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
+retgui_builder = { path = "../../builder" }
 util = { path = "../util" }
 
 [dependencies.retgui]

@@ -355,15 +355,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "builder"
-version = "0.1.0"
-dependencies = [
- "retgui",
- "retgui_builder",
- "util",
-]
-
-[[package]]
 name = "bumpalo"
 version = "3.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -680,6 +671,7 @@ name = "counter"
 version = "0.1.0"
 dependencies = [
  "retgui",
+ "retgui_builder",
  "util",
 ]
 
@@ -2601,14 +2593,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "multiwindow"
-version = "0.1.0"
-dependencies = [
- "retgui",
- "util",
-]
-
-[[package]]
 name = "naga"
 version = "29.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4438,14 +4422,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "text"
-version = "0.1.0"
-dependencies = [
- "retgui",
- "util",
-]
-
-[[package]]
 name = "thiserror"
 version = "1.0.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5201,18 +5177,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b96554aa2acc8ccdb7e1c9a58a7a68dd5d13bccc69cd124cb09406db612a1c9b"
 dependencies = [
  "rustls-pki-types",
-]
-
-[[package]]
-name = "website"
-version = "0.1.0"
-dependencies = [
- "console_error_panic_hook",
- "open",
- "retgui",
- "tracing-web",
- "util",
- "web-sys",
 ]
 
 [[package]]

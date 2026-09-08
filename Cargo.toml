@@ -8,13 +8,10 @@ members = [
     "logger",
     "xtask",
     "examples/util",
-    "examples/builder",
     "examples/counter",
     "examples/custom_event",
     "examples/custom_element",
-    "examples/multiwindow",
     "examples/pointer_events",
-    "examples/text",
     "examples/jsframeworkbench",
     "examples/gallery",
     "syntect_dumper",
@@ -23,7 +20,6 @@ members = [
     "resource_manager",
     "runtime",
     "undo",
-    "website",
 ]
 
 [workspace.package]
@@ -42,13 +38,6 @@ debug = true
 #codegen-units = 1
 #strip = true
 #debug = false
-
-[profile.web-release]
-inherits = "release"
-debug = false
-strip = "debuginfo"
-lto = true
-codegen-units = 1
 
 [workspace.dependencies]
 slotmap = "1.0.7"

@@ -46,10 +46,3 @@ impl<E: Element> ElementBuilder for Builder<E> {
         self.element
     }
 }
-
-pub mod prelude {
-    #[cfg(feature = "audio")]
-    pub use crate::AudioBuilder;
-    pub use crate::constructors::*;
-    pub use crate::{CalendarBuilder, DropdownBuilder, ElementBuilder, ImageBuilder, IntoBuilder, RadioBuilder, RadioGroupBuilder, SliderBuilder, TextBuilder, TextInputBuilder, TinyVgBuilder, WindowBuilder};
-}

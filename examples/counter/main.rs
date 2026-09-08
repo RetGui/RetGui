@@ -1,76 +1,60 @@
-use retgui::elements::{Container, Element, Text, Window};
+use retgui::elements::{Container, Element, Text};
 use retgui::events::Event;
-use retgui::style::{AlignItems, BoxShadow, FlexDirection, JustifyContent};
-use retgui::{App, Color, RetGuiOptions, pct, px, retgui_main, rgb, rgba};
+use retgui::style::{AlignItems, FlexDirection, JustifyContent};
+use retgui::{App, Color, RetGuiOptions, pct, px, retgui_main, rgb};
 
-use util::setup_logging;
+use retgui_builder::{ElementBuilder, TextBuilder, container, text, window};
 
-fn create_button<S: 'static>(
-    app: &mut App<S>,
-    label: &str,
-    base_color: Color,
-    delta: i64,
-    count: fn(&mut S) -> &mut i64,
-    count_text: Text,
-) -> Container {
-    let border_color = rgb(0, 0, 0);
-    let label = Text::new(app, label);
-    label.set_font_size(app, 24.0);
-    label.set_color(app, Color::WHITE);
-    label.set_selectable(app, false);
-    let container = Container::new(app);
-    container.set_box_shadows(
-        app,
-        vec![
-            BoxShadow::new(false, 0.0, 5.0, 5.0, 0.0, rgba(0, 0, 0, 200)),
-            BoxShadow::new(false, 0.0, 25.0, 35.0, 0.0, rgba(0, 0, 0, 150)),
-            BoxShadow::new(true, 0.0, 4.0, 4.0, 0.0, rgba(255, 255, 255, 120)),
-        ],
-    );
-    container.set_border_width_all(app, px(0));
-    container.set_border_color_all(app, border_color);
-    container.set_border_radius_all(app, (8.0, 8.0));
-    container.set_padding(app, px(15), px(30), px(15), px(30));
-    container.set_justify_content(app, JustifyContent::Center);
-    container.set_background_color(app, base_color);
-    container.add_click_listener(app, move |event, app, state| {
-        let count = count(state);
+fn create_button(app: &mut App<i64>, label: &str, base_color: Color, delta: i64, count_text: Text) -> Container {
+    let button = container(app)
+        .border_radius_all(app, (8.0, 8.0))
+        .padding(app, px(12), px(30), px(12), px(30))
+        .justify_content(app, JustifyContent::Center)
+        .background_color(app, base_color)
+        .push(
+            text(app, label)
+                .font_size(app, 24.0)
+                .color(app, Color::WHITE)
+                .selectable(app, false),
+            app,
+        )
+        .build();
+    button.add_click_listener(app, move |event, app, count| {
         *count += delta;
         count_text.set_text(app, &format!("Count: {count}"));
         event.stop_propagation();
     });
-    container.push(app, label);
-    container
+    button
 }
 
-pub fn counter<S: 'static>(app: &mut App<S>, count: fn(&mut S) -> &mut i64) -> Container {
-    let count_text = Text::new(app, "Count: 0");
-    let subtract = create_button(app, "-", rgb(244, 63, 94), -1, count, count_text);
-    let add = create_button(app, "+", rgb(16, 185, 129), 1, count, count_text);
-    let buttons = Container::new(app);
-    buttons.set_column_gap(app, px(20));
-    buttons.push(app, subtract);
-    buttons.push(app, add);
-
-    let container = Container::new(app);
-    container.set_flex_direction(app, FlexDirection::Column);
-    container.set_justify_content(app, JustifyContent::Center);
-    container.set_align_items(app, AlignItems::Center);
-    container.set_width(app, pct(100));
-    container.set_height(app, pct(100));
-    container.set_row_gap(app, px(20));
-    container.push(app, count_text);
-    container.push(app, buttons);
-    container
+fn counter(app: &mut App<i64>) -> Container {
+    let count_text = text(app, "Count: 0").build();
+    container(app)
+        .flex_direction(app, FlexDirection::Column)
+        .justify_content(app, JustifyContent::Center)
+        .align_items(app, AlignItems::Center)
+        .width(app, pct(100))
+        .height(app, pct(100))
+        .row_gap(app, px(24))
+        .font_size(app, 28.0)
+        .color(app, rgb(63, 63, 70))
+        .background_color(app, Color::WHITE)
+        .push(count_text, app)
+        .push(
+            container(app)
+                .column_gap(app, px(16))
+                .push(create_button(app, "−", rgb(244, 63, 94), -1, count_text), app)
+                .push(create_button(app, "+", rgb(16, 185, 129), 1, count_text), app),
+            app,
+        )
+        .build()
 }
 
 pub fn main() {
-    setup_logging();
     let mut app = App::new();
-    let content = counter(&mut app, |count| count);
-    let window = Window::new(&mut app, "Counter");
-    window.set_width(&mut app, pct(100));
-    window.set_height(&mut app, pct(100));
-    window.push(&mut app, content);
+    window(&mut app, "Counter")
+        .width(&mut app, pct(100))
+        .height(&mut app, pct(100))
+        .push(counter(&mut app), &mut app);
     retgui_main(app, 0_i64, RetGuiOptions::basic("Counter"));
 }

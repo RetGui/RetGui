@@ -5,8 +5,9 @@ use retgui::geometry::Size;
 use retgui::style::{FlexDirection, TextStyleProperty};
 use retgui::text::RangedStyles;
 use retgui::{App, RendererType, ResourceId, px};
-use retgui_builder::Builder;
-use retgui_builder::prelude::*;
+
+use retgui_builder::{Builder, ElementBuilder, ImageBuilder, IntoBuilder, RadioGroupBuilder, SliderBuilder, TextBuilder, TextInputBuilder, TinyVgBuilder, button, container, slider, text, text_input};
+
 use smol_str::SmolStr;
 
 type TestResult = Result<(), &'static str>;
@@ -116,7 +117,7 @@ fn radio_group_keeps_selection_when_value_is_unknown() -> TestResult {
 }
 
 #[test]
-fn prelude_resolves_resource_builders_by_element_type() -> TestResult {
+fn explicit_imports_resolve_resource_builders_by_element_type() -> TestResult {
     let mut app = App::<()>::new();
     let image_id = ResourceId::StaticBytes(b"image");
     let vector_id = ResourceId::StaticBytes(b"vector");
@@ -199,7 +200,9 @@ fn nested_pushes_preserve_child_order_and_parent_relationships() -> TestResult {
             container(&mut app)
                 .id(&mut app, "section")
                 .push(
-                    text(&mut app, "Title").id(&mut app, "title").capture(&mut title),
+                    text(&mut app, "Title")
+                        .id(&mut app, "title")
+                        .store_element_ref(&mut title),
                     &mut app,
                 )
                 .push(
@@ -261,7 +264,7 @@ fn nested_pushes_preserve_child_order_and_parent_relationships() -> TestResult {
 fn capture_stores_the_handle_immediately_without_retaining_a_borrow() -> TestResult {
     let mut app = App::<()>::new();
     let mut slot = Some(Text::new(&mut app, "Old"));
-    let builder = text(&mut app, "New").capture(&mut slot);
+    let builder = text(&mut app, "New").store_element_ref(&mut slot);
     let captured = slot.take().ok_or("capture did not store a handle")?;
     check(captured.text(&app) == "New", "capture did not replace the old handle")?;
     let built = builder.text(&mut app, "Updated").build();
@@ -315,7 +318,7 @@ fn build_listeners(app: &mut App<ListenerState>, state: &mut ListenerState) -> W
                         .height(app, px(40))
                         .font_size(app, 18.0)
                         .on_text_input_changed(app, input_changed)
-                        .capture(&mut state.input),
+                        .store_element_ref(&mut state.input),
                     app,
                 )
                 .push(
@@ -324,7 +327,7 @@ fn build_listeners(app: &mut App<ListenerState>, state: &mut ListenerState) -> W
                         .height(app, px(30))
                         .value(app, 0.0)
                         .on_slider_value_changed(app, slider_changed)
-                        .capture(&mut state.slider),
+                        .store_element_ref(&mut state.slider),
                     app,
                 )
                 .push(
@@ -332,7 +335,7 @@ fn build_listeners(app: &mut App<ListenerState>, state: &mut ListenerState) -> W
                         .width(app, px(200))
                         .height(app, px(40))
                         .on_click(app, button_clicked)
-                        .capture(&mut state.button)
+                        .store_element_ref(&mut state.button)
                         .push(text(app, "Apply"), app),
                     app,
                 ),

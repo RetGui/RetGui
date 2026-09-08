@@ -15,7 +15,7 @@ pub trait ElementBuilder: Sized {
         self
     }
 
-    fn capture(self, target: &mut Option<Self::Element>) -> Self {
+    fn store_element_ref(self, target: &mut Option<Self::Element>) -> Self {
         *target = Some(self.element());
         self
     }
