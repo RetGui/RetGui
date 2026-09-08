@@ -1,12 +1,20 @@
-use retgui::elements::{Container, Element, Text};
+use retgui::elements::{Button, Container, Element, Text};
 use retgui::events::Event;
 use retgui::style::{AlignItems, FlexDirection, JustifyContent};
 use retgui::{App, Color, RetGuiOptions, pct, px, retgui_main, rgb};
 
-use retgui_builder::{ElementBuilder, TextBuilder, container, text, window};
+use retgui_builder::{ElementBuilder, TextBuilder, button, container, text, window};
 
-fn create_button(app: &mut App<i64>, label: &str, base_color: Color, delta: i64, count_text: Text) -> Container {
-    let button = container(app)
+fn create_button(
+    app: &mut App<i64>,
+    label: &str,
+    accessibility_name: &str,
+    base_color: Color,
+    delta: i64,
+    count_text: Text,
+) -> Button {
+    let button = button(app)
+        .accessibility_name(app, accessibility_name)
         .border_radius_all(app, (8.0, 8.0))
         .padding(app, px(12), px(30), px(12), px(30))
         .justify_content(app, JustifyContent::Center)
@@ -43,8 +51,14 @@ fn counter(app: &mut App<i64>) -> Container {
         .push(
             container(app)
                 .column_gap(app, px(16))
-                .push(create_button(app, "−", rgb(244, 63, 94), -1, count_text), app)
-                .push(create_button(app, "+", rgb(16, 185, 129), 1, count_text), app),
+                .push(
+                    create_button(app, "−", "Decrement", rgb(244, 63, 94), -1, count_text),
+                    app,
+                )
+                .push(
+                    create_button(app, "+", "Increment", rgb(16, 185, 129), 1, count_text),
+                    app,
+                ),
             app,
         )
         .build()
