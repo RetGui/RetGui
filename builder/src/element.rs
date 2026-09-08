@@ -1,15 +1,131 @@
 use retgui::elements::Element;
-use retgui::events::PointerId;
+use retgui::events::{CheckboxToggledEvent, ClickEvent, CustomEvent, FocusEvent, KeyboardEvent, PointerButtonEvent, PointerCaptureEvent, PointerEnterEvent, PointerId, PointerLeaveEvent, PointerMovedEvent, RadioValueChangedEvent, ScrollEvent, SliderValueChangedEvent, TextInputChangedEvent, UnfocusEvent};
 use retgui::style::{AlignContent, AlignItems, AlignSelf, Animation, BoxShadow, BoxSizing, Display, FlexDirection, FlexWrap, FontFamily, FontStyle, FontWeight, JustifyContent, Overflow, Position, ScrollbarColor, TextAlign, Unit};
 use retgui::{App, Color, Gradient};
+
+use crate::{Builder, EventHandler};
 
 pub trait ElementBuilder: Sized {
     type Element: Element;
 
     fn element(&self) -> Self::Element;
 
-    fn push<S: 'static>(self, child: impl Element, app: &mut App<S>) -> Self {
-        self.element().push(app, child);
+    fn push<S: 'static, E: Element>(self, child: impl Into<Builder<E>>, app: &mut App<S>) -> Self {
+        self.element().push(app, child.into().build());
+        self
+    }
+
+    fn capture(self, target: &mut Option<Self::Element>) -> Self {
+        *target = Some(self.element());
+        self
+    }
+
+    fn on_pointer_enter<S: 'static>(self, app: &mut App<S>, handler: EventHandler<S, PointerEnterEvent>) -> Self {
+        self.element().add_pointer_enter_listener(app, handler);
+        self
+    }
+
+    fn on_pointer_leave<S: 'static>(self, app: &mut App<S>, handler: EventHandler<S, PointerLeaveEvent>) -> Self {
+        self.element().add_pointer_leave_listener(app, handler);
+        self
+    }
+
+    fn on_radio_value_changed<S: 'static>(
+        self,
+        app: &mut App<S>,
+        handler: EventHandler<S, RadioValueChangedEvent>,
+    ) -> Self {
+        self.element().add_radio_value_changed_listener(app, handler);
+        self
+    }
+
+    fn on_checkbox_toggled<S: 'static>(self, app: &mut App<S>, handler: EventHandler<S, CheckboxToggledEvent>) -> Self {
+        self.element().add_checkbox_toggled_listener(app, handler);
+        self
+    }
+
+    fn on_text_input_changed<S: 'static>(
+        self,
+        app: &mut App<S>,
+        handler: EventHandler<S, TextInputChangedEvent>,
+    ) -> Self {
+        self.element().add_text_input_changed_listener(app, handler);
+        self
+    }
+
+    fn on_pointer_button_down<S: 'static>(
+        self,
+        app: &mut App<S>,
+        handler: EventHandler<S, PointerButtonEvent>,
+    ) -> Self {
+        self.element().add_pointer_button_down_listener(app, handler);
+        self
+    }
+
+    fn on_pointer_moved<S: 'static>(self, app: &mut App<S>, handler: EventHandler<S, PointerMovedEvent>) -> Self {
+        self.element().add_pointer_moved_listener(app, handler);
+        self
+    }
+
+    fn on_pointer_button_up<S: 'static>(self, app: &mut App<S>, handler: EventHandler<S, PointerButtonEvent>) -> Self {
+        self.element().add_pointer_button_up_listener(app, handler);
+        self
+    }
+
+    fn on_click<S: 'static>(self, app: &mut App<S>, handler: EventHandler<S, ClickEvent>) -> Self {
+        self.element().add_click_listener(app, handler);
+        self
+    }
+
+    fn on_custom_event<S: 'static>(self, app: &mut App<S>, handler: EventHandler<S, CustomEvent>) -> Self {
+        self.element().add_custom_event_listener(app, handler);
+        self
+    }
+
+    fn on_focus<S: 'static>(self, app: &mut App<S>, handler: EventHandler<S, FocusEvent>) -> Self {
+        self.element().add_focus_listener(app, handler);
+        self
+    }
+
+    fn on_unfocus<S: 'static>(self, app: &mut App<S>, handler: EventHandler<S, UnfocusEvent>) -> Self {
+        self.element().add_unfocus_listener(app, handler);
+        self
+    }
+
+    fn on_lost_pointer_capture<S: 'static>(
+        self,
+        app: &mut App<S>,
+        handler: EventHandler<S, PointerCaptureEvent>,
+    ) -> Self {
+        self.element().add_lost_pointer_capture_listener(app, handler);
+        self
+    }
+
+    fn on_got_pointer_capture<S: 'static>(
+        self,
+        app: &mut App<S>,
+        handler: EventHandler<S, PointerCaptureEvent>,
+    ) -> Self {
+        self.element().add_got_pointer_capture_listener(app, handler);
+        self
+    }
+
+    fn on_keyboard_input<S: 'static>(self, app: &mut App<S>, handler: EventHandler<S, KeyboardEvent>) -> Self {
+        self.element().add_keyboard_input_listener(app, handler);
+        self
+    }
+
+    fn on_slider_value_changed<S: 'static>(
+        self,
+        app: &mut App<S>,
+        handler: EventHandler<S, SliderValueChangedEvent>,
+    ) -> Self {
+        self.element().add_slider_value_changed_listener(app, handler);
+        self
+    }
+
+    fn on_scroll<S: 'static>(self, app: &mut App<S>, handler: EventHandler<S, ScrollEvent>) -> Self {
+        self.element().add_scroll_listener(app, handler);
         self
     }
 

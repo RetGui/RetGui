@@ -9,6 +9,7 @@ repository = "https://github.com/RetGui/retgui"
 [features]
 default = []
 audio = ["retgui/audio"]
+code_highlighting = ["retgui/code_highlighting"]
 
 [dependencies]
 retgui = { path = "../retgui", version = "0.1.1", default-features = false }

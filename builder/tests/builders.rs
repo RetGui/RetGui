@@ -1,7 +1,10 @@
-use retgui::elements::{Container, DynElement, Element, Image, Radio, RadioGroup, Slider, SliderDirection, Text, TextInput, TinyVg};
-use retgui::style::TextStyleProperty;
+use retgui::drivers::headless::{self, HeadlessApp};
+use retgui::elements::{Button, Container, DynElement, Element, Image, Radio, RadioGroup, Slider, SliderDirection, Text, TextInput, TinyVg, Window};
+use retgui::events::{ClickEvent, Event, SliderValueChangedEvent, TextInputChangedEvent};
+use retgui::geometry::Size;
+use retgui::style::{FlexDirection, TextStyleProperty};
 use retgui::text::RangedStyles;
-use retgui::{App, ResourceId, px};
+use retgui::{App, RendererType, ResourceId, px};
 use retgui_builder::Builder;
 use retgui_builder::prelude::*;
 use smol_str::SmolStr;
@@ -189,26 +192,22 @@ fn custom_elements_support_generic_and_downstream_extension_traits() -> TestResu
 #[test]
 fn nested_pushes_preserve_child_order_and_parent_relationships() -> TestResult {
     let mut app = App::<usize>::new();
-    let root = Container::new(&mut app)
-        .builder()
+    let mut title = None;
+    let root = container(&mut app)
         .id(&mut app, "root")
         .push(
-            Container::new(&mut app)
-                .builder()
+            container(&mut app)
                 .id(&mut app, "section")
                 .push(
-                    Text::new(&mut app, "Title").builder().id(&mut app, "title").build(),
+                    text(&mut app, "Title").id(&mut app, "title").capture(&mut title),
                     &mut app,
                 )
                 .push(
-                    TextInput::new(&mut app, "Input")
-                        .builder()
+                    text_input(&mut app, "Input")
                         .multiline(&mut app, true)
-                        .id(&mut app, "input")
-                        .build(),
+                        .id(&mut app, "input"),
                     &mut app,
-                )
-                .build(),
+                ),
             &mut app,
         )
         .push(
@@ -238,6 +237,10 @@ fn nested_pushes_preserve_child_order_and_parent_relationships() -> TestResult {
     let grandchildren = children[0].children(&app);
     check(grandchildren.len() == 2, "nested child count is incorrect")?;
     check(
+        title.ok_or("title was not captured")?.as_dyn_element() == grandchildren[0],
+        "captured handle differs from attached child",
+    )?;
+    check(
         grandchildren[0].id(&app).as_deref() == Some("title"),
         "nested first child is incorrect",
     )?;
@@ -252,4 +255,148 @@ fn nested_pushes_preserve_child_order_and_parent_relationships() -> TestResult {
         )?;
     }
     Ok(())
+}
+
+#[test]
+fn capture_stores_the_handle_immediately_without_retaining_a_borrow() -> TestResult {
+    let mut app = App::<()>::new();
+    let mut slot = Some(Text::new(&mut app, "Old"));
+    let builder = text(&mut app, "New").capture(&mut slot);
+    let captured = slot.take().ok_or("capture did not store a handle")?;
+    check(captured.text(&app) == "New", "capture did not replace the old handle")?;
+    let built = builder.text(&mut app, "Updated").build();
+    check(
+        captured.as_dyn_element() == built.as_dyn_element(),
+        "capture changed the handle",
+    )?;
+    check(
+        captured.text(&app) == "Updated",
+        "captured handle does not see later setters",
+    )
+}
+
+struct ListenerState {
+    input: Option<TextInput>,
+    slider: Option<Slider>,
+    button: Option<Button>,
+    text: String,
+    value: f64,
+    clicks: usize,
+    targets: Vec<DynElement>,
+}
+
+fn input_changed(event: &mut TextInputChangedEvent, _app: &mut App<ListenerState>, state: &mut ListenerState) {
+    state.text = event.value.clone();
+    state.targets.push(event.target());
+}
+
+fn slider_changed(event: &mut SliderValueChangedEvent, _app: &mut App<ListenerState>, state: &mut ListenerState) {
+    state.value = event.value;
+    state.targets.push(event.target());
+}
+
+fn button_clicked(event: &mut ClickEvent, _app: &mut App<ListenerState>, state: &mut ListenerState) {
+    state.clicks += 1;
+    state.targets.push(event.target());
+}
+
+fn build_listeners(app: &mut App<ListenerState>, state: &mut ListenerState) -> Window {
+    Window::new_with_renderer(app, "Listeners", RendererType::Blank)
+        .builder()
+        .width(app, px(320))
+        .height(app, px(240))
+        .push(
+            container(app)
+                .flex_direction(app, FlexDirection::Column)
+                .row_gap(app, px(16))
+                .push(
+                    text_input(app, "Before")
+                        .width(app, px(200))
+                        .height(app, px(40))
+                        .font_size(app, 18.0)
+                        .on_text_input_changed(app, input_changed)
+                        .capture(&mut state.input),
+                    app,
+                )
+                .push(
+                    slider(app, 20.0)
+                        .width(app, px(200))
+                        .height(app, px(30))
+                        .value(app, 0.0)
+                        .on_slider_value_changed(app, slider_changed)
+                        .capture(&mut state.slider),
+                    app,
+                )
+                .push(
+                    button(app)
+                        .width(app, px(200))
+                        .height(app, px(40))
+                        .on_click(app, button_clicked)
+                        .capture(&mut state.button)
+                        .push(text(app, "Apply"), app),
+                    app,
+                ),
+            app,
+        )
+        .build()
+}
+
+fn check_listeners(test: &mut HeadlessApp<ListenerState>, window: Window) {
+    test.open(&window, Size::new(320.0, 240.0));
+    let input = test.state().input.expect("input was not captured");
+    let slider = test.state().slider.expect("slider was not captured");
+    let button = test.state().button.expect("button was not captured");
+
+    input.focus(test.app_mut());
+    test.type_text(&window, "After");
+    check(test.state().text.contains("After"), "text listener was not called").expect("text input event failed");
+    check(
+        test.state().text == input.text(test.app()),
+        "text event value differs from input",
+    )
+    .expect("text value failed");
+    check(
+        test.state().targets.contains(&input.as_dyn_element()),
+        "input target is incorrect",
+    )
+    .expect("input target failed");
+
+    test.click(&slider);
+    check(test.state().value > 0.0, "slider listener was not called").expect("slider event failed");
+    check(
+        test.state().value == slider.value(test.app()),
+        "slider event value differs from slider",
+    )
+    .expect("slider value failed");
+    check(
+        test.state().targets.contains(&slider.as_dyn_element()),
+        "slider target is incorrect",
+    )
+    .expect("slider target failed");
+
+    test.click(&button);
+    check(test.state().clicks == 1, "click listener was not called once").expect("click event failed");
+    check(
+        test.state().targets.contains(&button.as_dyn_element()),
+        "button target is incorrect",
+    )
+    .expect("button target failed");
+}
+
+#[test]
+fn named_listeners_receive_events_from_nested_elements() {
+    headless::run(
+        "builder_listeners",
+        ListenerState {
+            input: None,
+            slider: None,
+            button: None,
+            text: String::new(),
+            value: 0.0,
+            clicks: 0,
+            targets: Vec::new(),
+        },
+        build_listeners,
+        check_listeners,
+    );
 }
