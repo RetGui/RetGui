@@ -563,7 +563,7 @@ impl DropdownElement {
         let handled = match keyboard_event.code {
             KeyCode::Enter | KeyCode::NumpadEnter | KeyCode::Space if !keyboard_event.repeat => {
                 if self.is_floating_window_hidden {
-                    self.open_menu(event_queue);
+                    self.open_menu(elements, event_queue);
                 } else {
                     if let Some(index) = self.currently_hovered_element.filter(|index| *index < item_count) {
                         self.set_selected_element(elements, gummy_tree, access_tree, by_internal_id, index);
@@ -831,18 +831,21 @@ impl DropdownElement {
         pointer_id: &PointerId,
     ) {
         if self.is_floating_window_hidden {
-            self.open_menu(event_queue);
+            self.open_menu(elements, event_queue);
         } else {
             self.close_menu(event_queue);
             self.release_pointer_capture(elements, *pointer_id);
         }
     }
 
-    fn open_menu(&mut self, event_queue: &mut VecDeque<EventKind>) {
+    fn open_menu(&mut self, elements: &RetainedElements, event_queue: &mut VecDeque<EventKind>) {
         self.is_floating_window_hidden = false;
         self.currently_hovered_element = self
             .selected_element_index
             .or_else(|| (!self.element_data.children.is_empty()).then_some(0));
+        if let Some(index) = self.currently_hovered_element {
+            self.scroll_item_into_view(elements, index);
+        }
         self.queue_dropdown_toggled(event_queue, true);
         self.request_window_redraw();
     }
