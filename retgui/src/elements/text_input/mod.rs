@@ -413,9 +413,14 @@ impl ElementInternals for TextInputElement {
             _ => {}
         }
 
+        let editor_changed = self.state.editor().generation() != editor_generation;
+        if self.is_focused() && editor_changed && self.state.editor().raw_selection().is_collapsed() {
+            self.start_cursor_blink(pending_animation_updates);
+        }
+
         if self.state.is_layout_dirty {
             self.mark_dirty(gummy_tree);
-        } else if self.state.editor().generation() != editor_generation {
+        } else if editor_changed {
             if let Some(node) = self.element_data.layout.gummy_node_id {
                 gummy_tree.request_apply_layout(node);
             }
