@@ -33,7 +33,9 @@ pub(crate) use crate::elements::text::TextElement;
 pub use crate::elements::text_input::TextInput;
 pub(crate) use crate::elements::text_input::TextInputElement;
 pub use crate::elements::tinyvg::TinyVg;
-pub use crate::elements::traits::{AnimationInstant, AnimationSchedule, Element, ElementInternals, HasElementData, clone_element};
+pub use crate::elements::traits::{
+    AnimationInstant, AnimationSchedule, Element, ElementInternals, HasElementData, clone_element,
+};
 pub(crate) use crate::elements::traits::{set_focus_outline_visible, subtree_clone_pairs};
 pub use crate::elements::window::Window;
 pub(crate) use crate::elements::window::WindowElement;

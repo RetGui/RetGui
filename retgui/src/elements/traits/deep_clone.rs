@@ -4,7 +4,10 @@ use rustc_hash::FxHashMap;
 
 use crate::elements::element_id::create_unique_element_id;
 use crate::elements::radiogroup::RadioGroupElement;
-use crate::elements::{DropdownElement, DynElement, ElementIds, ElementInternals, Radio, RadioElement, RadioGroup, RetGuiAccessTree, RetainedElements};
+use crate::elements::{
+    DropdownElement, DynElement, ElementIds, ElementInternals, Radio, RadioElement, RadioGroup, RetGuiAccessTree,
+    RetainedElements,
+};
 use crate::layout::GummyTree;
 
 pub fn clone_element<T, F>(

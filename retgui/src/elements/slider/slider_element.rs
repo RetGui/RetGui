@@ -17,7 +17,9 @@ use winit::keyboard::KeyCode;
 
 use crate::elements::element_data::ElementData;
 use crate::elements::traits::clone_element;
-use crate::elements::{DynElement, Element, ElementIds, ElementInternals, HasElementData, RetGuiAccessTree, RetainedElements};
+use crate::elements::{
+    DynElement, Element, ElementIds, ElementInternals, HasElementData, RetGuiAccessTree, RetainedElements,
+};
 use crate::events::{Event, EventKind, SliderValueChangedEvent};
 use crate::layout::GummyTree;
 use crate::layout::layout::{CssComputedBorder, draw_borders_generic};

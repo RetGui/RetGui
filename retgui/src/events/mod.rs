@@ -3,8 +3,13 @@
 //! Import [`Event`] to use the behavior shared by every concrete event type,
 //! such as [`Event::stop_propagation`] and [`Event::prevent_default`].
 
-pub use winit::event::{ElementState, Ime, Modifiers, MouseButton, MouseButton as PointerButton, MouseScrollDelta as ScrollDelta, PointerKind as PointerId};
-pub use winit::keyboard::{Key, KeyCode as Code, KeyLocation as Location, ModifiersState as KeyboardModifiers, NamedKey};
+pub use winit::event::{
+    ElementState, Ime, Modifiers, MouseButton, MouseButton as PointerButton, MouseScrollDelta as ScrollDelta,
+    PointerKind as PointerId,
+};
+pub use winit::keyboard::{
+    Key, KeyCode as Code, KeyLocation as Location, ModifiersState as KeyboardModifiers, NamedKey,
+};
 
 pub use crate::events::mouse_wheel::MouseWheel;
 pub(crate) use event_dispatch::EventDispatcher;
@@ -969,7 +974,9 @@ mod tests {
 
     use super::event_dispatch::dispatch_event;
     use super::helpers::freeze_target_list;
-    use super::{ClickEvent, ClickTrigger, DynElement, Event, EventCallbackKind, EventKind, EventListenerOptions, FocusEvent};
+    use super::{
+        ClickEvent, ClickTrigger, DynElement, Event, EventCallbackKind, EventKind, EventListenerOptions, FocusEvent,
+    };
     use crate::App;
     use crate::elements::{Container, Element, Text};
 

@@ -12,7 +12,9 @@ use winit::keyboard::KeyCode;
 
 use crate::elements::element_data::ElementData;
 use crate::elements::{DynElement, ElementInternals, RetainedElements};
-use crate::events::{Event, EventKind, PointerButton, PointerId, PointerType, ScrollDelta, ScrollEvent as RetGuiScrollEvent};
+use crate::events::{
+    Event, EventKind, PointerButton, PointerId, PointerType, ScrollDelta, ScrollEvent as RetGuiScrollEvent,
+};
 use crate::layout::layout::{CssComputedBorder, Layout, draw_borders_generic};
 use crate::style::{Overflow, Style};
 

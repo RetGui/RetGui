@@ -11,8 +11,16 @@ use smol_str::SmolStr;
 use crate::elements::internal_helpers::push_child_to_element;
 use crate::elements::scrollable::{ScrollOptions, ScrollState};
 use crate::elements::{DynElement, ElementInternals, RetainedElements};
-use crate::events::{CheckboxToggledEvent, ClickEvent, CustomEvent, EventCallbackKind, EventKind, EventListenerOptions, FocusEvent, KeyboardEvent, PointerButtonEvent, PointerCaptureEvent, PointerEnterEvent, PointerId, PointerLeaveEvent, PointerMovedEvent, RadioValueChangedEvent, ScrollEvent, SliderValueChangedEvent, TextInputChangedEvent, UnfocusEvent};
-use crate::style::{AlignContent, AlignItems, AlignSelf, Animation, BoxShadow, BoxSizing, Display, FlexDirection, FlexWrap, FontFamily, FontStyle, FontWeight, JustifyContent, Overflow, Position, ScrollbarColor, TextAlign, Underline, Unit};
+use crate::events::{
+    CheckboxToggledEvent, ClickEvent, CustomEvent, EventCallbackKind, EventKind, EventListenerOptions, FocusEvent,
+    KeyboardEvent, PointerButtonEvent, PointerCaptureEvent, PointerEnterEvent, PointerId, PointerLeaveEvent,
+    PointerMovedEvent, RadioValueChangedEvent, ScrollEvent, SliderValueChangedEvent, TextInputChangedEvent,
+    UnfocusEvent,
+};
+use crate::style::{
+    AlignContent, AlignItems, AlignSelf, Animation, BoxShadow, BoxSizing, Display, FlexDirection, FlexWrap, FontFamily,
+    FontStyle, FontWeight, JustifyContent, Overflow, Position, ScrollbarColor, TextAlign, Underline, Unit,
+};
 use crate::{App, RetGuiError};
 
 fn with_element<R>(

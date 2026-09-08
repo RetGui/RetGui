@@ -1,12 +1,18 @@
 use retgui::drivers::headless::{self, HeadlessApp};
-use retgui::elements::{Button, Container, DynElement, Element, Image, Radio, RadioGroup, Slider, SliderDirection, Text, TextInput, TinyVg, Window};
+use retgui::elements::{
+    Button, Container, DynElement, Element, Image, Radio, RadioGroup, Slider, SliderDirection, Text, TextInput, TinyVg,
+    Window,
+};
 use retgui::events::{ClickEvent, Event, SliderValueChangedEvent, TextInputChangedEvent};
 use retgui::geometry::Size;
 use retgui::style::{FlexDirection, TextStyleProperty};
 use retgui::text::RangedStyles;
 use retgui::{App, RendererType, ResourceId, px};
 
-use retgui_builder::{Builder, ElementBuilder, ImageBuilder, IntoBuilder, RadioGroupBuilder, SliderBuilder, TextBuilder, TextInputBuilder, TinyVgBuilder, button, container, slider, text, text_input};
+use retgui_builder::{
+    Builder, ElementBuilder, ImageBuilder, IntoBuilder, RadioGroupBuilder, SliderBuilder, TextBuilder,
+    TextInputBuilder, TinyVgBuilder, button, container, slider, text, text_input,
+};
 
 use smol_str::SmolStr;
 

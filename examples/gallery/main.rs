@@ -5,11 +5,20 @@ use std::time::Duration;
 
 #[cfg(feature = "audio")]
 use retgui::elements::Audio;
-use retgui::elements::{Button, Calendar, Checkbox, CheckboxGroup, Container, Dropdown, DynElement, Element, Image, Radio, RadioGroup, Slider, SliderDirection, Text, TextInput, TinyVg, Window};
+use retgui::elements::{
+    Button, Calendar, Checkbox, CheckboxGroup, Container, Dropdown, DynElement, Element, Image, Radio, RadioGroup,
+    Slider, SliderDirection, Text, TextInput, TinyVg, Window,
+};
 use retgui::events::Event;
 use retgui::geometry::Point;
-use retgui::style::{AlignItems, Animation, BoxShadow, Display, FlexDirection, FontFamily, FontStyle, FontWeight, JustifyContent, KeyFrame, Overflow, Position, Repeat, StyleVariant, TextAlign, TimingFunction};
-use retgui::{App, Brush, Color, ColorStop, Gradient, ResourceId, ResourceType, RetGuiOptions, auto, pct, px, retgui_main, rgb, rgba};
+use retgui::style::{
+    AlignItems, Animation, BoxShadow, Display, FlexDirection, FontFamily, FontStyle, FontWeight, JustifyContent,
+    KeyFrame, Overflow, Position, Repeat, StyleVariant, TextAlign, TimingFunction,
+};
+use retgui::{
+    App, Brush, Color, ColorStop, Gradient, ResourceId, ResourceType, RetGuiOptions, auto, pct, px, retgui_main, rgb,
+    rgba,
+};
 
 use serde::Deserialize;
 

@@ -9,7 +9,10 @@ use retgui_primitives::geometry::{Affine, BezPath, Circle, Rectangle, Shape};
 
 use retgui_resource_manager::{ResourceId, ResourceManager};
 
-use crate::render_command::{BoxShadowCmd, DrawBoxShadow, DrawCircleCmd, DrawCircleOutlineCmd, DrawImageCmd, DrawRectCmd, DrawRectOutlineCmd, DrawTextCmd, FillBezPathCmd, PushLayerCmd, StrokeBezPathCmd};
+use crate::render_command::{
+    BoxShadowCmd, DrawBoxShadow, DrawCircleCmd, DrawCircleOutlineCmd, DrawImageCmd, DrawRectCmd, DrawRectOutlineCmd,
+    DrawTextCmd, FillBezPathCmd, PushLayerCmd, StrokeBezPathCmd,
+};
 use crate::render_list::RenderList;
 use crate::sort_commands::sort_render_list_internal;
 use crate::text_renderer_data::{TextData, TextScroll};

@@ -14,7 +14,9 @@ use crate::elements::codeeditor::highlighter::compute_code_editor_style;
 use crate::elements::element_data::ElementData;
 use crate::elements::internal_helpers::{apply_generic_container_layout, draw_generic_container};
 use crate::elements::traits::clone_element;
-use crate::elements::{DynElement, Element, ElementIds, ElementInternals, RetGuiAccessTree, RetainedElements, TextInput, TextInputElement};
+use crate::elements::{
+    DynElement, Element, ElementIds, ElementInternals, RetGuiAccessTree, RetainedElements, TextInput, TextInputElement,
+};
 use crate::events::EventKind;
 use crate::layout::GummyTree;
 use crate::text::text_context::TextContext;

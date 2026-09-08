@@ -41,8 +41,14 @@ use crate::accessibility::RetGuiAccessTree;
 use crate::elements::audio::AudioContext;
 use crate::elements::gui_actions::GuiActionQueue;
 use crate::elements::internal_helpers::queue_animation_update;
-use crate::elements::{AnimationSchedule, DynElement, ElementData, ElementInternals, RetainedElements, Window, WindowElement, scrollable, set_focus_outline_visible};
-use crate::events::{EventCallback, EventCallbackKind, EventDispatcher, EventKind, EventListenerOptions, ImeEvent, KeyboardEvent, PointerButtonEvent, PointerInfo, PointerMovedEvent, PointerScrollEvent, PointerState};
+use crate::elements::{
+    AnimationSchedule, DynElement, ElementData, ElementInternals, RetainedElements, Window, WindowElement, scrollable,
+    set_focus_outline_visible,
+};
+use crate::events::{
+    EventCallback, EventCallbackKind, EventDispatcher, EventKind, EventListenerOptions, ImeEvent, KeyboardEvent,
+    PointerButtonEvent, PointerInfo, PointerMovedEvent, PointerScrollEvent, PointerState,
+};
 use crate::layout::GummyTree;
 use crate::text::text_context::{TextContext, create_font_context};
 use crate::window_manager::WindowManager;

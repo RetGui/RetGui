@@ -46,7 +46,9 @@ use crate::app::App;
 use crate::app::CreatedRenderer;
 use crate::elements::element_data::ElementData;
 use crate::elements::internal_helpers::{apply_generic_container_layout, draw_generic_container};
-use crate::elements::{DynElement, Element, ElementIds, ElementInternals, HasElementData, RetainedElements, scrollable};
+use crate::elements::{
+    DynElement, Element, ElementIds, ElementInternals, HasElementData, RetainedElements, scrollable,
+};
 use crate::events::pointer_capture::PointerCapture;
 use crate::events::{EventKind, KeyboardEvent, PointerScrollEvent, PointerType};
 use crate::layout::GummyTree;

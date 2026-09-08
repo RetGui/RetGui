@@ -25,7 +25,10 @@ use self::image::{draw_image, upload_image};
 use self::text::draw_text;
 use crate::RenderCommand;
 use crate::helpers::{brush_to_paint, rgba_to_encoded_u32};
-use crate::render_command::{BoxShadowCmd, DrawCircleCmd, DrawCircleOutlineCmd, DrawRectCmd, DrawRectOutlineCmd, FillBezPathCmd, PushLayerCmd, StrokeBezPathCmd};
+use crate::render_command::{
+    BoxShadowCmd, DrawCircleCmd, DrawCircleOutlineCmd, DrawRectCmd, DrawRectOutlineCmd, FillBezPathCmd, PushLayerCmd,
+    StrokeBezPathCmd,
+};
 use crate::render_list::RenderList;
 use crate::renderer::Renderer;
 use crate::resource_mapper::{RendererResourceId, ResourceMapper};

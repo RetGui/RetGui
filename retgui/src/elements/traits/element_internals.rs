@@ -13,11 +13,17 @@ use retgui_renderer::renderer::Renderer;
 use retgui_resource_manager::ResourceManager;
 
 use crate::elements::scrollable::{ScrollState, draw_scrollbar};
-use crate::elements::{DynElement, ElementIds, HasElementData, RetGuiAccessTree, RetainedElements, ScrollOptions, WindowElement};
+use crate::elements::{
+    DynElement, ElementIds, HasElementData, RetGuiAccessTree, RetainedElements, ScrollOptions, WindowElement,
+};
 use crate::events::pointer_capture::PointerCapture;
 use crate::events::{EventKind, FocusEvent, PointerId, UnfocusEvent};
 use crate::layout::GummyTree;
-use crate::style::{AlignContent, AlignItems, AlignSelf, Animation, BoxShadow, BoxSizing, Display, FlexDirection, FlexWrap, FontFamily, FontStyle, FontWeight, JustifyContent, Overflow, Position, ScrollbarColor, Style, StyleVariant, TextAlign, Underline, Unit};
+use crate::style::{
+    AlignContent, AlignItems, AlignSelf, Animation, BoxShadow, BoxSizing, Display, FlexDirection, FlexWrap, FontFamily,
+    FontStyle, FontWeight, JustifyContent, Overflow, Position, ScrollbarColor, Style, StyleVariant, TextAlign,
+    Underline, Unit,
+};
 use crate::text::text_context::TextContext;
 use crate::{Color, RetGuiError};
 

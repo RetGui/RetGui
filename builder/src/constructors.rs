@@ -5,7 +5,10 @@ use std::path::Path;
 use retgui::elements::Audio;
 #[cfg(feature = "code_highlighting")]
 use retgui::elements::CodeEditor;
-use retgui::elements::{Button, Calendar, Checkbox, CheckboxGroup, Container, Dropdown, Image, Radio, RadioGroup, Slider, Text, TextInput, TinyVg, Window};
+use retgui::elements::{
+    Button, Calendar, Checkbox, CheckboxGroup, Container, Dropdown, Image, Radio, RadioGroup, Slider, Text, TextInput,
+    TinyVg, Window,
+};
 use retgui::{App, ResourceId};
 
 use crate::Builder;

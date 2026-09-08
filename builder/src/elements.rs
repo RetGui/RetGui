@@ -2,7 +2,9 @@ use std::sync::Arc;
 
 #[cfg(feature = "audio")]
 use retgui::elements::Audio;
-use retgui::elements::{Calendar, Dropdown, Image, Radio, RadioGroup, Slider, SliderDirection, Text, TextInput, TinyVg, Window};
+use retgui::elements::{
+    Calendar, Dropdown, Image, Radio, RadioGroup, Slider, SliderDirection, Text, TextInput, TinyVg, Window,
+};
 use retgui::text::RangedStyles;
 use retgui::winit::window::Window as WinitWindow;
 use retgui::{App, Brush, Color, Gradient, ResourceId};

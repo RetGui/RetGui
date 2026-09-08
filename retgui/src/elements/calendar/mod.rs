@@ -4,16 +4,24 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 
 use retgui_calendar::sys_locale::get_locale_or_default;
-use retgui_calendar::{DateAddOptions, DateDuration, Locale, Month, Weekday, current_calendar_start, current_month, day_abbreviation, first_day_of_week, format_date_day_number, month_name, year_name};
+use retgui_calendar::{
+    DateAddOptions, DateDuration, Locale, Month, Weekday, current_calendar_start, current_month, day_abbreviation,
+    first_day_of_week, format_date_day_number, month_name, year_name,
+};
 
 use retgui_renderer::renderer::Renderer;
 
 use retgui_resource_manager::ResourceManager;
 
 use crate::elements::element_data::ElementData;
-use crate::elements::internal_helpers::{apply_generic_container_layout, draw_generic_container, push_child_to_element};
+use crate::elements::internal_helpers::{
+    apply_generic_container_layout, draw_generic_container, push_child_to_element,
+};
 use crate::elements::traits::clone_element;
-use crate::elements::{Container, ContainerElement, Dropdown, DropdownElement, DynElement, Element, ElementIds, ElementInternals, RetGuiAccessTree, RetainedElements, Text, TextElement};
+use crate::elements::{
+    Container, ContainerElement, Dropdown, DropdownElement, DynElement, Element, ElementIds, ElementInternals,
+    RetGuiAccessTree, RetainedElements, Text, TextElement,
+};
 use crate::events::{Event, EventKind};
 use crate::layout::GummyTree;
 use crate::style::{AlignItems, Display, FlexDirection, JustifyContent, Unit};

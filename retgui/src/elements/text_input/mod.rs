@@ -21,7 +21,10 @@ use crate::App;
 use crate::elements::element_data::ElementData;
 use crate::elements::text_input::text_input_state::TextInputState;
 use crate::elements::traits::clone_element;
-use crate::elements::{AnimationSchedule, DynElement, Element, ElementIds, ElementInternals, RetGuiAccessTree, RetainedElements, WindowElement, scrollable};
+use crate::elements::{
+    AnimationSchedule, DynElement, Element, ElementIds, ElementInternals, RetGuiAccessTree, RetainedElements,
+    WindowElement, scrollable,
+};
 use crate::events::{Event, EventKind};
 use crate::layout::GummyTree;
 use crate::layout::layout_context::{GummyTextInputContext, LayoutContext, TextHashKey};

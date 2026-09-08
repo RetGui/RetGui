@@ -3,7 +3,10 @@
 pub use image;
 
 pub use retgui_primitives::brush::Brush;
-pub use retgui_primitives::{Color, ColorStop, Extend, Gradient, GradientKind, HueDirection, LinearGradientData, RadialGradientData, SweepGradientData, geometry, palette};
+pub use retgui_primitives::{
+    Color, ColorStop, Extend, Gradient, GradientKind, HueDirection, LinearGradientData, RadialGradientData,
+    SweepGradientData, geometry, palette,
+};
 
 pub use retgui_renderer::RendererType;
 pub use retgui_renderer::renderer::Renderer;

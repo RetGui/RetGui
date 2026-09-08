@@ -1,6 +1,13 @@
 use retgui::elements::Element;
-use retgui::events::{CheckboxToggledEvent, ClickEvent, CustomEvent, FocusEvent, KeyboardEvent, PointerButtonEvent, PointerCaptureEvent, PointerEnterEvent, PointerId, PointerLeaveEvent, PointerMovedEvent, RadioValueChangedEvent, ScrollEvent, SliderValueChangedEvent, TextInputChangedEvent, UnfocusEvent};
-use retgui::style::{AlignContent, AlignItems, AlignSelf, Animation, BoxShadow, BoxSizing, Display, FlexDirection, FlexWrap, FontFamily, FontStyle, FontWeight, JustifyContent, Overflow, Position, ScrollbarColor, TextAlign, Unit};
+use retgui::events::{
+    CheckboxToggledEvent, ClickEvent, CustomEvent, FocusEvent, KeyboardEvent, PointerButtonEvent, PointerCaptureEvent,
+    PointerEnterEvent, PointerId, PointerLeaveEvent, PointerMovedEvent, RadioValueChangedEvent, ScrollEvent,
+    SliderValueChangedEvent, TextInputChangedEvent, UnfocusEvent,
+};
+use retgui::style::{
+    AlignContent, AlignItems, AlignSelf, Animation, BoxShadow, BoxSizing, Display, FlexDirection, FlexWrap, FontFamily,
+    FontStyle, FontWeight, JustifyContent, Overflow, Position, ScrollbarColor, TextAlign, Unit,
+};
 use retgui::{App, Color, Gradient};
 
 use crate::{Builder, EventHandler};

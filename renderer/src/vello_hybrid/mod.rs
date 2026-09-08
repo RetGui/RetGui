@@ -24,7 +24,10 @@ use winit::window::Window;
 
 use crate::RenderCommand;
 use crate::helpers::brush_to_paint;
-use crate::render_command::{BoxShadowCmd, DrawCircleCmd, DrawCircleOutlineCmd, DrawRectCmd, DrawRectOutlineCmd, FillBezPathCmd, PushLayerCmd, StrokeBezPathCmd};
+use crate::render_command::{
+    BoxShadowCmd, DrawCircleCmd, DrawCircleOutlineCmd, DrawRectCmd, DrawRectOutlineCmd, FillBezPathCmd, PushLayerCmd,
+    StrokeBezPathCmd,
+};
 use crate::render_list::RenderList;
 use crate::renderer::Renderer;
 use crate::resource_mapper::{RendererResourceId, ResourceMapper};

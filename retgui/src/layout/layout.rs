@@ -3,7 +3,9 @@ use std::cell::Cell;
 use gummy::NodeId;
 
 use retgui_primitives::geometry::borders::{BOTTOM, CssRoundedRect, LEFT, RIGHT, TOP};
-use retgui_primitives::geometry::{Affine, BezPath, Border, ElementBox, Margin, Padding, Point, Rectangle, Shape, Size, TrblRectangle, Vec2};
+use retgui_primitives::geometry::{
+    Affine, BezPath, Border, ElementBox, Margin, Padding, Point, Rectangle, Shape, Size, TrblRectangle, Vec2,
+};
 
 use retgui_renderer::Brush;
 use retgui_renderer::render_command::DrawBoxShadow;

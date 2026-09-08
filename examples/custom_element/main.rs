@@ -1,7 +1,10 @@
 use std::collections::VecDeque;
 use std::sync::Arc;
 
-use retgui::elements::{DynElement, Element, ElementData, ElementIds, ElementInternals, HasElementData, RetGuiAccessTree, RetainedElements, Text, Window, clone_element};
+use retgui::elements::{
+    DynElement, Element, ElementData, ElementIds, ElementInternals, HasElementData, RetGuiAccessTree, RetainedElements,
+    Text, Window, clone_element,
+};
 use retgui::events::EventKind;
 use retgui::layout::GummyTree;
 use retgui::style::AlignSelf;

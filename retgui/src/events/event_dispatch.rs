@@ -4,9 +4,13 @@ use retgui_primitives::geometry::Point;
 
 use crate::App;
 use crate::elements::{DynElement, WindowElement};
-use crate::events::helpers::{TargetSearchContext, call_user_event_handlers, find_target, freeze_target_list, nearest_common_ancestor};
+use crate::events::helpers::{
+    TargetSearchContext, call_user_event_handlers, find_target, freeze_target_list, nearest_common_ancestor,
+};
 use crate::events::pointer_capture::PointerCapture;
-use crate::events::{ClickEvent, ClickTrigger, Event, EventKind, PointerButton, PointerEnterEvent, PointerId, PointerLeaveEvent};
+use crate::events::{
+    ClickEvent, ClickTrigger, Event, EventKind, PointerButton, PointerEnterEvent, PointerId, PointerLeaveEvent,
+};
 
 pub(super) fn dispatch_event<S: 'static>(
     event: &mut EventKind,

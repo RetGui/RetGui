@@ -21,7 +21,9 @@ use crate::elements::element_data::ElementData;
 use crate::elements::element_id::create_unique_element_id;
 use crate::elements::internal_helpers::{apply_generic_container_layout, apply_generic_container_layout_non_dom};
 use crate::elements::traits::clone_element;
-use crate::elements::{DynElement, Element, ElementIds, ElementInternals, RetGuiAccessTree, RetainedElements, scrollable};
+use crate::elements::{
+    DynElement, Element, ElementIds, ElementInternals, RetGuiAccessTree, RetainedElements, scrollable,
+};
 use crate::events::{CheckboxToggledEvent, EventKind};
 use crate::layout::GummyTree;
 use crate::style::Unit;

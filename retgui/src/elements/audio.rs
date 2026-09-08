@@ -21,10 +21,15 @@ use retgui_resource_manager::{ResourceId, ResourceManager};
 use web_time::{Duration, Instant};
 
 use crate::elements::element_data::ElementData;
-use crate::elements::internal_helpers::{apply_generic_container_layout, draw_generic_container, push_child_to_element, queue_animation_update};
+use crate::elements::internal_helpers::{
+    apply_generic_container_layout, draw_generic_container, push_child_to_element, queue_animation_update,
+};
 use crate::elements::tinyvg::TinyVgElement;
 use crate::elements::traits::clone_element;
-use crate::elements::{AnimationSchedule, Button, ButtonElement, DynElement, Element, ElementIds, ElementInternals, RetGuiAccessTree, RetainedElements, Slider, SliderElement, Text, TextElement, TinyVg, scrollable};
+use crate::elements::{
+    AnimationSchedule, Button, ButtonElement, DynElement, Element, ElementIds, ElementInternals, RetGuiAccessTree,
+    RetainedElements, Slider, SliderElement, Text, TextElement, TinyVg, scrollable,
+};
 use crate::events::{Event, EventKind};
 use crate::layout::GummyTree;
 use crate::style::{AlignItems, Display, Unit};
