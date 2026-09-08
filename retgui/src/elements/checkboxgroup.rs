@@ -102,7 +102,7 @@ impl ElementInternals for CheckboxGroupElement {
 }
 
 impl CheckboxGroup {
-    pub fn new(app: &mut App, label: &str) -> Self {
+    pub fn new<S: 'static>(app: &mut App<S>, label: &str) -> Self {
         Self {
             inner: CheckboxGroupElement::insert(
                 &mut app.elements,

@@ -27,14 +27,14 @@ pub use crate::elements::scrollable::{ScrollOptions, ScrollState, ScrollToBox};
 #[cfg(feature = "audio")]
 pub(crate) use crate::elements::slider::SliderElement;
 pub use crate::elements::slider::{Slider, SliderDirection};
-pub use crate::elements::store::{RetainedElements, State, States};
+pub use crate::elements::store::RetainedElements;
 pub use crate::elements::text::Text;
 pub(crate) use crate::elements::text::TextElement;
 pub use crate::elements::text_input::TextInput;
 pub(crate) use crate::elements::text_input::TextInputElement;
 pub use crate::elements::tinyvg::TinyVg;
-pub(crate) use crate::elements::traits::set_focus_outline_visible;
 pub use crate::elements::traits::{AnimationInstant, AnimationSchedule, Element, ElementInternals, HasElementData, clone_element};
+pub(crate) use crate::elements::traits::{set_focus_outline_visible, subtree_clone_pairs};
 pub use crate::elements::window::Window;
 pub(crate) use crate::elements::window::WindowElement;
 

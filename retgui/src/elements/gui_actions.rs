@@ -3,10 +3,10 @@ use std::pin::Pin;
 use std::sync::{Arc, OnceLock};
 use std::task::{Context, Poll, Wake, Waker};
 
-use crate::{App, States};
+use crate::App;
 
-type GuiAction = Box<dyn FnOnce(&mut App, &mut States) + 'static>;
-type GuiFuture = Pin<Box<dyn Future<Output = GuiAction> + 'static>>;
+type GuiAction<S> = Box<dyn FnOnce(&mut App<S>, &mut S) + 'static>;
+type GuiFuture<S> = Pin<Box<dyn Future<Output = GuiAction<S>> + 'static>>;
 
 struct GuiWaker {
     callback: OnceLock<Box<dyn Fn() + Send + Sync + 'static>>,
@@ -24,12 +24,12 @@ impl Wake for GuiWaker {
     }
 }
 
-pub(crate) struct GuiActionQueue {
-    futures: Vec<GuiFuture>,
+pub(crate) struct GuiActionQueue<S: 'static> {
+    futures: Vec<GuiFuture<S>>,
     waker: Arc<GuiWaker>,
 }
 
-impl GuiActionQueue {
+impl<S: 'static> GuiActionQueue<S> {
     pub(crate) fn new() -> Self {
         Self {
             futures: Vec::new(),
@@ -43,16 +43,16 @@ impl GuiActionQueue {
     where
         F: Future<Output = O> + 'static,
         O: 'static,
-        C: FnOnce(O, &mut App, &mut States) + 'static,
+        C: FnOnce(O, &mut App<S>, &mut S) + 'static,
     {
         self.futures.push(Box::pin(async move {
             let output = future.await;
-            Box::new(move |app: &mut App, states: &mut States| on_complete(output, app, states)) as GuiAction
+            Box::new(move |app: &mut App<S>, state: &mut S| on_complete(output, app, state)) as GuiAction<S>
         }));
         self.waker.wake_by_ref();
     }
 
-    pub(crate) fn drain(&mut self) -> Vec<GuiAction> {
+    pub(crate) fn drain(&mut self) -> Vec<GuiAction<S>> {
         let mut actions = Vec::new();
         let waker = Waker::from(self.waker.clone());
         let mut context = Context::from_waker(&waker);

@@ -12,7 +12,7 @@ Morbi tincidunt porta scelerisque. Etiam sodales, leo eget molestie imperdiet, l
 
 Nunc tellus magna, varius eu ornare et, sodales hendrerit quam. Praesent nec magna finibus, elementum orci nec, facilisis nisi. Duis ligula mi, dapibus eget nibh a, posuere viverra ante. Aliquam efficitur mauris id quam faucibus, eget posuere turpis imperdiet. Nam vulputate sed urna vitae tincidunt. Nulla ligula urna, iaculis id urna sit amet, porta iaculis ligula. Maecenas volutpat odio at pretium commodo. Nullam faucibus efficitur neque, vitae elementum sem sollicitudin eu. Nullam rutrum nulla eu erat dignissim varius. ";
 
-pub fn text(app: &mut App) -> Container {
+pub fn text<S: 'static>(app: &mut App<S>) -> Container {
     let input = TextInput::new(app, LOREM_IPSUM);
     input.set_overflow_y(app, Overflow::Scroll);
     input.set_width(app, Unit::Px(600.0));
@@ -34,12 +34,11 @@ pub fn text(app: &mut App) -> Container {
 
 pub fn main() {
     let mut app = App::new();
-    let states = retgui::States::new();
     let content = text(&mut app);
     let window = Window::new(&mut app, "Text");
     window.push(&mut app, content);
     use retgui::RetGuiOptions;
 
     util::setup_logging();
-    retgui::retgui_main(app, states, RetGuiOptions::basic("text"));
+    retgui::retgui_main(app, (), RetGuiOptions::basic("text"));
 }

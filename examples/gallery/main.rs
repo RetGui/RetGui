@@ -5,17 +5,17 @@ use std::time::Duration;
 
 #[cfg(feature = "audio")]
 use retgui::elements::Audio;
-use retgui::elements::{Button, Calendar, Checkbox, CheckboxGroup, Container, Dropdown, DynElement, Element, Image, Radio, RadioGroup, Slider, SliderDirection, State, Text, TextInput, TinyVg, Window};
+use retgui::elements::{Button, Calendar, Checkbox, CheckboxGroup, Container, Dropdown, DynElement, Element, Image, Radio, RadioGroup, Slider, SliderDirection, Text, TextInput, TinyVg, Window};
 use retgui::events::Event;
 use retgui::geometry::Point;
 use retgui::style::{AlignItems, Animation, BoxShadow, Display, FlexDirection, FontFamily, FontStyle, FontWeight, JustifyContent, KeyFrame, Overflow, Position, Repeat, StyleVariant, TextAlign, TimingFunction};
-use retgui::{App, Brush, Color, ColorStop, Gradient, ResourceId, ResourceType, RetGuiOptions, States, auto, pct, px, retgui_main, rgb, rgba};
+use retgui::{App, Brush, Color, ColorStop, Gradient, ResourceId, ResourceType, RetGuiOptions, auto, pct, px, retgui_main, rgb, rgba};
 
 use serde::Deserialize;
 
 use util::setup_logging;
 
-pub fn title(app: &mut App, value: &str) -> Text {
+pub fn title(app: &mut App<GalleryState>, value: &str) -> Text {
     let text = Text::new(app, value);
     text.set_font_weight(app, FontWeight::BOLD);
     text.set_font_size(app, 20.0);
@@ -23,7 +23,7 @@ pub fn title(app: &mut App, value: &str) -> Text {
     text
 }
 
-pub fn animations(app: &mut App) -> Text {
+pub fn animations(app: &mut App<GalleryState>) -> Text {
     let gameboy_gradient = |start, end| {
         Gradient::new_linear(Point::new(start, 0.0), Point::new(end, 0.0)).color_stops(&[
             ColorStop::new(0.0, Color::from_rgb8(50, 50, 252)),
@@ -47,7 +47,7 @@ pub fn animations(app: &mut App) -> Text {
     text
 }
 
-pub fn text_input(app: &mut App) -> Container {
+pub fn text_input(app: &mut App<GalleryState>) -> Container {
     let input = TextInput::new(app, "An element for text input");
     input.set_width(app, px(200.0));
     input.set_height(app, px(200.0));
@@ -59,7 +59,7 @@ pub fn text_input(app: &mut App) -> Container {
     container
 }
 
-pub fn dropdown(app: &mut App) -> Container {
+pub fn dropdown(app: &mut App<GalleryState>) -> Container {
     let cat = Text::new(app, "Cat");
     let dog = Text::new(app, "Dog");
     let dropdown = Dropdown::new(app);
@@ -76,7 +76,7 @@ pub fn dropdown(app: &mut App) -> Container {
     container
 }
 
-pub fn text(app: &mut App) -> Container {
+pub fn text(app: &mut App<GalleryState>) -> Container {
     let normal = Text::new(app, "Normal Text with a Color");
     normal.set_color(app, Color::from_rgb8(0, 0, 255));
     let bold = Text::new(app, "Bold Text");
@@ -109,7 +109,7 @@ pub fn text(app: &mut App) -> Container {
     container
 }
 
-pub fn variable_fonts(app: &mut App) -> Container {
+pub fn variable_fonts(app: &mut App<GalleryState>) -> Container {
     let font = include_bytes!("../../assets/fonts/Roboto-VariableFont_wdth,wght.ttf");
     app.upload_resource(ResourceId::StaticBytes(font), ResourceType::Font, font.as_slice())
         .expect("gallery font must load");
@@ -149,7 +149,7 @@ pub fn variable_fonts(app: &mut App) -> Container {
     container
 }
 
-pub fn tinyvg(app: &mut App) -> Container {
+pub fn tinyvg(app: &mut App<GalleryState>) -> Container {
     let tiger = include_bytes!("tiger.tvg");
     app.upload_resource(ResourceId::StaticBytes(tiger), ResourceType::TinyVg, tiger.as_slice())
         .expect("gallery image must load");
@@ -164,7 +164,7 @@ pub fn tinyvg(app: &mut App) -> Container {
     container
 }
 
-pub fn images(app: &mut App) -> Container {
+pub fn images(app: &mut App<GalleryState>) -> Container {
     let image = Image::new(app, ResourceId::Url("https://picsum.photos/300/200".to_string()));
     image.set_width(app, px(300.0));
     image.set_height(app, px(200.0));
@@ -221,7 +221,7 @@ fn weather_description(code: u8) -> &'static str {
     }
 }
 
-pub fn async_weather(app: &mut App) -> Container {
+pub fn async_weather(app: &mut App<GalleryState>) -> Container {
     let status = Text::new(app, "Click the button for the current conditions.");
     status.set_width(app, px(280.0));
     status.set_font_size(app, 14.0);
@@ -235,7 +235,7 @@ pub fn async_weather(app: &mut App) -> Container {
     button.push(app, label);
     button.add_click_listener(app, move |event, app, _| {
         status.set_text(app, "Loading...");
-        app.spawn_local(fetch_amsterdam_weather(), move |weather, app, _states| {
+        app.spawn_local(fetch_amsterdam_weather(), move |weather, app, _state| {
             let message = match weather {
                 Ok(weather) => format!(
                     "{}\n{:.1} °C (feels like {:.1} °C)\nHumidity: {}%\nWind: {:.1} km/h\nUpdated: {}",
@@ -266,7 +266,7 @@ pub fn async_weather(app: &mut App) -> Container {
     container
 }
 
-pub fn gradient(app: &mut App) -> Container {
+pub fn gradient(app: &mut App<GalleryState>) -> Container {
     let linear = Gradient::new_linear(Point::new(0.0, 0.0), Point::new(1.0, 0.0)).color_stops(&[
         ColorStop::new(0.0, Color::from_rgb8(120, 0, 200)),
         ColorStop::new(0.45, Color::from_rgb8(35, 127, 183)),
@@ -321,7 +321,7 @@ pub fn gradient(app: &mut App) -> Container {
     container
 }
 
-pub fn box_shadows(app: &mut App) -> Container {
+pub fn box_shadows(app: &mut App<GalleryState>) -> Container {
     let border_color = rgb(0, 0, 0);
     let shadow = Container::new(app);
     shadow.set_box_shadows(
@@ -346,7 +346,7 @@ pub fn box_shadows(app: &mut App) -> Container {
     container
 }
 
-pub fn overlay(app: &mut App) -> Container {
+pub fn overlay(app: &mut App<GalleryState>) -> Container {
     let status = Text::new(app, "Click where the cards overlap");
     let overlay_label = Text::new(app, "Overlay");
     overlay_label.set_color(app, Color::WHITE);
@@ -400,7 +400,7 @@ pub fn overlay(app: &mut App) -> Container {
     container
 }
 
-pub fn multiple_windows(app: &mut App) -> Container {
+pub fn multiple_windows(app: &mut App<GalleryState>) -> Container {
     let radius = (1.0, 1.0);
     let border = Color::BLACK;
     let width = px(1.0);
@@ -426,7 +426,7 @@ pub fn multiple_windows(app: &mut App) -> Container {
     container
 }
 
-pub fn sliders(app: &mut App) -> Container {
+pub fn sliders(app: &mut App<GalleryState>) -> Container {
     let first = Slider::new(app, 20.0);
     first.set_value(app, 70.0);
     first.set_width(app, px(100.0));
@@ -456,7 +456,7 @@ pub fn sliders(app: &mut App) -> Container {
     container
 }
 
-pub fn scrollable(app: &mut App) -> Container {
+pub fn scrollable(app: &mut App<GalleryState>) -> Container {
     let start = Text::new(app, "The Start");
     let middle = Text::new(app, "The Middle");
     middle.set_margin(app, px(50.0), px(0.0), px(250.0), px(0.0));
@@ -494,7 +494,7 @@ pub fn scrollable(app: &mut App) -> Container {
     container
 }
 
-pub fn radio_buttons(app: &mut App) -> Container {
+pub fn radio_buttons(app: &mut App<GalleryState>) -> Container {
     let group = RadioGroup::new(app, "Pick a color");
     let green = Image::new(
         app,
@@ -536,7 +536,7 @@ pub fn radio_buttons(app: &mut App) -> Container {
     container
 }
 
-pub fn checkbox(app: &mut App) -> Container {
+pub fn checkbox(app: &mut App<GalleryState>) -> Container {
     let coffee_label = Text::new(app, "Coffee");
     coffee_label.set_selectable(app, false);
     let coffee = Checkbox::new(app, "coffee", true);
@@ -573,7 +573,7 @@ pub fn checkbox(app: &mut App) -> Container {
 }
 
 #[cfg(feature = "audio")]
-pub fn audio(app: &mut App) -> Audio {
+pub fn audio(app: &mut App<GalleryState>) -> Audio {
     let mut asset_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     asset_path.push("assets");
     asset_path.push("1-11. Mice on Venus.mp3");
@@ -581,7 +581,7 @@ pub fn audio(app: &mut App) -> Audio {
 }
 
 #[cfg(not(feature = "audio"))]
-pub fn audio(app: &mut App) -> Container {
+pub fn audio(app: &mut App<GalleryState>) -> Container {
     Container::new(app)
 }
 
@@ -591,7 +591,7 @@ struct GalleryExample {
 }
 
 impl GalleryExample {
-    fn new(app: &mut App, label: &'static str, child: impl Element) -> Self {
+    fn new(app: &mut App<GalleryState>, label: &'static str, child: impl Element) -> Self {
         let section = Container::new(app);
         section.set_display(app, Display::Flex);
         section.set_flex_direction(app, FlexDirection::Column);
@@ -604,7 +604,7 @@ impl GalleryExample {
         Self { label, section }
     }
 
-    fn titled(app: &mut App, label: &'static str, child: impl Element) -> Self {
+    fn titled(app: &mut App<GalleryState>, label: &'static str, child: impl Element) -> Self {
         let heading = title(app, label);
         let content = Container::new(app);
         content.set_display(app, Display::Flex);
@@ -616,27 +616,19 @@ impl GalleryExample {
     }
 }
 
-#[derive(Clone, Copy)]
-struct NavigationSelection {
-    active: State<DynElement>,
+pub struct GalleryState {
+    active: DynElement,
 }
 
-impl NavigationSelection {
-    fn new(states: &mut States, active: DynElement) -> Self {
-        Self {
-            active: states.insert(active),
-        }
-    }
-
-    fn select(&self, app: &mut App, states: &mut States, target: DynElement) {
-        let active = self.active.borrow_mut(states);
-        style_navigation_button(app, *active, false);
+impl GalleryState {
+    fn select(&mut self, app: &mut App<GalleryState>, target: DynElement) {
+        style_navigation_button(app, self.active, false);
         style_navigation_button(app, target, true);
-        *active = target;
+        self.active = target;
     }
 }
 
-fn gallery_examples(app: &mut App) -> Vec<GalleryExample> {
+fn gallery_examples(app: &mut App<GalleryState>) -> Vec<GalleryExample> {
     let animations = animations(app);
     let audio = audio(app);
     let calendar = Calendar::new(app);
@@ -687,13 +679,13 @@ fn navigation_background(selected: bool) -> Color {
     }
 }
 
-fn style_navigation_button(app: &mut App, button: impl Element, selected: bool) {
+fn style_navigation_button(app: &mut App<GalleryState>, button: impl Element, selected: bool) {
     button.set_background_color(app, navigation_background(selected));
     button.set_outline_color_all(app, retgui::palette::css::DODGER_BLUE);
     button.set_outline_width_all(app, px(if selected { 2.0 } else { 0.0 }));
 }
 
-fn navigation_button(app: &mut App, label: &str, selected: bool) -> Button {
+fn navigation_button(app: &mut App<GalleryState>, label: &str, selected: bool) -> Button {
     let label = Text::new(app, label);
     label.set_font_size(app, 15.0);
     label.set_selectable(app, false);
@@ -712,7 +704,7 @@ fn navigation_button(app: &mut App, label: &str, selected: bool) -> Button {
     button
 }
 
-fn sidebar(app: &mut App) -> Container {
+fn sidebar(app: &mut App<GalleryState>) -> Container {
     let container = Container::new(app);
     container.set_display(app, Display::Flex);
     container.set_flex_direction(app, FlexDirection::Column);
@@ -728,7 +720,7 @@ fn sidebar(app: &mut App) -> Container {
     container
 }
 
-fn content_pane(app: &mut App) -> Container {
+fn content_pane(app: &mut App<GalleryState>) -> Container {
     let container = Container::new(app);
     container.set_display(app, Display::Flex);
     container.set_flex_direction(app, FlexDirection::Column);
@@ -739,7 +731,7 @@ fn content_pane(app: &mut App) -> Container {
     container
 }
 
-fn select_example(app: &mut App, examples: &[GalleryExample], selected: usize) {
+fn select_example(app: &mut App<GalleryState>, examples: &[GalleryExample], selected: usize) {
     for (index, example) in examples.iter().enumerate() {
         example.section.set_display(
             app,
@@ -752,7 +744,7 @@ fn select_example(app: &mut App, examples: &[GalleryExample], selected: usize) {
     }
 }
 
-fn gallery(app: &mut App, states: &mut States) -> Container {
+fn gallery(app: &mut App<GalleryState>) -> (Container, GalleryState) {
     let examples = Rc::new(gallery_examples(app));
     let sidebar = sidebar(app);
     let content = content_pane(app);
@@ -761,20 +753,19 @@ fn gallery(app: &mut App, states: &mut States) -> Container {
         .enumerate()
         .map(|(index, example)| navigation_button(app, example.label, index == 0))
         .collect::<Vec<_>>();
-    let selection = NavigationSelection::new(
-        states,
-        buttons
+    let state = GalleryState {
+        active: buttons
             .first()
             .expect("the gallery must contain at least one example")
             .as_dyn_element(),
-    );
+    };
     select_example(app, &examples, 0);
 
     for (index, (example, button)) in examples.iter().zip(buttons).enumerate() {
         let examples = examples.clone();
-        button.add_click_listener(app, move |event, app, states| {
+        button.add_click_listener(app, move |event, app, state| {
             select_example(app, &examples, index);
-            selection.select(app, states, event.current_target());
+            state.select(app, event.current_target());
             event.stop_propagation();
         });
         sidebar.push(app, button);
@@ -787,19 +778,18 @@ fn gallery(app: &mut App, states: &mut States) -> Container {
     container.set_height(app, pct(100));
     container.push(app, sidebar);
     container.push(app, content);
-    container
+    (container, state)
 }
 
 pub fn main() {
     setup_logging();
     let mut app = App::new();
-    let mut states = States::new();
-    let gallery = gallery(&mut app, &mut states);
+    let (gallery, state) = gallery(&mut app);
     let window = Window::new(&mut app, "Gallery");
     window.set_display(&mut app, Display::Flex);
     window.set_overflow(&mut app, Overflow::Clip, Overflow::Clip);
     window.set_width(&mut app, pct(100));
     window.set_height(&mut app, pct(100));
     window.push(&mut app, gallery);
-    retgui_main(app, states, RetGuiOptions::basic("Gallery"));
+    retgui_main(app, state, RetGuiOptions::basic("Gallery"));
 }

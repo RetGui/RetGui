@@ -91,7 +91,7 @@ impl ElementInternals for ColorTileElement {
 }
 
 impl ColorTile {
-    fn new(app: &mut App) -> Self {
+    fn new<S: 'static>(app: &mut App<S>) -> Self {
         let inner = app.insert_element(true, |element_data| ColorTileElement {
             element_data,
             color: rgb(37, 99, 235),
@@ -101,14 +101,14 @@ impl ColorTile {
         Self { inner }
     }
 
-    fn fill_color(self, app: &mut App, color: Color) -> Self {
+    fn fill_color<S: 'static>(self, app: &mut App<S>, color: Color) -> Self {
         let tile = app.get_as_mut::<ColorTileElement>(self.inner);
         tile.color = color;
         tile.request_window_redraw();
         self
     }
 
-    fn click_count(self, app: &App) -> u32 {
+    fn click_count<S: 'static>(self, app: &App<S>) -> u32 {
         app.get_as::<ColorTileElement>(self.inner).clicks
     }
 }
@@ -117,7 +117,6 @@ fn main() {
     setup_logging();
 
     let mut app = App::new();
-    let states = retgui::States::new();
     let label = Text::new(&mut app, "Click the custom Element");
     label.set_font_size(&mut app, 20.0);
     label.set_selectable(&mut app, false);
@@ -138,5 +137,5 @@ fn main() {
     window.set_height(&mut app, pct(100));
     window.push(&mut app, tile);
 
-    retgui_main(app, states, RetGuiOptions::basic("Custom Element"));
+    retgui_main(app, (), RetGuiOptions::basic("Custom Element"));
 }

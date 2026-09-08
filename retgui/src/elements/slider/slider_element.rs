@@ -59,7 +59,7 @@ pub(crate) struct SliderElement {
 }
 
 impl Slider {
-    pub fn new(app: &mut App, thumb_size: f32) -> Self {
+    pub fn new<S: 'static>(app: &mut App<S>, thumb_size: f32) -> Self {
         Self {
             inner: SliderElement::create(
                 &mut app.elements,
@@ -71,86 +71,86 @@ impl Slider {
         }
     }
 
-    pub fn set_value(&self, app: &mut App, value: f64) {
+    pub fn set_value<S: 'static>(&self, app: &mut App<S>, value: f64) {
         if let Some(slider) = app.try_get_as_mut::<SliderElement>(self.inner) {
             slider.set_value(value);
         }
     }
 
-    pub fn value(&self, app: &App) -> f64 {
+    pub fn value<S: 'static>(&self, app: &App<S>) -> f64 {
         app.try_get_as::<SliderElement>(self.inner)
             .map_or(0.0, SliderElement::get_value)
     }
 
-    pub fn set_step(&self, app: &mut App, value: f64) {
+    pub fn set_step<S: 'static>(&self, app: &mut App<S>, value: f64) {
         if let Some(slider) = app.try_get_as_mut::<SliderElement>(self.inner) {
             slider.set_step(value);
         }
     }
 
-    pub fn step(&self, app: &App) -> f64 {
+    pub fn step<S: 'static>(&self, app: &App<S>) -> f64 {
         app.try_get_as::<SliderElement>(self.inner)
             .map_or(0.0, SliderElement::get_step)
     }
 
-    pub fn set_min(&self, app: &mut App, min: f64) {
+    pub fn set_min<S: 'static>(&self, app: &mut App<S>, min: f64) {
         if let Some(slider) = app.try_get_as_mut::<SliderElement>(self.inner) {
             slider.set_min(min);
         }
     }
 
-    pub fn min(&self, app: &App) -> f64 {
+    pub fn min<S: 'static>(&self, app: &App<S>) -> f64 {
         app.try_get_as::<SliderElement>(self.inner)
             .map_or(0.0, SliderElement::get_min)
     }
 
-    pub fn set_max(&self, app: &mut App, max: f64) {
+    pub fn set_max<S: 'static>(&self, app: &mut App<S>, max: f64) {
         if let Some(slider) = app.try_get_as_mut::<SliderElement>(self.inner) {
             slider.set_max(max);
         }
     }
 
-    pub fn max(&self, app: &App) -> f64 {
+    pub fn max<S: 'static>(&self, app: &App<S>) -> f64 {
         app.try_get_as::<SliderElement>(self.inner)
             .map_or(0.0, SliderElement::get_max)
     }
 
-    pub fn set_direction(&self, app: &mut App, direction: SliderDirection) {
+    pub fn set_direction<S: 'static>(&self, app: &mut App<S>, direction: SliderDirection) {
         if let Some(slider) = app.try_get_as_mut::<SliderElement>(self.inner) {
             slider.set_direction(direction);
         }
     }
 
-    pub fn direction(&self, app: &App) -> SliderDirection {
+    pub fn direction<S: 'static>(&self, app: &App<S>) -> SliderDirection {
         app.try_get_as::<SliderElement>(self.inner)
             .map_or_else(SliderDirection::default, SliderElement::get_direction)
     }
 
-    pub fn set_thumb_size(&self, app: &mut App, thumb_size: f64) {
+    pub fn set_thumb_size<S: 'static>(&self, app: &mut App<S>, thumb_size: f64) {
         if let Some(slider) = app.try_get_as_mut::<SliderElement>(self.inner) {
             slider.set_thumb_size(thumb_size);
         }
     }
 
-    pub fn thumb_size(&self, app: &App) -> f64 {
+    pub fn thumb_size<S: 'static>(&self, app: &App<S>) -> f64 {
         app.try_get_as::<SliderElement>(self.inner)
             .map_or(0.0, SliderElement::get_thumb_size)
     }
 
-    pub fn set_thumb_color(&self, app: &mut App, thumb_background_color: Brush) {
+    pub fn set_thumb_color<S: 'static>(&self, app: &mut App<S>, thumb_background_color: Brush) {
         if let Some(slider) = app.try_get_as_mut::<SliderElement>(self.inner) {
             slider.set_thumb_color(thumb_background_color);
         }
     }
 
-    pub fn thumb_brush(&self, app: &App) -> Brush {
+    pub fn thumb_brush<S: 'static>(&self, app: &App<S>) -> Brush {
         app.try_get_as::<SliderElement>(self.inner)
             .map_or_else(Brush::default, SliderElement::get_thumb_brush)
     }
 
-    pub fn set_thumb_border_radius(
+    pub fn set_thumb_border_radius<S: 'static>(
         &self,
-        app: &mut App,
+        app: &mut App<S>,
         top: (f32, f32),
         right: (f32, f32),
         bottom: (f32, f32),
@@ -161,31 +161,31 @@ impl Slider {
         }
     }
 
-    pub fn thumb_border_radius(&self, app: &App) -> Option<[(f32, f32); 4]> {
+    pub fn thumb_border_radius<S: 'static>(&self, app: &App<S>) -> Option<[(f32, f32); 4]> {
         app.try_get_as::<SliderElement>(self.inner)
             .and_then(SliderElement::get_thumb_border_radius)
     }
 
-    pub fn set_track_color(&self, app: &mut App, track_background_color: Color) {
+    pub fn set_track_color<S: 'static>(&self, app: &mut App<S>, track_background_color: Color) {
         if let Some(slider) = app.try_get_as_mut::<SliderElement>(self.inner) {
             slider.set_track_brush(Brush::Color(track_background_color));
         }
     }
 
-    pub fn set_track_gradient(&self, app: &mut App, track_background_gradient: Gradient) {
+    pub fn set_track_gradient<S: 'static>(&self, app: &mut App<S>, track_background_gradient: Gradient) {
         if let Some(slider) = app.try_get_as_mut::<SliderElement>(self.inner) {
             slider.set_track_brush(Brush::Gradient(track_background_gradient));
         }
     }
 
-    pub fn track_brush(&self, app: &App) -> Option<Brush> {
+    pub fn track_brush<S: 'static>(&self, app: &App<S>) -> Option<Brush> {
         app.try_get_as::<SliderElement>(self.inner)
             .and_then(SliderElement::get_track_brush)
     }
 
-    pub fn set_track_border_radius(
+    pub fn set_track_border_radius<S: 'static>(
         &self,
-        app: &mut App,
+        app: &mut App<S>,
         top: (f32, f32),
         right: (f32, f32),
         bottom: (f32, f32),
@@ -196,7 +196,7 @@ impl Slider {
         }
     }
 
-    pub fn track_border_radius(&self, app: &App) -> Option<[(f32, f32); 4]> {
+    pub fn track_border_radius<S: 'static>(&self, app: &App<S>) -> Option<[(f32, f32); 4]> {
         app.try_get_as::<SliderElement>(self.inner)
             .and_then(SliderElement::get_track_border_radius)
     }
@@ -738,7 +738,7 @@ mod tests {
 
     #[test]
     fn steps_one() {
-        let mut app = App::new();
+        let mut app = App::<()>::new();
         let slider = Slider::new(&mut app, 16.0);
         let slider = app.get_as_mut::<SliderElement>(slider.inner);
 
@@ -750,7 +750,7 @@ mod tests {
 
     #[test]
     fn steps_down_one() {
-        let mut app = App::new();
+        let mut app = App::<()>::new();
         let slider = Slider::new(&mut app, 16.0);
         let slider = app.get_as_mut::<SliderElement>(slider.inner);
 

@@ -144,7 +144,7 @@ impl ElementInternals for ButtonElement {
 }
 
 impl Button {
-    pub fn new(app: &mut App) -> Self {
+    pub fn new<S: 'static>(app: &mut App<S>) -> Self {
         Self {
             inner: ButtonElement::insert(
                 &mut app.elements,

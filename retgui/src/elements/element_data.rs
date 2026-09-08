@@ -2,8 +2,6 @@ use std::cell::Cell;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 
-use smallvec::SmallVec;
-
 use smol_str::SmolStr;
 
 use crate::Color;
@@ -11,7 +9,6 @@ use crate::accessibility::RetGuiAccessTree;
 use crate::elements::DynElement;
 use crate::elements::element_id::create_unique_element_id;
 use crate::elements::scrollable::{ScrollState, apply_scroll_layout};
-use crate::events::EventCallback;
 use crate::geometry::TrblRectangle;
 use crate::layout::GummyTree;
 use crate::layout::layout::Layout;
@@ -52,8 +49,6 @@ pub struct ElementData {
     pub(crate) access_scale_factor: Cell<f64>,
     pub(crate) applied_scale_factor: f64,
     pub(crate) focused: bool,
-
-    pub event_callbacks: SmallVec<[EventCallback; 1]>,
 
     pub(crate) unfocused_outline_color: Option<TrblRectangle<Color>>,
     pub(crate) unfocused_outline_width: Option<TrblRectangle<Unit>>,
@@ -111,7 +106,6 @@ impl ElementData {
             access_scale_factor: Cell::new(1.0),
             applied_scale_factor: 1.0,
             focused: false,
-            event_callbacks: SmallVec::new(),
             unfocused_outline_color: None,
             unfocused_outline_width: None,
         }

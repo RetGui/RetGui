@@ -20,17 +20,16 @@ features = ["system_fonts", "vello_hybrid_renderer"]
 ## Example
 
 ```rust
-use retgui::elements::{Container, Element, State, Text, Window};
+use retgui::elements::{Container, Element, Text, Window};
 use retgui::events::Event;
 use retgui::style::{AlignItems, FlexDirection, JustifyContent};
-use retgui::{App, Color, RetGuiOptions, States, pct, px, rgb};
+use retgui::{App, Color, RetGuiOptions, pct, px, rgb};
 
 fn create_button(
-    app: &mut App,
+    app: &mut App<i64>,
     label: &str,
     base_color: Color,
     delta: i64,
-    count: State<i64>,
     count_text: Text,
 ) -> Container {
     let label = Text::new(app, label);
@@ -45,8 +44,7 @@ fn create_button(
     button.set_padding(app, px(15), px(30), px(15), px(30));
     button.set_justify_content(app, JustifyContent::Center);
     button.set_background_color(app, base_color);
-    button.add_click_listener(app, move |event, app, states| {
-        let count = count.write(states);
+    button.add_click_listener(app, move |event, app, count| {
         *count += delta;
         count_text.set_text(app, &format!("Count: {count}"));
         event.stop_propagation();
@@ -57,14 +55,12 @@ fn create_button(
 
 fn main() {
     let mut app = App::new();
-    let mut states = States::new();
-    let count = states.insert(0_i64);
     let count_text = Text::new(&mut app, "Count: 0");
     let subtract = create_button(
-        &mut app, "-", rgb(244, 67, 54), -1, count, count_text,
+        &mut app, "-", rgb(244, 67, 54), -1, count_text,
     );
     let add = create_button(
-        &mut app, "+", rgb(76, 175, 80), 1, count, count_text,
+        &mut app, "+", rgb(76, 175, 80), 1, count_text,
     );
     let buttons = Container::new(&mut app);
     buttons.set_gap(&mut app, px(20), px(20));
@@ -81,7 +77,7 @@ fn main() {
     window.push(&mut app, count_text);
     window.push(&mut app, buttons);
 
-    retgui::retgui_main(app, states, RetGuiOptions::basic("Counter"));
+    retgui::retgui_main(app, 0_i64, RetGuiOptions::basic("Counter"));
 }
 ```
 

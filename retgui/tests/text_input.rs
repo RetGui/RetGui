@@ -11,6 +11,7 @@ mod test_utils;
 fn type_hello() {
     run(
         "text_input_hello_test",
+        (),
         |app, _states| {
             let text_input = TextInput::new(app, "");
             text_input.set_font_size(app, 32.0);
@@ -38,6 +39,7 @@ fn type_hello() {
 fn set_cursor_after_ll() {
     run(
         "text_input_set_cursor_after_ll_test",
+        (),
         |app, _states| {
             let text_input = TextInput::new(app, "Hello");
             text_input.set_font_size(app, 32.0);
@@ -75,6 +77,7 @@ fn set_cursor_after_ll() {
 fn select_ll() {
     run(
         "text_input_select_ll_test",
+        (),
         |app, _states| {
             let text_input = TextInput::new(app, "Hello");
             text_input.set_font_size(app, 32.0);

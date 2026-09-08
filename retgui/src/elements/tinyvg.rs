@@ -129,7 +129,7 @@ impl ElementInternals for TinyVgElement {
 }
 
 impl TinyVg {
-    pub fn new(app: &mut App, resource_id: ResourceId) -> Self {
+    pub fn new<S: 'static>(app: &mut App<S>, resource_id: ResourceId) -> Self {
         Self {
             inner: TinyVgElement::insert(
                 &mut app.elements,
@@ -142,7 +142,7 @@ impl TinyVg {
         }
     }
 
-    pub fn dummy(app: &mut App) -> Self {
+    pub fn dummy<S: 'static>(app: &mut App<S>) -> Self {
         Self {
             inner: TinyVgElement::insert_unloaded(
                 &mut app.elements,
@@ -154,13 +154,13 @@ impl TinyVg {
         }
     }
 
-    pub fn set_resource_id(&self, app: &mut App, resource_id: ResourceId) {
+    pub fn set_resource_id<S: 'static>(&self, app: &mut App<S>, resource_id: ResourceId) {
         if let Some(tiny) = app.elements.try_get_as_mut::<TinyVgElement>(self.inner) {
             tiny.set_resource_id(&mut app.gummy_tree, &mut app.pending_resources, resource_id);
         }
     }
 
-    pub fn resource_id(&self, app: &App) -> ResourceId {
+    pub fn resource_id<S: 'static>(&self, app: &App<S>) -> ResourceId {
         app.try_get_as::<TinyVgElement>(self.inner)
             .map_or(ResourceId::DUMMY, |tiny| tiny.get_resource_id().clone())
     }

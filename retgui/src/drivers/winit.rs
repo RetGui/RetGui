@@ -12,7 +12,6 @@ use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoopBuilder};
 use winit::platform::android::EventLoopBuilderExtAndroid;
 use winit::window::WindowId;
 
-use crate::States;
 use crate::app::{App, WindowEventResult};
 use crate::drivers::Driver;
 
@@ -20,12 +19,12 @@ use crate::drivers::Driver;
 const WAIT_TIME: time::Duration = time::Duration::from_millis(10);
 
 /// A winit driver.
-pub struct WinitDriver {
-    app: App,
-    states: States,
+pub struct WinitDriver<S: 'static = ()> {
+    app: App<S>,
+    state: S,
 }
 
-impl ApplicationHandler for WinitDriver {
+impl<S: 'static> ApplicationHandler for WinitDriver<S> {
     fn can_create_surfaces(&mut self, event_loop: &dyn ActiveEventLoop) {
         self.app.on_resume(Some(event_loop));
     }
@@ -34,7 +33,7 @@ impl ApplicationHandler for WinitDriver {
         let Some(window) = self.app.window_by_id(window_id) else {
             return;
         };
-        match self.app.on_window_event(window, event, &mut self.states) {
+        match self.app.on_window_event(window, event, &mut self.state) {
             WindowEventResult::Continue => {}
             WindowEventResult::ExitRequested => event_loop.exit(),
         }
@@ -44,7 +43,7 @@ impl ApplicationHandler for WinitDriver {
         if event_loop.exiting() {
             return;
         }
-        let next_animation_update = self.app.on_about_to_wait(Some(event_loop), &mut self.states);
+        let next_animation_update = self.app.on_about_to_wait(Some(event_loop), &mut self.state);
         self.maybe_exit(event_loop);
 
         let perf_stats_enabled = self.app.window_manager.any_perf_stats_enabled(&self.app.elements);
@@ -69,9 +68,9 @@ impl ApplicationHandler for WinitDriver {
     }
 }
 
-impl Driver for WinitDriver {
-    fn new(app: App, states: States) -> Self {
-        Self { app, states }
+impl<S: 'static> Driver<S> for WinitDriver<S> {
+    fn new(app: App<S>, state: S) -> Self {
+        Self { app, state }
     }
 
     fn run(self) {
@@ -96,7 +95,7 @@ impl Driver for WinitDriver {
     }
 }
 
-impl WinitDriver {
+impl<S: 'static> WinitDriver<S> {
     fn maybe_exit(&mut self, event_loop: &dyn ActiveEventLoop) {
         if self.app.close_requested() {
             info!("Exiting winit event loop");

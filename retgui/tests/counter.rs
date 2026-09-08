@@ -1,18 +1,11 @@
 use retgui::drivers::headless::run;
-use retgui::elements::{Container, Element, State, Text, Window};
+use retgui::elements::{Container, Element, Text, Window};
 use retgui::events::{Event, PointerButton};
 use retgui::geometry::Size;
 use retgui::style::{AlignItems, FlexDirection, JustifyContent};
 use retgui::{App, Color, RendererType, pct, px, rgb};
 
-fn create_button(
-    app: &mut App,
-    label: &str,
-    base_color: Color,
-    delta: i64,
-    state: State<i64>,
-    count_text: Text,
-) -> Container {
+fn create_button(app: &mut App<i64>, label: &str, base_color: Color, delta: i64, count_text: Text) -> Container {
     let border_color = rgb(0, 0, 0);
     let label = Text::new(app, label);
     label.set_font_size(app, 24.0);
@@ -25,9 +18,8 @@ fn create_button(
     button.set_padding(app, px(15), px(30), px(15), px(30));
     button.set_justify_content(app, JustifyContent::Center);
     button.set_background_color(app, base_color);
-    button.add_pointer_button_up_listener(app, move |event, app, states| {
+    button.add_pointer_button_up_listener(app, move |event, app, count| {
         if event.button == Some(PointerButton::Left) {
-            let count = state.borrow_mut(states);
             *count += delta;
             count_text.set_text(app, &format!("Count: {count}"));
             event.stop_propagation();
@@ -44,11 +36,11 @@ mod test_utils;
 fn counter() {
     run(
         "counter_test",
-        |app, states| {
-            let count = states.insert(0_i64);
+        0_i64,
+        |app, _count| {
             let count_text = Text::new(app, "Count: 0");
-            let subtract = create_button(app, "-", rgb(244, 67, 54), -1, count, count_text);
-            let add_button = create_button(app, "+", rgb(76, 175, 80), 1, count, count_text);
+            let subtract = create_button(app, "-", rgb(244, 67, 54), -1, count_text);
+            let add_button = create_button(app, "+", rgb(76, 175, 80), 1, count_text);
             let buttons = Container::new(app);
             buttons.set_gap(app, px(20), px(20));
             buttons.push(app, subtract);
@@ -62,15 +54,15 @@ fn counter() {
             window.set_gap(app, px(20), px(20));
             window.push(app, count_text);
             window.push(app, buttons);
-            (count, add_button, window)
+            (add_button, window)
         },
-        |test, (count, add_button, window)| {
+        |test, (add_button, window)| {
             test.open(&window, Size::new(800.0, 600.0));
             for _ in 0..3 {
                 test.click(&add_button);
             }
 
-            assert_eq!(*count.borrow(test.states()), 3);
+            assert_eq!(*test.state(), 3);
             test_utils::check_snapshot(test_utils::screenshot_rgb(test, &window), "counter.png");
         },
     );

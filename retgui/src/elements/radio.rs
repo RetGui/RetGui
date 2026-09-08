@@ -365,8 +365,7 @@ impl RadioElement {
 }
 
 impl Radio {
-
-    pub fn new(app: &mut App, group: RadioGroup, value: &str, label: &str, selected: bool) -> Self {
+    pub fn new<S: 'static>(app: &mut App<S>, group: RadioGroup, value: &str, label: &str, selected: bool) -> Self {
         let radio = Self {
             inner: RadioElement::insert(
                 &mut app.elements,
@@ -388,13 +387,13 @@ impl Radio {
         }
         radio
     }
-    
-    pub fn is_selected(&self, app: &App) -> bool {
+
+    pub fn is_selected<S: 'static>(&self, app: &App<S>) -> bool {
         app.try_get_as::<RadioElement>(self.inner)
             .is_some_and(|radio| radio.is_selected(&app.elements))
     }
 
-    pub fn select(&self, app: &mut App) {
+    pub fn select<S: 'static>(&self, app: &mut App<S>) {
         app.elements.try_dispatch_mut(self.inner, |radio, elements| {
             (radio as &mut dyn Any)
                 .downcast_mut::<RadioElement>()
@@ -404,7 +403,7 @@ impl Radio {
     }
 
     /// Hide the default circle radio button.
-    pub fn set_hide_radio(&self, app: &mut App, value: bool) {
+    pub fn set_hide_radio<S: 'static>(&self, app: &mut App<S>, value: bool) {
         // TODO: Hide in gummy.
         if let Some(inner) = app.try_get_as_mut::<RadioElement>(self.inner) {
             inner.hide_radio = value;
@@ -413,16 +412,16 @@ impl Radio {
     }
 
     /// Hide the default circle radio button.
-    pub fn hide_radio(&self, app: &mut App) {
+    pub fn hide_radio<S: 'static>(&self, app: &mut App<S>) {
         self.set_hide_radio(app, true);
     }
 
-    pub fn label(&self, app: &App) -> String {
+    pub fn label<S: 'static>(&self, app: &App<S>) -> String {
         app.try_get_as::<RadioElement>(self.inner)
             .map_or_else(String::new, |radio| radio.label.clone())
     }
 
-    pub fn value(&self, app: &App) -> String {
+    pub fn value<S: 'static>(&self, app: &App<S>) -> String {
         app.try_get_as::<RadioElement>(self.inner)
             .map_or_else(String::new, |radio| radio.value.clone())
     }

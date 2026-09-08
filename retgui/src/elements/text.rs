@@ -355,7 +355,7 @@ impl ElementInternals for TextElement {
 }
 
 impl Text {
-    pub fn new(app: &mut App, text: &str) -> Self {
+    pub fn new<S: 'static>(app: &mut App<S>, text: &str) -> Self {
         Self {
             inner: TextElement::insert(
                 &mut app.elements,
@@ -367,31 +367,31 @@ impl Text {
         }
     }
 
-    pub fn is_selectable(&self, app: &App) -> bool {
+    pub fn is_selectable<S: 'static>(&self, app: &App<S>) -> bool {
         app.try_get_as::<TextElement>(self.inner)
             .is_some_and(|text| text.selectable)
     }
 
-    pub fn set_selectable(&self, app: &mut App, selectable: bool) {
+    pub fn set_selectable<S: 'static>(&self, app: &mut App<S>, selectable: bool) {
         if let Some(text) = app.try_get_as_mut::<TextElement>(self.inner) {
             text.set_selectable(selectable);
         }
     }
 
     /// Returns the current text, or an empty string if this handle is stale.
-    pub fn text(&self, app: &App) -> String {
+    pub fn text<S: 'static>(&self, app: &App<S>) -> String {
         app.try_get_as::<TextElement>(self.inner)
             .map_or_else(String::new, |text| text.get_text().to_owned())
     }
 
-    pub fn set_text(&self, app: &mut App, text: &str) {
+    pub fn set_text<S: 'static>(&self, app: &mut App<S>, text: &str) {
         let (gummy_tree, elements) = (&mut app.gummy_tree, &mut app.elements);
         if let Some(element) = elements.try_get_as_mut::<TextElement>(self.inner) {
             element.set_text(gummy_tree, text);
         }
     }
 
-    pub fn set_text_smol_str(&self, app: &mut App, text: SmolStr) {
+    pub fn set_text_smol_str<S: 'static>(&self, app: &mut App<S>, text: SmolStr) {
         let (gummy_tree, elements) = (&mut app.gummy_tree, &mut app.elements);
         if let Some(element) = elements.try_get_as_mut::<TextElement>(self.inner) {
             element.set_text_smol_str(gummy_tree, text);
@@ -683,7 +683,7 @@ mod animation_tests {
 
     #[test]
     fn animated_brush_refreshes_snapshot_without_cloning_glyph_data() {
-        let mut app = App::new();
+        let mut app = App::<()>::new();
         let text = Text::new(&mut app, "animated");
         let render = Rc::new(TextRender {
             lines: Vec::new(),

@@ -1,44 +1,26 @@
-use std::rc::Rc;
-
-use retgui::elements::{Container, Element, State, Window};
+use retgui::elements::{Container, Element, Window};
 use retgui::style::{Display, FlexDirection};
-use retgui::{App, States, pct};
+use retgui::{App, pct};
 
-use crate::WebsiteGlobalState;
+use crate::WebsiteState;
 use crate::docs::docs;
 use crate::examples::examples;
 use crate::index::index_page;
 use crate::navbar::navbar;
 use crate::theme::BODY_BACKGROUND_COLOR;
 
-pub type NavigateFn = Rc<dyn Fn(&str, &mut App, &mut States) + 'static>;
+pub type NavigateFn = fn(&str, &mut App<WebsiteState>, &mut WebsiteState);
 
 pub struct Router {
-    state: State<RouterState>,
-}
-
-struct RouterState {
-    root: Option<Window>,
-    global_state: State<WebsiteGlobalState>,
-    index: Option<Container>,
-    docs: Option<Container>,
-    examples: Option<Container>,
+    root: Window,
+    index: Container,
+    docs: Container,
+    examples: Container,
 }
 
 impl Router {
-    pub fn new(app: &mut App, states: &mut States, global_state: State<WebsiteGlobalState>) -> Self {
-        let state = states.insert(RouterState {
-            root: None,
-            global_state,
-            index: None,
-            docs: None,
-            examples: None,
-        });
-        let navigate: NavigateFn = Rc::new(move |route, app, states| {
-            navigate_to(state, app, states, route);
-        });
-
-        let navigation = navbar(app, navigate.clone());
+    pub fn new(app: &mut App<WebsiteState>, route: &str) -> (Self, usize) {
+        let navigation = navbar(app, navigate_to);
         let root = Window::new(app, "RetGui GUI");
         root.set_display(app, Display::Flex);
         root.set_flex_direction(app, FlexDirection::Column);
@@ -46,41 +28,38 @@ impl Router {
         root.set_height(app, pct(100));
         root.set_background_color(app, BODY_BACKGROUND_COLOR);
         root.push(app, navigation);
-        let index = index_page(app, navigate.clone());
-        let docs = docs(app, navigate.clone());
-        let examples = examples(app, states, global_state, navigate);
+        let index = index_page(app, navigate_to);
+        let docs = docs(app, navigate_to);
+        let (examples, selected_example) = examples(app, route, navigate_to);
 
-        let router = state.borrow_mut(states);
-        router.root = Some(root);
-        router.index = Some(index);
-        router.docs = Some(docs);
-        router.examples = Some(examples);
-        Self { state }
+        (
+            Self {
+                root,
+                index,
+                docs,
+                examples,
+            },
+            selected_example,
+        )
     }
 
-    pub fn navigate(&self, app: &mut App, states: &mut States) {
-        let global_state = self.state.borrow(states).global_state;
-        let route = global_state.borrow(states).get_route();
-        navigate_to(self.state, app, states, &route);
+    fn navigate(&self, app: &mut App<WebsiteState>, route: &str) {
+        let base = route.split('/').find(|part| !part.is_empty()).unwrap_or("");
+        let page = match base {
+            "docs" => self.docs,
+            "examples" => self.examples,
+            _ => self.index,
+        };
+        if let Some(current) = self.root.children(app).get(1).copied() {
+            self.root
+                .remove_child(app, current)
+                .expect("failed to remove routed page");
+        }
+        self.root.push(app, page);
     }
 }
 
-fn navigate_to(state: State<RouterState>, app: &mut App, states: &mut States, route: &str) {
-    let (global_state, root, page) = {
-        let router = state.borrow(states);
-        let base = route.split('/').find(|part| !part.is_empty()).unwrap_or("");
-        let page = match base {
-            "docs" => router.docs.expect("docs page was not initialized"),
-            "examples" => router.examples.expect("examples page was not initialized"),
-            _ => router.index.expect("index page was not initialized"),
-        };
-        let root = router.root.expect("router root was not initialized");
-        (router.global_state, root, page)
-    };
-
-    global_state.borrow_mut(states).set_route(route);
-    if let Some(current) = root.children(app).get(1).copied() {
-        root.remove_child(app, current).expect("failed to remove routed page");
-    }
-    root.push(app, page);
+pub fn navigate_to(route: &str, app: &mut App<WebsiteState>, state: &mut WebsiteState) {
+    state.global.set_route(route);
+    state.router.navigate(app, route);
 }

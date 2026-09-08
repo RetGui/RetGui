@@ -102,7 +102,7 @@ impl ElementInternals for ImageElement {
 }
 
 impl Image {
-    pub fn new(app: &mut App, resource_id: ResourceId) -> Self {
+    pub fn new<S: 'static>(app: &mut App<S>, resource_id: ResourceId) -> Self {
         Self {
             inner: ImageElement::insert(
                 &mut app.elements,
@@ -115,7 +115,7 @@ impl Image {
         }
     }
 
-    pub fn dummy(app: &mut App) -> Self {
+    pub fn dummy<S: 'static>(app: &mut App<S>) -> Self {
         Self {
             inner: ImageElement::insert_unloaded(
                 &mut app.elements,
@@ -127,13 +127,13 @@ impl Image {
         }
     }
 
-    pub fn set_resource_id(&self, app: &mut App, resource_id: ResourceId) {
+    pub fn set_resource_id<S: 'static>(&self, app: &mut App<S>, resource_id: ResourceId) {
         if let Some(image) = app.elements.try_get_as_mut::<ImageElement>(self.inner) {
             image.set_image(&mut app.gummy_tree, &mut app.pending_resources, resource_id);
         }
     }
 
-    pub fn resource_id(&self, app: &App) -> ResourceId {
+    pub fn resource_id<S: 'static>(&self, app: &App<S>) -> ResourceId {
         app.try_get_as::<ImageElement>(self.inner)
             .map_or(ResourceId::DUMMY, |image| image.get_resource_id().clone())
     }

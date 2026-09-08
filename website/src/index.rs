@@ -6,8 +6,9 @@ use crate::link::Link;
 use crate::router::NavigateFn;
 use crate::theme::{WRAPPER_PADDING_LEFT, WRAPPER_PADDING_RIGHT, wrapper};
 use crate::web_link::WebLink;
+use crate::WebsiteState;
 
-fn hero_intro(app: &mut App, navigate: NavigateFn) -> Container {
+fn hero_intro(app: &mut App<WebsiteState>, navigate: NavigateFn) -> Container {
     let heading = Text::new(app, "A Reactive GUI Framework for Rust");
     heading.set_color(app, Color::WHITE);
     heading.set_font_size(app, 56.0);
@@ -21,7 +22,7 @@ fn hero_intro(app: &mut App, navigate: NavigateFn) -> Container {
     let learn_label = Text::new(app, "Learn RetGui");
     learn_label.set_selectable(app, false);
     learn_label.set_color(app, palette::css::WHITE);
-    let learn = Link(app, move |app, states| navigate("/docs", app, states));
+    let learn = Link(app, move |app, state| navigate("/docs", app, state));
     learn.set_padding(app, px(8), px(20), px(8), px(20));
     learn.set_background_color(app, rgb(69, 117, 230));
     learn.push(app, learn_label);
@@ -60,7 +61,7 @@ fn hero_intro(app: &mut App, navigate: NavigateFn) -> Container {
     container
 }
 
-fn hero_features(app: &mut App) -> Container {
+fn hero_features(app: &mut App<WebsiteState>) -> Container {
     let heading = Text::new(app, "Features");
     heading.set_width(app, pct(100));
     heading.set_font_size(app, 36.0);
@@ -68,7 +69,7 @@ fn hero_features(app: &mut App) -> Container {
     let features = [
         (
             "Compile-time ownership",
-            "Slotmap handles and explicit stores replace runtime borrow checks.",
+            "Use your own state and update the UI with ordinary Rust references.",
         ),
         ("Pure Rust", "No UI macros are required."),
         ("Web-like styling", "Flexbox and block layout use familiar concepts."),
@@ -107,7 +108,7 @@ fn hero_features(app: &mut App) -> Container {
     container
 }
 
-pub(crate) fn index_page(app: &mut App, navigate: NavigateFn) -> Container {
+pub(crate) fn index_page(app: &mut App<WebsiteState>, navigate: NavigateFn) -> Container {
     let intro = hero_intro(app, navigate);
     let features = hero_features(app);
     let page = Container::new(app);

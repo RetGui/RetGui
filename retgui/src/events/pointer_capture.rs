@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
+use crate::App;
 use crate::elements::{DynElement, WindowElement};
 use crate::events::event_dispatch::dispatch_event;
 use crate::events::helpers::freeze_target_list;
 use crate::events::{EventKind, PointerCaptureEvent, PointerId};
-use crate::{App, States};
 
 /// Stores window specific information like pointer captures, focus (soon), etc.
 #[derive(Default, Clone)]
@@ -45,11 +45,11 @@ impl PointerCapture {
     }
 
     /// Checks if Got or Lost events need to be dispatched and updates the current pointer capture.
-    pub(super) fn process_pending_pointer_capture(
-        app: &mut App,
+    pub(super) fn process_pending_pointer_capture<S: 'static>(
+        app: &mut App<S>,
         window: DynElement,
         pointer_id: &PointerId,
-        states: &mut States,
+        state: &mut S,
     ) -> bool {
         let mut did_pointer_capture_change = false;
 
@@ -69,7 +69,7 @@ impl PointerCapture {
         {
             let targets = freeze_target_list(pointer_capture_val, &app.elements);
             let mut event = EventKind::LostPointerCapture(PointerCaptureEvent::new(pointer_capture_val, *pointer_id));
-            dispatch_event(&mut event, &targets, app, states);
+            dispatch_event(&mut event, &targets, app, state);
 
             did_pointer_capture_change = true;
         }
@@ -82,7 +82,7 @@ impl PointerCapture {
             let targets = freeze_target_list(pending_pointer_capture_val, &app.elements);
             let mut event =
                 EventKind::GotPointerCapture(PointerCaptureEvent::new(pending_pointer_capture_val, *pointer_id));
-            dispatch_event(&mut event, &targets, app, states);
+            dispatch_event(&mut event, &targets, app, state);
 
             did_pointer_capture_change = true;
         }
@@ -102,12 +102,12 @@ impl PointerCapture {
         did_pointer_capture_change
     }
 
-    pub(super) fn maybe_handle_implicit_pointer_capture_release(
-        app: &mut App,
+    pub(super) fn maybe_handle_implicit_pointer_capture_release<S: 'static>(
+        app: &mut App<S>,
         window: DynElement,
         message: &EventKind,
         pointer_id: &PointerId,
-        states: &mut States,
+        state: &mut S,
     ) -> bool {
         // 9.5 Implicit release of pointer capture
         // https://w3c.github.io/pointerevents/#implicit-release-of-pointer-capture
@@ -125,9 +125,9 @@ impl PointerCapture {
                 .pending_pointer_captures
                 .remove(pointer_id);
 
-            did_pointer_capture_change = Self::process_pending_pointer_capture(app, window, pointer_id, states);
+            did_pointer_capture_change = Self::process_pending_pointer_capture(app, window, pointer_id, state);
         } else if message.is_system_pointer_event() {
-            did_pointer_capture_change = Self::process_pending_pointer_capture(app, window, pointer_id, states);
+            did_pointer_capture_change = Self::process_pending_pointer_capture(app, window, pointer_id, state);
         }
 
         did_pointer_capture_change

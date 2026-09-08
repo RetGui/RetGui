@@ -58,7 +58,7 @@ pub enum TextInputMessage {
 
 impl TextInput {
     /// Creates a single line editable text input.
-    pub fn new(app: &mut App, text: &str) -> Self {
+    pub fn new<S: 'static>(app: &mut App<S>, text: &str) -> Self {
         Self {
             inner: TextInputElement::create(
                 &mut app.elements,
@@ -71,25 +71,25 @@ impl TextInput {
     }
 
     /// Disables the text input.
-    pub fn set_disabled(&self, app: &mut App, disabled: bool) {
+    pub fn set_disabled<S: 'static>(&self, app: &mut App<S>, disabled: bool) {
         if let Some(input) = app.try_get_as_mut::<TextInputElement>(self.inner) {
             input.disabled(disabled);
         }
     }
 
     /// Returns whether the element is disabled.
-    pub fn is_disabled(&self, app: &App) -> bool {
+    pub fn is_disabled<S: 'static>(&self, app: &App<S>) -> bool {
         app.try_get_as::<TextInputElement>(self.inner)
             .is_some_and(|input| input.disabled)
     }
 
     /// Returns whether the text input is multiline.
-    pub fn is_multiline(&self, app: &App) -> bool {
+    pub fn is_multiline<S: 'static>(&self, app: &App<S>) -> bool {
         app.try_get_as::<TextInputElement>(self.inner)
             .is_some_and(|input| input.state.multiline)
     }
 
-    pub fn set_multiline(&self, app: &mut App, multiline: bool) {
+    pub fn set_multiline<S: 'static>(&self, app: &mut App<S>, multiline: bool) {
         if let Some(input) = app.try_get_as_mut::<TextInputElement>(self.inner) {
             input.multiline(multiline);
         }
@@ -98,7 +98,7 @@ impl TextInput {
     /// Returns the text in the text input.
     ///
     /// This does not include the ime preedit text.
-    pub fn text(&self, app: &App) -> String {
+    pub fn text<S: 'static>(&self, app: &App<S>) -> String {
         app.try_get_as::<TextInputElement>(self.inner)
             .map_or_else(String::new, |input| input.state.editor().text().into_iter().collect())
     }
@@ -107,7 +107,7 @@ impl TextInput {
     ///
     /// Updates the text content immediately. Mark layout and render caches as dirty. Layout and
     /// render caches will be computed in the next layout/render pass.
-    pub fn set_text(&self, app: &mut App, text: &str) {
+    pub fn set_text<S: 'static>(&self, app: &mut App<S>, text: &str) {
         let (gummy_tree, elements) = (&mut app.gummy_tree, &mut app.elements);
         if let Some(input) = elements.try_get_as_mut::<TextInputElement>(self.inner) {
             input.set_text(gummy_tree, text);
@@ -115,7 +115,7 @@ impl TextInput {
     }
 
     /// Styles the text along ranges.
-    pub fn set_ranged_styles(&self, app: &mut App, ranged_styles: RangedStyles) {
+    pub fn set_ranged_styles<S: 'static>(&self, app: &mut App<S>, ranged_styles: RangedStyles) {
         let (gummy_tree, elements) = (&mut app.gummy_tree, &mut app.elements);
         if let Some(input) = elements.try_get_as_mut::<TextInputElement>(self.inner) {
             input.set_ranged_styles(gummy_tree, ranged_styles);
@@ -123,7 +123,7 @@ impl TextInput {
     }
 
     /// Returns the ranged styles.
-    pub fn ranged_styles(&self, app: &App) -> Option<RangedStyles> {
+    pub fn ranged_styles<S: 'static>(&self, app: &App<S>) -> Option<RangedStyles> {
         app.try_get_as::<TextInputElement>(self.inner)
             .and_then(|input| input.ranged_styles.clone())
     }
@@ -577,7 +577,7 @@ impl TextInputElement {
         by_internal_id: &mut ElementIds,
         text: &str,
     ) -> DynElement {
-        let default_style = TextInputElement::get_default_style();
+        let default_style = Self::get_default_style();
 
         let text_input_state = TextInputState::default();
 

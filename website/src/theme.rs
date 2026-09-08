@@ -19,7 +19,7 @@ pub(crate) const WRAPPER_PADDING_RIGHT: Unit = Unit::Px(20.0);
 
 //pub(crate) const MOBILE_MEDIA_QUERY_WIDTH: u32 = 850;
 
-pub(crate) fn wrapper(app: &mut App) -> Container {
+pub(crate) fn wrapper<S: 'static>(app: &mut App<S>) -> Container {
     let container = Container::new(app);
     container.set_margin(
         app,

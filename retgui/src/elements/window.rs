@@ -175,7 +175,7 @@ impl ElementInternals for WindowElement {
 }
 
 impl Window {
-    pub fn new_advanced<F>(app: &mut App, window_fn: F, renderer_type: RendererType) -> Self
+    pub fn new_advanced<S: 'static, F>(app: &mut App<S>, window_fn: F, renderer_type: RendererType) -> Self
     where
         F: FnMut(&dyn ActiveEventLoop) -> Box<dyn WinitWindow> + 'static,
     {
@@ -193,7 +193,7 @@ impl Window {
         Window { inner }
     }
 
-    pub fn new(app: &mut App, title: &str) -> Self {
+    pub fn new<S: 'static>(app: &mut App<S>, title: &str) -> Self {
         let inner = WindowElement::insert(
             &mut app.elements,
             &mut app.gummy_tree,
@@ -208,7 +208,7 @@ impl Window {
         Window { inner }
     }
 
-    pub fn new_with_renderer(app: &mut App, title: &str, renderer_type: RendererType) -> Self {
+    pub fn new_with_renderer<S: 'static>(app: &mut App<S>, title: &str, renderer_type: RendererType) -> Self {
         let inner = WindowElement::insert(
             &mut app.elements,
             &mut app.gummy_tree,
@@ -223,47 +223,47 @@ impl Window {
         Window { inner }
     }
 
-    pub fn screenshot(&self, app: &mut App) -> Screenshot {
+    pub fn screenshot<S: 'static>(&self, app: &mut App<S>) -> Screenshot {
         app.elements.get_as_mut::<WindowElement>(self.inner).screenshot()
     }
 
-    pub fn close(&self, app: &App) {
+    pub fn close<S: 'static>(&self, app: &App<S>) {
         app.elements.get_as::<WindowElement>(self.inner).close();
     }
 
-    pub fn winit_window(&self, app: &App) -> Option<Arc<dyn WinitWindow>> {
+    pub fn winit_window<S: 'static>(&self, app: &App<S>) -> Option<Arc<dyn WinitWindow>> {
         app.elements.get_as::<WindowElement>(self.inner).winit_window()
     }
 
-    pub fn set_winit_window(&self, app: &mut App, window: Option<Arc<dyn WinitWindow>>) {
+    pub fn set_winit_window<S: 'static>(&self, app: &mut App<S>, window: Option<Arc<dyn WinitWindow>>) {
         app.elements
             .get_as_mut::<WindowElement>(self.inner)
             .set_winit_window(window);
     }
 
-    pub fn set_scale_factor(&self, app: &mut App, scale_factor: f64) {
+    pub fn set_scale_factor<S: 'static>(&self, app: &mut App<S>, scale_factor: f64) {
         app.elements.dispatch_mut(self.inner, |window, retained_elements| {
             window.set_scale_factor(retained_elements, &mut app.gummy_tree, scale_factor);
         });
     }
 
     /// Get the effective scale factor factoring window scale factor and zoom.
-    pub fn effective_scale_factor(&self, app: &App) -> f64 {
+    pub fn effective_scale_factor<S: 'static>(&self, app: &App<S>) -> f64 {
         app.elements
             .get_as::<WindowElement>(self.inner)
             .effective_scale_factor()
     }
 
     /// Get the logical size of the window.
-    pub fn window_size(&self, app: &App) -> Size<f32> {
+    pub fn window_size<S: 'static>(&self, app: &App<S>) -> Size<f32> {
         app.elements.get_as::<WindowElement>(self.inner).window_size()
     }
 
-    pub fn zoom_scale_factor(&self, app: &App) -> f64 {
+    pub fn zoom_scale_factor<S: 'static>(&self, app: &App<S>) -> f64 {
         app.elements.get_as::<WindowElement>(self.inner).zoom_scale_factor()
     }
 
-    pub fn on_request_redraw(&self, retgui_app: &mut App) {
+    pub fn on_request_redraw<S: 'static>(&self, retgui_app: &mut App<S>) {
         WindowElement::on_request_redraw(
             &mut retgui_app.elements,
             &mut retgui_app.gummy_tree,
@@ -273,7 +273,7 @@ impl Window {
         );
     }
 
-    pub fn zoom_in(&self, app: &mut App) {
+    pub fn zoom_in<S: 'static>(&self, app: &mut App<S>) {
         app.elements.dispatch_mut(self.inner, |window, retained_elements| {
             (window as &mut dyn Any)
                 .downcast_mut::<WindowElement>()
@@ -282,7 +282,7 @@ impl Window {
         });
     }
 
-    pub fn zoom_out(&self, app: &mut App) {
+    pub fn zoom_out<S: 'static>(&self, app: &mut App<S>) {
         app.elements.dispatch_mut(self.inner, |window, retained_elements| {
             (window as &mut dyn Any)
                 .downcast_mut::<WindowElement>()

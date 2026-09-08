@@ -194,7 +194,7 @@ impl<'a, 'elements> MarkdownRenderer<'a, 'elements> {
     }
 }
 
-pub fn render_markdown(app: &mut App, markdown: &str) -> DynElement {
+pub fn render_markdown<S: 'static>(app: &mut App<S>, markdown: &str) -> DynElement {
     let parser = pulldown_cmark::Parser::new(markdown);
     let mut renderer = MarkdownRenderer::new(
         &mut app.elements,
@@ -502,7 +502,7 @@ mod tests {
 
     #[test]
     fn markdown_builds_nested_content_and_queues_images() {
-        let mut app = App::new();
+        let mut app = App::<()>::new();
         let root = render_markdown(
             &mut app,
             "# Heading\n\nPlain **bold** text.\n\n1. first\n2. second\n\n![alt](image.png)\n\n```rust\nfn main() {}\n```\n\n---",

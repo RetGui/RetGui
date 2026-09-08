@@ -18,8 +18,8 @@ use retgui_primitives::geometry::Point;
 use winit::dpi::{LogicalPosition, PhysicalPosition};
 use winit::event::{ButtonSource, KeyEvent, PointerKind, PointerSource};
 
+use crate::App;
 use crate::elements::DynElement;
-use crate::{App, States};
 
 pub mod pointer_capture;
 
@@ -760,45 +760,69 @@ impl Event for CustomEvent {
     }
 }
 
-pub type CheckboxToggledHandler = Rc<dyn Fn(&mut CheckboxToggledEvent, &mut App, &mut States)>;
-pub type ClickHandler = Rc<dyn Fn(&mut ClickEvent, &mut App, &mut States)>;
-pub type CustomHandler = Rc<dyn Fn(&mut CustomEvent, &mut App, &mut States)>;
-pub type DropdownItemSelectedHandler = Rc<dyn Fn(&mut DropdownItemSelectedEvent, &mut App, &mut States)>;
-pub type FocusHandler = Rc<dyn Fn(&mut FocusEvent, &mut App, &mut States)>;
-pub type KeyboardInputHandler = Rc<dyn Fn(&mut KeyboardEvent, &mut App, &mut States)>;
-pub type PointerCaptureHandler = Rc<dyn Fn(&mut PointerCaptureEvent, &mut App, &mut States)>;
-pub type PointerEnterHandler = Rc<dyn Fn(&mut PointerEnterEvent, &mut App, &mut States)>;
-pub type PointerEventHandler = Rc<dyn Fn(&mut PointerButtonEvent, &mut App, &mut States)>;
-pub type PointerLeaveHandler = Rc<dyn Fn(&mut PointerLeaveEvent, &mut App, &mut States)>;
-pub type PointerMovedHandler = Rc<dyn Fn(&mut PointerMovedEvent, &mut App, &mut States)>;
-pub type PointerUpdateHandler = PointerMovedHandler;
-pub type RadioValueChangedHandler = Rc<dyn Fn(&mut RadioValueChangedEvent, &mut App, &mut States)>;
-pub type ScrollHandler = Rc<dyn Fn(&mut ScrollEvent, &mut App, &mut States)>;
-pub type SliderValueChangedHandler = Rc<dyn Fn(&mut SliderValueChangedEvent, &mut App, &mut States)>;
-pub type TextInputChangedHandler = Rc<dyn Fn(&mut TextInputChangedEvent, &mut App, &mut States)>;
-pub type UnfocusHandler = Rc<dyn Fn(&mut UnfocusEvent, &mut App, &mut States)>;
+pub type CheckboxToggledHandler<S = ()> = Rc<dyn Fn(&mut CheckboxToggledEvent, &mut App<S>, &mut S)>;
+pub type ClickHandler<S = ()> = Rc<dyn Fn(&mut ClickEvent, &mut App<S>, &mut S)>;
+pub type CustomHandler<S = ()> = Rc<dyn Fn(&mut CustomEvent, &mut App<S>, &mut S)>;
+pub type DropdownItemSelectedHandler<S = ()> = Rc<dyn Fn(&mut DropdownItemSelectedEvent, &mut App<S>, &mut S)>;
+pub type FocusHandler<S = ()> = Rc<dyn Fn(&mut FocusEvent, &mut App<S>, &mut S)>;
+pub type KeyboardInputHandler<S = ()> = Rc<dyn Fn(&mut KeyboardEvent, &mut App<S>, &mut S)>;
+pub type PointerCaptureHandler<S = ()> = Rc<dyn Fn(&mut PointerCaptureEvent, &mut App<S>, &mut S)>;
+pub type PointerEnterHandler<S = ()> = Rc<dyn Fn(&mut PointerEnterEvent, &mut App<S>, &mut S)>;
+pub type PointerEventHandler<S = ()> = Rc<dyn Fn(&mut PointerButtonEvent, &mut App<S>, &mut S)>;
+pub type PointerLeaveHandler<S = ()> = Rc<dyn Fn(&mut PointerLeaveEvent, &mut App<S>, &mut S)>;
+pub type PointerMovedHandler<S = ()> = Rc<dyn Fn(&mut PointerMovedEvent, &mut App<S>, &mut S)>;
+pub type PointerUpdateHandler<S = ()> = PointerMovedHandler<S>;
+pub type RadioValueChangedHandler<S = ()> = Rc<dyn Fn(&mut RadioValueChangedEvent, &mut App<S>, &mut S)>;
+pub type ScrollHandler<S = ()> = Rc<dyn Fn(&mut ScrollEvent, &mut App<S>, &mut S)>;
+pub type SliderValueChangedHandler<S = ()> = Rc<dyn Fn(&mut SliderValueChangedEvent, &mut App<S>, &mut S)>;
+pub type TextInputChangedHandler<S = ()> = Rc<dyn Fn(&mut TextInputChangedEvent, &mut App<S>, &mut S)>;
+pub type UnfocusHandler<S = ()> = Rc<dyn Fn(&mut UnfocusEvent, &mut App<S>, &mut S)>;
 pub type UserEventData = dyn Any;
 
-#[derive(Clone)]
-pub enum EventCallbackKind {
-    CheckboxToggled(CheckboxToggledHandler),
-    Click(ClickHandler),
-    Custom(CustomHandler),
-    DropdownItemSelected(DropdownItemSelectedHandler),
-    Focus(FocusHandler),
-    GotPointerCapture(PointerCaptureHandler),
-    KeyboardInput(KeyboardInputHandler),
-    LostPointerCapture(PointerCaptureHandler),
-    PointerButtonDown(PointerEventHandler),
-    PointerButtonUp(PointerEventHandler),
-    PointerEnter(PointerEnterHandler),
-    PointerLeave(PointerLeaveHandler),
-    PointerMoved(PointerMovedHandler),
-    RadioValueChanged(RadioValueChangedHandler),
-    Scroll(ScrollHandler),
-    SliderValueChanged(SliderValueChangedHandler),
-    TextInputChanged(TextInputChangedHandler),
-    Unfocus(UnfocusHandler),
+pub enum EventCallbackKind<S: 'static = ()> {
+    CheckboxToggled(CheckboxToggledHandler<S>),
+    Click(ClickHandler<S>),
+    Custom(CustomHandler<S>),
+    DropdownItemSelected(DropdownItemSelectedHandler<S>),
+    Focus(FocusHandler<S>),
+    GotPointerCapture(PointerCaptureHandler<S>),
+    KeyboardInput(KeyboardInputHandler<S>),
+    LostPointerCapture(PointerCaptureHandler<S>),
+    PointerButtonDown(PointerEventHandler<S>),
+    PointerButtonUp(PointerEventHandler<S>),
+    PointerEnter(PointerEnterHandler<S>),
+    PointerLeave(PointerLeaveHandler<S>),
+    PointerMoved(PointerMovedHandler<S>),
+    RadioValueChanged(RadioValueChangedHandler<S>),
+    Scroll(ScrollHandler<S>),
+    SliderValueChanged(SliderValueChangedHandler<S>),
+    TextInputChanged(TextInputChangedHandler<S>),
+    Unfocus(UnfocusHandler<S>),
+}
+
+impl<S: 'static> Clone for EventCallbackKind<S> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::CheckboxToggled(handler) => Self::CheckboxToggled(handler.clone()),
+            Self::Click(handler) => Self::Click(handler.clone()),
+            Self::Custom(handler) => Self::Custom(handler.clone()),
+            Self::DropdownItemSelected(handler) => Self::DropdownItemSelected(handler.clone()),
+            Self::Focus(handler) => Self::Focus(handler.clone()),
+            Self::GotPointerCapture(handler) => Self::GotPointerCapture(handler.clone()),
+            Self::KeyboardInput(handler) => Self::KeyboardInput(handler.clone()),
+            Self::LostPointerCapture(handler) => Self::LostPointerCapture(handler.clone()),
+            Self::PointerButtonDown(handler) => Self::PointerButtonDown(handler.clone()),
+            Self::PointerButtonUp(handler) => Self::PointerButtonUp(handler.clone()),
+            Self::PointerEnter(handler) => Self::PointerEnter(handler.clone()),
+            Self::PointerLeave(handler) => Self::PointerLeave(handler.clone()),
+            Self::PointerMoved(handler) => Self::PointerMoved(handler.clone()),
+            Self::RadioValueChanged(handler) => Self::RadioValueChanged(handler.clone()),
+            Self::Scroll(handler) => Self::Scroll(handler.clone()),
+            Self::SliderValueChanged(handler) => Self::SliderValueChanged(handler.clone()),
+            Self::TextInputChanged(handler) => Self::TextInputChanged(handler.clone()),
+            Self::Unfocus(handler) => Self::Unfocus(handler.clone()),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Default)]
@@ -806,10 +830,18 @@ pub struct EventListenerOptions {
     pub capturing: bool,
 }
 
-#[derive(Clone)]
-pub struct EventCallback {
-    pub callback: EventCallbackKind,
+pub struct EventCallback<S: 'static = ()> {
+    pub callback: EventCallbackKind<S>,
     pub capturing: bool,
+}
+
+impl<S: 'static> Clone for EventCallback<S> {
+    fn clone(&self) -> Self {
+        Self {
+            callback: self.callback.clone(),
+            capturing: self.capturing,
+        }
+    }
 }
 
 /// The inline event representation used by RetGui's dispatcher and queue.
@@ -937,12 +969,18 @@ mod tests {
 
     use super::event_dispatch::dispatch_event;
     use super::helpers::freeze_target_list;
-    use super::{ClickEvent, ClickTrigger, DynElement, Event, EventCallbackKind, EventDispatcher, EventKind, EventListenerOptions, FocusEvent};
+    use super::{ClickEvent, ClickTrigger, DynElement, Event, EventCallbackKind, EventKind, EventListenerOptions, FocusEvent};
+    use crate::App;
     use crate::elements::{Container, Element, Text};
-    use crate::{App, States};
 
     fn event_target(app: &mut App) -> DynElement {
         DynElement::new(Container::new(app).inner)
+    }
+
+    fn click<S: 'static>(app: &mut App<S>, state: &mut S, target: DynElement) {
+        let targets = freeze_target_list(target, &app.elements);
+        let mut event = EventKind::Click(ClickEvent::new(target, ClickTrigger::Programmatic));
+        dispatch_event(&mut event, &targets, app, state);
     }
 
     #[test]
@@ -979,19 +1017,195 @@ mod tests {
 
     #[test]
     fn deleting_an_event_target_during_dispatch_is_safe() {
-        let mut app = App::new();
-        let mut states = States::new();
+        let mut app = App::<Vec<&'static str>>::new();
+        let mut state = Vec::new();
         let parent = Container::new(&mut app);
         let child = Container::new(&mut app);
-        child.add_click_listener(&mut app, move |_event, app, _states| {
+        let captured = Rc::new(());
+        let weak = Rc::downgrade(&captured);
+        child.add_click_listener(&mut app, move |event, app, state| {
             parent.delete_all_children(app);
+            assert_eq!(Rc::strong_count(&captured), 1);
+            state.push("deleted");
+            event.stop_propagation();
         });
+        child.add_click_listener(&mut app, |_event, _app, state| state.push("remaining"));
+        parent.add_click_listener(&mut app, |_event, _app, state| state.push("parent"));
         parent.push(&mut app, child);
-        let targets = freeze_target_list(child.inner, &app.elements);
-        let mut event = EventKind::Click(ClickEvent::new(child.inner, ClickTrigger::Programmatic));
 
-        dispatch_event(&mut event, &targets, &mut app, &mut states);
+        click(&mut app, &mut state, child.inner);
 
+        assert!(!app.contains(child.inner));
+        assert_eq!(state, ["deleted", "remaining"]);
+        assert!(weak.upgrade().is_none());
+    }
+
+    #[test]
+    fn cloned_subtrees_keep_listener_order_and_independent_lists() {
+        let mut app = App::<Vec<(&'static str, DynElement)>>::new();
+        let mut state = Vec::new();
+        let parent = Container::new(&mut app);
+        let child = Container::new(&mut app);
+        parent.push(&mut app, child);
+        parent.add_event_listener(
+            &mut app,
+            EventCallbackKind::Click(Rc::new(|event, _app, state| {
+                state.push(("capture", event.current_target()));
+            })),
+            EventListenerOptions { capturing: true },
+        );
+        parent.add_click_listener(&mut app, |event, _app, state| {
+            state.push(("bubble", event.current_target()));
+        });
+        child.add_click_listener(&mut app, |event, _app, state| {
+            state.push(("child", event.current_target()));
+        });
+
+        let cloned = app.deep_clone(parent.inner);
+        let cloned_child = cloned.first_child(&app).unwrap();
+        child.add_click_listener(&mut app, |event, _app, state| {
+            state.push(("original", event.current_target()));
+        });
+        cloned_child.add_click_listener(&mut app, |event, _app, state| {
+            state.push(("clone", event.current_target()));
+        });
+
+        click(&mut app, &mut state, cloned_child);
+        click(&mut app, &mut state, child.inner);
+
+        assert_eq!(
+            state,
+            [
+                ("capture", cloned),
+                ("child", cloned_child),
+                ("clone", cloned_child),
+                ("bubble", cloned),
+                ("capture", parent.inner),
+                ("child", child.inner),
+                ("original", child.inner),
+                ("bubble", parent.inner),
+            ]
+        );
+    }
+
+    #[test]
+    fn the_same_callback_can_dispatch_again_with_non_clone_user_state() {
+        struct State {
+            count: usize,
+            label: Text,
+            calls: Vec<(usize, &'static str)>,
+        }
+
+        impl State {
+            fn increment(&mut self, app: &mut App<Self>) {
+                self.count += 1;
+                self.refresh(app);
+            }
+
+            fn refresh(&self, app: &mut App<Self>) {
+                self.label.set_text(app, &self.count.to_string());
+            }
+        }
+
+        let mut app = App::<State>::new();
+        let target = Container::new(&mut app);
+        let label = Text::new(&mut app, "0");
+        let mut state = State {
+            count: 0,
+            label,
+            calls: Vec::new(),
+        };
+        target.add_click_listener(&mut app, |event, app, state| {
+            state.increment(app);
+            let count = state.count;
+            state.calls.push((count, "enter"));
+            if count == 1 {
+                click(app, state, event.current_target());
+            }
+            state.calls.push((count, "leave"));
+        });
+
+        let cloned = app.deep_clone(target.inner);
+        click(&mut app, &mut state, cloned);
+
+        assert_eq!(state.count, 2);
+        assert_eq!(state.label.text(&app), "2");
+        assert_eq!(state.calls, [(1, "enter"), (2, "enter"), (2, "leave"), (1, "leave")]);
+    }
+
+    #[test]
+    fn listeners_added_during_capture_join_later_snapshots() {
+        let mut app = App::<Vec<&'static str>>::new();
+        let mut state = Vec::new();
+        let parent = Container::new(&mut app);
+        let child = Container::new(&mut app);
+        parent.push(&mut app, child);
+        parent.add_event_listener(
+            &mut app,
+            EventCallbackKind::Click(Rc::new(|_event, _app, state| state.push("parent capture"))),
+            EventListenerOptions { capturing: true },
+        );
+        child.add_event_listener(
+            &mut app,
+            EventCallbackKind::Click(Rc::new(move |_event, app, state| {
+                state.push("capture");
+                child.add_click_listener(app, |_event, _app, state| state.push("added bubble"));
+                child.add_event_listener(
+                    app,
+                    EventCallbackKind::Click(Rc::new(|_event, _app, state| state.push("added capture"))),
+                    EventListenerOptions { capturing: true },
+                );
+            })),
+            EventListenerOptions { capturing: true },
+        );
+        child.add_click_listener(&mut app, |_event, _app, state| state.push("bubble"));
+        parent.add_click_listener(&mut app, |_event, _app, state| state.push("parent bubble"));
+
+        click(&mut app, &mut state, child.inner);
+        assert_eq!(
+            state,
+            ["parent capture", "capture", "bubble", "added bubble", "parent bubble"]
+        );
+
+        state.clear();
+        click(&mut app, &mut state, child.inner);
+        assert_eq!(
+            state,
+            [
+                "parent capture",
+                "capture",
+                "added capture",
+                "bubble",
+                "added bubble",
+                "added bubble",
+                "parent bubble"
+            ]
+        );
+    }
+
+    #[test]
+    fn detached_callbacks_live_until_their_subtree_is_deleted() {
+        let mut app = App::<usize>::new();
+        let mut state = 0;
+        let parent = Container::new(&mut app);
+        let subtree = Container::new(&mut app);
+        let child = Container::new(&mut app);
+        let captured = Rc::new(1);
+        let weak = Rc::downgrade(&captured);
+        child.add_click_listener(&mut app, move |_event, _app, count| *count += *captured);
+        parent.push(&mut app, subtree);
+        subtree.push(&mut app, child);
+
+        parent.remove_all_children(&mut app);
+        parent.delete_all_children(&mut app);
+        click(&mut app, &mut state, child.inner);
+        assert_eq!(state, 1);
+        assert!(weak.upgrade().is_some());
+
+        parent.push(&mut app, subtree);
+        parent.delete_all_children(&mut app);
+        assert!(weak.upgrade().is_none());
+        assert!(!app.contains(subtree.inner));
         assert!(!app.contains(child.inner));
     }
 }

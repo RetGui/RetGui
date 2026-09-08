@@ -210,7 +210,7 @@ impl ElementInternals for CheckboxElement {
 }
 
 impl Checkbox {
-    pub fn new(app: &mut App, label: &str, checked: bool) -> Self {
+    pub fn new<S: 'static>(app: &mut App<S>, label: &str, checked: bool) -> Self {
         Self {
             inner: CheckboxElement::insert(
                 &mut app.elements,

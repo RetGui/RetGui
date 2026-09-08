@@ -131,7 +131,7 @@ impl ElementInternals for CalendarElement {
 }
 
 impl Calendar {
-    pub fn new(app: &mut App) -> Self {
+    pub fn new<S: 'static>(app: &mut App<S>) -> Self {
         let App {
             elements,
             gummy_tree,
@@ -253,7 +253,7 @@ impl Calendar {
         Self { inner }
     }
 
-    pub fn set_start_year(&self, app: &mut App, year: i32) {
+    pub fn set_start_year<S: 'static>(&self, app: &mut App<S>, year: i32) {
         if !app.contains(self.inner) {
             return;
         }
@@ -279,7 +279,7 @@ impl Calendar {
         });
     }
 
-    pub fn set_end_year(&self, app: &mut App, year: i32) {
+    pub fn set_end_year<S: 'static>(&self, app: &mut App<S>, year: i32) {
         if !app.contains(self.inner) {
             return;
         }
@@ -452,13 +452,12 @@ impl CalendarElement {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::States;
     use crate::events::{DropdownItemSelectedEvent, EventDispatcher};
 
     #[test]
     fn calendar_rebuilds_years_and_updates_days_from_dropdown_events() {
         let mut app = App::new();
-        let mut states = States::new();
+        let mut state = ();
         let calendar = Calendar::new(&mut app);
         let year_dropdown = app.get_as::<CalendarElement>(calendar.inner).year_dropdown;
         let month_dropdown = app.get_as::<CalendarElement>(calendar.inner).month_dropdown;
@@ -480,7 +479,7 @@ mod tests {
                     index,
                 )));
         }
-        EventDispatcher::dispatch_queued_events(&mut app, &mut states);
+        EventDispatcher::dispatch_queued_events(&mut app, &mut state);
         let calendar_element = app.get_as::<CalendarElement>(calendar.inner);
         assert_eq!((calendar_element.focus_year, calendar_element.focus_month), (2024, 1));
         let days = calendar_element.days.clone();
@@ -493,7 +492,7 @@ mod tests {
                 month_dropdown.inner,
                 1,
             )));
-        EventDispatcher::dispatch_queued_events(&mut app, &mut states);
+        EventDispatcher::dispatch_queued_events(&mut app, &mut state);
         assert_eq!(app.get_as::<CalendarElement>(calendar.inner).focus_month, 2);
         assert_ne!(january, days.iter().map(|day| day.text(&app)).collect::<Vec<_>>());
     }

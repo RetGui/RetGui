@@ -1,12 +1,11 @@
 use std::any::Any;
 use std::collections::VecDeque;
-use std::marker::PhantomData;
 use std::mem;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use rustc_hash::{FxHashMap, FxHashSet};
 
-use slotmap::{DefaultKey, Key, SlotMap};
+use slotmap::{DefaultKey, SlotMap};
 
 use crate::accessibility::RetGuiAccessTree;
 use crate::elements::radiogroup::RadioGroupElement;
@@ -145,10 +144,10 @@ impl RetainedElements {
         event_queue: &mut VecDeque<EventKind>,
         focus: &mut Option<DynElement>,
         parent: DynElement,
-    ) {
+    ) -> Vec<DynElement> {
         let roots = mem::take(&mut self.get_mut(parent).element_data_mut().children);
         if roots.is_empty() {
-            return;
+            return Vec::new();
         }
 
         for root in &roots {
@@ -217,13 +216,14 @@ impl RetainedElements {
             }
         }
 
-        for handle in subtree.into_iter().rev() {
+        for handle in subtree.iter().rev() {
             if let Some(element) = self.slots.remove(handle.key()).flatten() {
                 by_internal_id.remove(&element.element_data().internal_id);
             }
         }
 
         self.get(parent).request_window_redraw();
+        subtree
     }
 
     pub fn dispatch_mut<R>(
@@ -262,104 +262,5 @@ impl RetainedElements {
 
     pub fn store_id(&self) -> u64 {
         self.id
-    }
-}
-
-pub struct States {
-    id: u64,
-    slots: SlotMap<DefaultKey, Box<dyn Any>>,
-}
-
-impl Default for States {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl States {
-    pub fn new() -> Self {
-        Self {
-            id: NEXT_STORE_ID.fetch_add(1, Ordering::Relaxed),
-            slots: SlotMap::with_key(),
-        }
-    }
-
-    pub fn insert<T: 'static>(&mut self, value: T) -> State<T> {
-        State {
-            key: self.slots.insert(Box::new(value)),
-            store_id: self.id,
-            marker: PhantomData,
-        }
-    }
-
-    pub fn insert_with<T: 'static>(&mut self, create: impl FnOnce(State<T>) -> T) -> State<T> {
-        let store_id = self.id;
-        let key = self.slots.insert_with_key(|key| {
-            Box::new(create(State {
-                key,
-                store_id,
-                marker: PhantomData,
-            }))
-        });
-        State {
-            key,
-            store_id,
-            marker: PhantomData,
-        }
-    }
-
-    pub fn get<T: 'static>(&self, state: State<T>) -> &T {
-        assert_eq!(state.store_id, self.id, "state handle belongs to a different store");
-        self.slots[state.key].downcast_ref().expect("state handle changed type")
-    }
-
-    pub fn get_mut<T: 'static>(&mut self, state: State<T>) -> &mut T {
-        assert_eq!(state.store_id, self.id, "state handle belongs to a different store");
-        self.slots[state.key].downcast_mut().expect("state handle changed type")
-    }
-}
-
-pub struct State<T> {
-    key: DefaultKey,
-    store_id: u64,
-    marker: PhantomData<fn() -> T>,
-}
-
-impl<T> Copy for State<T> {}
-
-impl<T> Clone for State<T> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<T> PartialEq for State<T> {
-    fn eq(&self, other: &Self) -> bool {
-        self.key == other.key && self.store_id == other.store_id
-    }
-}
-
-impl<T> Eq for State<T> {}
-
-impl<T> std::fmt::Debug for State<T> {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        formatter
-            .debug_tuple("State")
-            .field(&(self.store_id, self.key.data()))
-            .finish()
-    }
-}
-
-impl<T: 'static> State<T> {
-    pub fn borrow(self, states: &States) -> &T {
-        states.get(self)
-    }
-
-    pub fn borrow_mut(self, states: &mut States) -> &mut T {
-        states.get_mut(self)
-    }
-
-    pub fn with_mut<R>(self, states: &mut States, callback: impl FnOnce(&mut T) -> R) -> R {
-        callback(states.get_mut(self))
     }
 }

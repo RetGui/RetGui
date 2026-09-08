@@ -113,7 +113,7 @@ impl ElementInternals for CodeEditorElement {
 }
 
 impl CodeEditor {
-    pub fn new(app: &mut App, code: &str, extension: &str, theme: &str) -> Self {
+    pub fn new<S: 'static>(app: &mut App<S>, code: &str, extension: &str, theme: &str) -> Self {
         Self {
             inner: CodeEditorElement::insert(
                 &mut app.elements,

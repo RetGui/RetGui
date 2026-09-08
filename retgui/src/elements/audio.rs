@@ -2,7 +2,6 @@
 
 use std::collections::VecDeque;
 use std::path::Path;
-use std::rc::Rc;
 use std::sync::Arc;
 #[cfg(not(target_arch = "wasm32"))]
 use std::time::{Duration, Instant};
@@ -231,7 +230,7 @@ impl ElementInternals for AudioElement {
 }
 
 impl Audio {
-    pub fn new(app: &mut App, path: &Path) -> Self {
+    pub fn new<S: 'static>(app: &mut App<S>, path: &Path) -> Self {
         let play_icon = ResourceId::StaticBytes(PLAY);
         let pause_icon = ResourceId::StaticBytes(PAUSE);
         let volume_icon = ResourceId::StaticBytes(VOLUME);
@@ -315,54 +314,6 @@ impl Audio {
         audio.element_data_mut().create_layout_node(gummy_tree, None);
 
         push_child_to_element(elements, gummy_tree, play_button.inner, play_button_icon.inner);
-        elements
-            .get_mut(play_button.inner)
-            .on_click(Rc::new(move |event, app, _states| {
-                let Ok(inner) = event.current_target().parent(app) else {
-                    return;
-                };
-                app.elements.try_dispatch_mut(inner, |audio, arena| {
-                    if let Some(audio) = (audio as &mut dyn std::any::Any).downcast_mut::<AudioElement>() {
-                        audio.toggle(
-                            arena,
-                            &mut app.gummy_tree,
-                            &mut app.pending_resources,
-                            &mut app.pending_animation_updates,
-                        );
-                    }
-                });
-            }));
-        let play_control = play_button;
-        elements
-            .get_mut(track.inner)
-            .on_slider_value_changed(Rc::new(move |event, app, _states| {
-                let Ok(inner) = event.current_target().parent(app) else {
-                    return;
-                };
-                if let Some(audio) = app
-                    .elements
-                    .try_get_mut(inner)
-                    .and_then(|element| (element as &mut dyn std::any::Any).downcast_mut::<AudioElement>())
-                {
-                    audio.set_cursor(event.value as f32);
-                }
-            }));
-        let track_control = track;
-        elements
-            .get_mut(volume_track.inner)
-            .on_slider_value_changed(Rc::new(move |event, app, _states| {
-                let Ok(inner) = event.current_target().parent(app) else {
-                    return;
-                };
-                if let Some(audio) = app
-                    .elements
-                    .try_get_mut(inner)
-                    .and_then(|element| (element as &mut dyn std::any::Any).downcast_mut::<AudioElement>())
-                {
-                    audio.set_volume(event.value as f32);
-                }
-            }));
-        let volume_control = volume_track;
         let volume_icon_element = TinyVgElement::insert(
             elements,
             gummy_tree,
@@ -377,11 +328,11 @@ impl Audio {
         icon.set_height(gummy_tree, Unit::Px(16.0));
 
         for child in [
-            play_control.inner,
-            track_control.inner,
+            play_button.inner,
+            track.inner,
             duration.inner,
             volume_icon_element,
-            volume_control.inner,
+            volume_track.inner,
         ] {
             push_child_to_element(elements, gummy_tree, inner, child);
         }
@@ -391,17 +342,56 @@ impl Audio {
                 .expect("audio handle changed type")
                 .set_sound(elements, gummy_tree, audio_context, path);
         });
+        play_button.add_click_listener(app, move |event, app, _state| {
+            let Ok(inner) = event.current_target().parent(app) else {
+                return;
+            };
+            app.elements.try_dispatch_mut(inner, |audio, arena| {
+                if let Some(audio) = (audio as &mut dyn std::any::Any).downcast_mut::<AudioElement>() {
+                    audio.toggle(
+                        arena,
+                        &mut app.gummy_tree,
+                        &mut app.pending_resources,
+                        &mut app.pending_animation_updates,
+                    );
+                }
+            });
+        });
+        track.add_slider_value_changed_listener(app, move |event, app, _state| {
+            let Ok(inner) = event.current_target().parent(app) else {
+                return;
+            };
+            if let Some(audio) = app
+                .elements
+                .try_get_mut(inner)
+                .and_then(|element| (element as &mut dyn std::any::Any).downcast_mut::<AudioElement>())
+            {
+                audio.set_cursor(event.value as f32);
+            }
+        });
+        volume_track.add_slider_value_changed_listener(app, move |event, app, _state| {
+            let Ok(inner) = event.current_target().parent(app) else {
+                return;
+            };
+            if let Some(audio) = app
+                .elements
+                .try_get_mut(inner)
+                .and_then(|element| (element as &mut dyn std::any::Any).downcast_mut::<AudioElement>())
+            {
+                audio.set_volume(event.value as f32);
+            }
+        });
         Self { inner }
     }
 
-    pub fn set_controls(&self, app: &mut App, controls: bool) {
+    pub fn set_controls<S: 'static>(&self, app: &mut App<S>, controls: bool) {
         let (gummy_tree, elements) = (&mut app.gummy_tree, &mut app.elements);
         if let Some(audio) = elements.try_get_as_mut::<AudioElement>(self.inner) {
             audio.set_controls(gummy_tree, controls);
         }
     }
 
-    pub fn play(&self, app: &mut App) {
+    pub fn play<S: 'static>(&self, app: &mut App<S>) {
         app.elements.try_dispatch_mut(self.inner, |audio, arena| {
             (audio as &mut dyn std::any::Any)
                 .downcast_mut::<AudioElement>()
@@ -415,7 +405,7 @@ impl Audio {
         });
     }
 
-    pub fn pause(&self, app: &mut App) {
+    pub fn pause<S: 'static>(&self, app: &mut App<S>) {
         app.elements.try_dispatch_mut(self.inner, |audio, arena| {
             (audio as &mut dyn std::any::Any)
                 .downcast_mut::<AudioElement>()
@@ -429,7 +419,7 @@ impl Audio {
         });
     }
 
-    pub fn toggle(&self, app: &mut App) {
+    pub fn toggle<S: 'static>(&self, app: &mut App<S>) {
         app.elements.try_dispatch_mut(self.inner, |audio, arena| {
             (audio as &mut dyn std::any::Any)
                 .downcast_mut::<AudioElement>()
@@ -443,7 +433,7 @@ impl Audio {
         });
     }
 
-    pub fn is_playing(&self, app: &App) -> bool {
+    pub fn is_playing<S: 'static>(&self, app: &App<S>) -> bool {
         app.try_get_as::<AudioElement>(self.inner)
             .is_some_and(AudioElement::is_playing)
     }

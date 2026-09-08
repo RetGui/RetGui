@@ -6,10 +6,10 @@ use retgui_renderer::renderer::Renderer;
 
 use rustc_hash::FxHashMap;
 
+use crate::App;
 use crate::elements::{DynElement, RetainedElements};
 use crate::events::pointer_capture::PointerCapture;
 use crate::events::{Event, EventCallback, EventCallbackKind, EventKind, PointerId};
-use crate::{App, States};
 
 pub(super) fn freeze_target_list(target: DynElement, elements: &RetainedElements) -> VecDeque<DynElement> {
     let mut current = Some(target);
@@ -79,11 +79,18 @@ pub(super) fn find_target(
         .unwrap_or(root)
 }
 
-pub(super) fn call_user_event_handlers(event: &mut EventKind, capturing: bool, app: &mut App, states: &mut States) {
-    let Some(current_target) = app.elements.try_get(event.current_target()) else {
+pub(super) fn call_user_event_handlers<S: 'static>(
+    event: &mut EventKind,
+    capturing: bool,
+    app: &mut App<S>,
+    state: &mut S,
+) {
+    if !app.elements.contains(event.current_target()) {
+        return;
+    }
+    let Some(callbacks) = app.event_callbacks.get(&event.current_target()).cloned() else {
         return;
     };
-    let callbacks = current_target.element_data().event_callbacks.clone();
 
     for EventCallback {
         callback,
@@ -94,38 +101,38 @@ pub(super) fn call_user_event_handlers(event: &mut EventKind, capturing: bool, a
             continue;
         }
         match (&mut *event, callback) {
-            (EventKind::PointerEnter(event), EventCallbackKind::PointerEnter(handler)) => handler(event, app, states),
-            (EventKind::PointerLeave(event), EventCallbackKind::PointerLeave(handler)) => handler(event, app, states),
-            (EventKind::Click(event), EventCallbackKind::Click(handler)) => handler(event, app, states),
-            (EventKind::Custom(event), EventCallbackKind::Custom(handler)) => handler(event, app, states),
-            (EventKind::Focus(event), EventCallbackKind::Focus(handler)) => handler(event, app, states),
+            (EventKind::PointerEnter(event), EventCallbackKind::PointerEnter(handler)) => handler(event, app, state),
+            (EventKind::PointerLeave(event), EventCallbackKind::PointerLeave(handler)) => handler(event, app, state),
+            (EventKind::Click(event), EventCallbackKind::Click(handler)) => handler(event, app, state),
+            (EventKind::Custom(event), EventCallbackKind::Custom(handler)) => handler(event, app, state),
+            (EventKind::Focus(event), EventCallbackKind::Focus(handler)) => handler(event, app, state),
             (EventKind::GotPointerCapture(event), EventCallbackKind::GotPointerCapture(handler))
             | (EventKind::LostPointerCapture(event), EventCallbackKind::LostPointerCapture(handler)) => {
-                handler(event, app, states)
+                handler(event, app, state)
             }
-            (EventKind::Scroll(event), EventCallbackKind::Scroll(handler)) => handler(event, app, states),
-            (EventKind::Unfocus(event), EventCallbackKind::Unfocus(handler)) => handler(event, app, states),
+            (EventKind::Scroll(event), EventCallbackKind::Scroll(handler)) => handler(event, app, state),
+            (EventKind::Unfocus(event), EventCallbackKind::Unfocus(handler)) => handler(event, app, state),
             (EventKind::PointerUp(event), EventCallbackKind::PointerButtonUp(handler))
             | (EventKind::PointerDown(event), EventCallbackKind::PointerButtonDown(handler)) => {
-                handler(event, app, states)
+                handler(event, app, state)
             }
             (EventKind::KeyDown(event), EventCallbackKind::KeyboardInput(handler))
-            | (EventKind::KeyUp(event), EventCallbackKind::KeyboardInput(handler)) => handler(event, app, states),
-            (EventKind::PointerMoved(event), EventCallbackKind::PointerMoved(handler)) => handler(event, app, states),
+            | (EventKind::KeyUp(event), EventCallbackKind::KeyboardInput(handler)) => handler(event, app, state),
+            (EventKind::PointerMoved(event), EventCallbackKind::PointerMoved(handler)) => handler(event, app, state),
             (EventKind::DropdownItemSelected(event), EventCallbackKind::DropdownItemSelected(handler)) => {
-                handler(event, app, states)
+                handler(event, app, state)
             }
             (EventKind::SliderValueChanged(event), EventCallbackKind::SliderValueChanged(handler)) => {
-                handler(event, app, states)
+                handler(event, app, state)
             }
             (EventKind::RadioValueChanged(event), EventCallbackKind::RadioValueChanged(handler)) => {
-                handler(event, app, states)
+                handler(event, app, state)
             }
             (EventKind::CheckboxToggled(event), EventCallbackKind::CheckboxToggled(handler)) => {
-                handler(event, app, states)
+                handler(event, app, state)
             }
             (EventKind::TextInputChanged(event), EventCallbackKind::TextInputChanged(handler)) => {
-                handler(event, app, states)
+                handler(event, app, state)
             }
             _ => {}
         }

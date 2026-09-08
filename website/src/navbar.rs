@@ -5,10 +5,11 @@ use retgui::{App, pct, px, rgb};
 use crate::link::Link;
 use crate::router::NavigateFn;
 use crate::theme::{NAVBAR_BACKGROUND_COLOR, NAVBAR_TEXT_COLOR, wrapper};
+use crate::WebsiteState;
 
 pub const NAVBAR_HEIGHT: f32 = 60.0;
 
-fn create_link(app: &mut App, navigate: NavigateFn, label: &str, route: &str) -> Container {
+fn create_link(app: &mut App<WebsiteState>, navigate: NavigateFn, label: &str, route: &str) -> Container {
     let route_owned = route.to_string();
     let text = Text::new(app, label);
     text.set_id(app, &format!("route_{route}"));
@@ -16,18 +17,18 @@ fn create_link(app: &mut App, navigate: NavigateFn, label: &str, route: &str) ->
     text.set_font_size(app, 16.0);
     text.set_selectable(app, false);
     text.set_color(app, NAVBAR_TEXT_COLOR);
-    let link = Link(app, move |app, states| navigate(&route_owned, app, states));
+    let link = Link(app, move |app, state| navigate(&route_owned, app, state));
     link.push(app, text);
     link
 }
 
-pub fn navbar(app: &mut App, navigate: NavigateFn) -> Container {
-    let brand = create_link(app, navigate.clone(), "RetGui", "/");
+pub fn navbar(app: &mut App<WebsiteState>, navigate: NavigateFn) -> Container {
+    let brand = create_link(app, navigate, "RetGui", "/");
     brand.set_font_size(app, 32.0);
     brand.set_font_weight(app, FontWeight::BOLD);
     brand.set_margin(app, px(0), px(24), px(0), px(0));
-    let home = create_link(app, navigate.clone(), "Home", "/");
-    let docs = create_link(app, navigate.clone(), "Docs", "/docs");
+    let home = create_link(app, navigate, "Home", "/");
+    let docs = create_link(app, navigate, "Docs", "/docs");
     let examples = create_link(app, navigate, "Examples", "/examples");
     let links = Container::new(app);
     links.set_display(app, Display::Flex);

@@ -32,7 +32,7 @@ use crate::{App, auto, px, rgba};
 ///
 /// ```no_run
 /// use retgui::elements::{Dropdown, Element, Text, Window};
-/// use retgui::{App, RetGuiOptions, States, px, retgui_main};
+/// use retgui::{App, RetGuiOptions, px, retgui_main};
 ///
 /// fn main() {
 ///     let mut app = App::new();
@@ -54,7 +54,7 @@ use crate::{App, auto, px, rgba};
 ///     dropdown.set_selected_item(&mut app, 0);
 ///     let window = Window::new(&mut app, "Dropdown");
 ///     window.push(&mut app, dropdown);
-///     retgui_main(app, States::new(), RetGuiOptions::basic("Dropdown"));
+///     retgui_main(app, (), RetGuiOptions::basic("Dropdown"));
 /// }
 /// ```
 #[derive(Clone, Copy)]
@@ -511,7 +511,7 @@ impl Shape {
 }
 
 impl Dropdown {
-    pub fn new(app: &mut App) -> Self {
+    pub fn new<S: 'static>(app: &mut App<S>) -> Self {
         Self {
             inner: DropdownElement::insert(
                 &mut app.elements,
@@ -522,7 +522,7 @@ impl Dropdown {
         }
     }
 
-    pub fn set_selected_item(&self, app: &mut App, index: usize) {
+    pub fn set_selected_item<S: 'static>(&self, app: &mut App<S>, index: usize) {
         app.elements.try_dispatch_mut(self.inner, |inner, arena| {
             let inner = (inner as &mut dyn Any).downcast_mut::<DropdownElement>().unwrap();
             inner.set_selected_element(
@@ -535,7 +535,7 @@ impl Dropdown {
         });
     }
 
-    pub fn selected_item(&self, app: &App) -> Option<usize> {
+    pub fn selected_item<S: 'static>(&self, app: &App<S>) -> Option<usize> {
         app.try_get_as::<DropdownElement>(self.inner)
             .and_then(|dropdown| dropdown.selected_element_index)
     }

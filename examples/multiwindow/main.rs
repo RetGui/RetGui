@@ -1,7 +1,12 @@
-use retgui::elements::{Container, Element, State, Text, Window};
+use retgui::elements::{Container, Element, Text, Window};
 use retgui::events::Event;
 use retgui::style::{AlignItems, Display, FlexDirection, JustifyContent, Unit};
-use retgui::{App, Color, States, rgb};
+use retgui::{App, Color, rgb};
+
+#[derive(Default)]
+pub struct MultiwindowState {
+    counters: Vec<Counter>,
+}
 
 #[derive(Default, Clone, Copy)]
 pub struct Counter {
@@ -23,8 +28,8 @@ fn create_button(
     label: &str,
     base_color: Color,
     delta: i64,
-    app: &mut App,
-    state: State<Counter>,
+    app: &mut App<MultiwindowState>,
+    counter_index: usize,
     count_text: Text,
 ) -> Container {
     let label = Text::new(app, label);
@@ -40,12 +45,12 @@ fn create_button(
     container.set_justify_content(app, JustifyContent::Center);
     container.set_align_items(app, AlignItems::Center);
     container.set_background_color(app, base_color);
-    container.add_click_listener(app, move |event, app, states| {
-        let state = state.borrow_mut(states);
-        let create_window = state.change(delta);
-        count_text.set_text(app, &format!("Count: {}", state.count()));
+    container.add_click_listener(app, move |event, app, state| {
+        let count = &mut state.counters[counter_index];
+        let create_window = count.change(delta);
+        count_text.set_text(app, &format!("Count: {}", count.count()));
         if create_window {
-            counter(app, states);
+            counter(app, state);
         }
         event.stop_propagation();
     });
@@ -53,11 +58,12 @@ fn create_button(
     container
 }
 
-pub fn counter(app: &mut App, states: &mut States) -> Window {
-    let count = states.insert(Counter::default());
+pub fn counter(app: &mut App<MultiwindowState>, state: &mut MultiwindowState) -> Window {
+    let counter_index = state.counters.len();
+    state.counters.push(Counter::default());
     let count_text = Text::new(app, "Count: 0");
-    let subtract = create_button("-", rgb(244, 67, 54), -1, app, count, count_text);
-    let add = create_button("+", rgb(76, 175, 80), 1, app, count, count_text);
+    let subtract = create_button("-", rgb(244, 67, 54), -1, app, counter_index, count_text);
+    let add = create_button("+", rgb(76, 175, 80), 1, app, counter_index, count_text);
     let button = Container::new(app);
     button.set_display(app, Display::Flex);
     button.set_flex_direction(app, FlexDirection::Row);
@@ -82,10 +88,10 @@ pub fn counter(app: &mut App, states: &mut States) -> Window {
 
 fn main() {
     let mut app = App::new();
-    let mut states = States::new();
-    let _counter1 = counter(&mut app, &mut states);
+    let mut state = MultiwindowState::default();
+    let _counter1 = counter(&mut app, &mut state);
     use retgui::RetGuiOptions;
 
     util::setup_logging();
-    retgui::retgui_main(app, states, RetGuiOptions::basic("Counter"));
+    retgui::retgui_main(app, state, RetGuiOptions::basic("Counter"));
 }

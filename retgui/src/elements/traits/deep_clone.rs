@@ -93,14 +93,11 @@ where
     new_element
 }
 
-pub(crate) fn finish_clone(
-    elements: &mut RetainedElements,
+pub(crate) fn subtree_clone_pairs(
+    elements: &RetainedElements,
     source: DynElement,
     cloned_root: DynElement,
-    gummy_tree: &mut GummyTree,
-    access_tree: &RetGuiAccessTree,
-    by_internal_id: &mut ElementIds,
-) {
+) -> Vec<(DynElement, DynElement)> {
     let mut pairs = vec![(source, cloned_root)];
     let mut index = 0;
     while let Some(&(original, cloned)) = pairs.get(index) {
@@ -109,6 +106,18 @@ pub(crate) fn finish_clone(
         pairs.extend(original_children.iter().copied().zip(cloned_children.iter().copied()));
         index += 1;
     }
+    pairs
+}
+
+pub(crate) fn finish_clone(
+    elements: &mut RetainedElements,
+    source: DynElement,
+    cloned_root: DynElement,
+    gummy_tree: &mut GummyTree,
+    access_tree: &RetGuiAccessTree,
+    by_internal_id: &mut ElementIds,
+) {
+    let pairs = subtree_clone_pairs(elements, source, cloned_root);
     let cloned_by_source: FxHashMap<_, _> = pairs.iter().copied().collect();
 
     // All children are restored to the store now, so groups in a different

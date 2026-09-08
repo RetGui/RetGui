@@ -1,4 +1,4 @@
-use retgui::{App, RetGuiOptions, States, retgui_main};
+use retgui::{App, RetGuiOptions, retgui_main};
 
 use crate::router::Router;
 
@@ -10,6 +10,13 @@ mod navbar;
 mod router;
 mod theme;
 mod web_link;
+
+pub(crate) struct WebsiteState {
+    global: WebsiteGlobalState,
+    router: Router,
+    selected_example: usize,
+    counter: i64,
+}
 
 pub(crate) struct WebsiteGlobalState {
     /// The current route that we are viewing.
@@ -81,11 +88,16 @@ impl Default for WebsiteGlobalState {
 fn main() {
     util::setup_logging();
     let mut app = App::new();
-    let mut states = States::new();
     let mut global_state = WebsiteGlobalState::default();
     global_state.load_route();
-    let global_state = states.insert(global_state);
-    let router = Router::new(&mut app, &mut states, global_state);
-    router.navigate(&mut app, &mut states);
-    retgui_main(app, states, RetGuiOptions::default());
+    let route = global_state.get_route();
+    let (router, selected_example) = Router::new(&mut app, &route);
+    let mut state = WebsiteState {
+        global: global_state,
+        router,
+        selected_example,
+        counter: 0,
+    };
+    router::navigate_to(&route, &mut app, &mut state);
+    retgui_main(app, state, RetGuiOptions::default());
 }

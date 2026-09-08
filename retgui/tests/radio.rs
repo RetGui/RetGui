@@ -11,6 +11,7 @@ mod test_utils;
 fn switches_from_red_to_green() {
     run(
         "radio_switches_from_red_to_green",
+        (),
         |app, _states| {
             let group = RadioGroup::new(app, "Color");
             let red_label = Text::new(app, "Red");

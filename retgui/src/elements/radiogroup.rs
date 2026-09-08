@@ -137,7 +137,7 @@ impl RadioGroupElement {
 }
 
 impl RadioGroup {
-    pub fn new(app: &mut App, label: &str) -> Self {
+    pub fn new<S: 'static>(app: &mut App<S>, label: &str) -> Self {
         Self {
             inner: RadioGroupElement::insert(
                 &mut app.elements,
@@ -149,12 +149,12 @@ impl RadioGroup {
         }
     }
 
-    pub fn value(&self, app: &App) -> Option<String> {
+    pub fn value<S: 'static>(&self, app: &App<S>) -> Option<String> {
         let selected = app.try_get_as::<RadioGroupElement>(self.inner)?.selected?;
         Some(app.try_get_as::<RadioElement>(selected.inner)?.value.clone())
     }
 
-    pub fn set_value(&self, app: &mut App, value: &str) -> bool {
+    pub fn set_value<S: 'static>(&self, app: &mut App<S>, value: &str) -> bool {
         let Some(group) = app.try_get_as::<RadioGroupElement>(self.inner) else {
             return false;
         };

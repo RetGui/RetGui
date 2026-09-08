@@ -102,7 +102,7 @@ impl ElementInternals for ContainerElement {
 }
 
 impl Container {
-    pub fn new(app: &mut App) -> Self {
+    pub fn new<S: 'static>(app: &mut App<S>) -> Self {
         Self {
             inner: ContainerElement::create(
                 &mut app.elements,
