@@ -29,5 +29,5 @@ features = [
     "jpeg",
     "png",
     "clipboard",
-    "vello_hybrid_renderer"
+    "vello_gpu_renderer"
 ]

@@ -16,7 +16,7 @@ use vello_common::filter_effects::{Filter, FilterFunction};
 use vello_common::paint::ImageId;
 use vello_common::{kurbo, peniko};
 
-use vello_hybrid::{RenderSize, Renderer as VelloRenderer, Resources, Scene, TextureBindings};
+use vello_gpu::{RenderSize, Renderer as VelloRenderer, Resources, Scene, TextureBindings};
 
 use wgpu::{CommandEncoder, CurrentSurfaceTexture, TextureFormat};
 
@@ -32,9 +32,9 @@ use crate::render_list::RenderList;
 use crate::renderer::Renderer;
 use crate::resource_mapper::{RendererResourceId, ResourceMapper};
 use crate::sort_commands::SortedCommands;
-use crate::vello_hybrid::image::{draw_image, upload_image};
-use crate::vello_hybrid::render_context::{RenderContext, RenderSurface, create_vello_renderer};
-use crate::vello_hybrid::text::draw_text;
+use crate::vello_gpu::image::{draw_image, upload_image};
+use crate::vello_gpu::render_context::{RenderContext, RenderSurface, create_vello_renderer};
+use crate::vello_gpu::text::draw_text;
 
 pub mod image;
 mod render_context;
@@ -271,8 +271,8 @@ impl Renderer for VelloHybridRenderer {
         };
 
         let render_size = RenderSize {
-            width: surface.config.width,
-            height: surface.config.height,
+            width: surface.config.width.try_into().unwrap(),
+            height: surface.config.height.try_into().unwrap(),
         };
 
         let mut encoder = device_handle
@@ -296,13 +296,13 @@ impl Renderer for VelloHybridRenderer {
                 &texture_view,
                 None,
                 &self.texture_bindings,
+                vello_gpu::TargetInit::Clear(vello_gpu::ClearSettings::default()),
             )
             .unwrap();
 
         device_handle.queue.submit([encoder.finish()]);
-
-        // Queue the texture to be presented on the surface
-        surface_texture.present();
+        device_handle.queue.present(surface_texture);
+        device_handle.device.poll(wgpu::PollType::Poll).unwrap();
 
         self.scene.reset();
     }
@@ -336,9 +336,9 @@ impl VelloHybridRenderer {
                 width,
                 height,
                 present_mode_for_vsync(true),
-                #[cfg(feature = "vello_hybrid_renderer_webgl")]
+                #[cfg(feature = "vello_gpu_renderer_webgl")]
                 TextureFormat::Rgba8Unorm,
-                #[cfg(not(feature = "vello_hybrid_renderer_webgl"))]
+                #[cfg(not(feature = "vello_gpu_renderer_webgl"))]
                 TextureFormat::Bgra8Unorm,
             )
             .await;

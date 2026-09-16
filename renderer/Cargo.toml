@@ -5,34 +5,34 @@ edition.workspace = true
 
 [features]
 vello_cpu_renderer = ["dep:vello_cpu", "dep:softbuffer", "dep:vello_common", "dep:glifo"]
-vello_hybrid_renderer = ["dep:vello_hybrid", "dep:vello_common", "dep:glifo", "dep:wgpu", "wgpu/fragile-send-sync-non-atomic-wasm"]
-vello_hybrid_renderer_webgl = ["wgpu/webgl"]
+vello_gpu_renderer = ["dep:vello_gpu", "dep:vello_common", "dep:glifo", "dep:wgpu", "wgpu/fragile-send-sync-non-atomic-wasm"]
+vello_gpu_renderer_webgl = ["wgpu/webgl"]
 
 [dependencies]
 
 [dependencies.glifo]
 git = "https://github.com/linebender/vello.git"
-rev = "9376c29e5be5be5076fcebcd083362759345ab74"
+rev = "0268b37f5c54fc3970707b1c525d555c568d67dd"
 default-features = false
 features = ["std"]
 optional = true
 
 [dependencies.vello_cpu]
 git = "https://github.com/linebender/vello.git"
-rev = "9376c29e5be5be5076fcebcd083362759345ab74"
+rev = "0268b37f5c54fc3970707b1c525d555c568d67dd"
 optional = true
 features = []
 
-[dependencies.vello_hybrid]
+[dependencies.vello_gpu]
 git = "https://github.com/linebender/vello.git"
-rev = "9376c29e5be5be5076fcebcd083362759345ab74"
+rev = "0268b37f5c54fc3970707b1c525d555c568d67dd"
 default-features = false
 features = ["default"]
 optional = true
 
 [dependencies.vello_common]
 git = "https://github.com/linebender/vello.git"
-rev = "9376c29e5be5be5076fcebcd083362759345ab74"
+rev = "0268b37f5c54fc3970707b1c525d555c568d67dd"
 optional = true
 default-features = false
 features = ["std"]
@@ -42,7 +42,7 @@ version = "0.4.8"
 optional = true
 
 [dependencies.wgpu]
-version = "29.0.3"
+version = "30.0.1"
 default-features = false
 features = ["wgsl", "vulkan", "dx12"]
 optional = true

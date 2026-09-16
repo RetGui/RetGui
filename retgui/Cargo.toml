@@ -14,7 +14,7 @@ dynamic_linking = []
 integration_tests = ["vello_cpu_renderer", "png"]
 clipboard = ["dep:clipboard-rs"]
 vello_cpu_renderer = ["retgui_renderer/vello_cpu_renderer"]
-vello_hybrid_renderer = ["retgui_renderer/vello_hybrid_renderer"]
+vello_gpu_renderer = ["retgui_renderer/vello_gpu_renderer"]
 http_client = ["retgui_resource_manager/http_client"]
 
 system_fonts = ["parley/system"]
@@ -26,7 +26,7 @@ markdown = ["dep:pulldown-cmark", "code_highlighting", "http_client", "link"]
 code_highlighting = ["dep:syntect"]
 link = ["dep:open"]
 
-default = ["vello_hybrid_renderer", "clipboard"]
+default = ["vello_gpu_renderer", "clipboard"]
 
 [dependencies]
 slotmap.workspace = true

@@ -14,7 +14,7 @@ Add the following to your `Cargo.toml`:
 [dependencies.retgui]
 git = "https://github.com/RetGui/RetGui"
 default-features = false
-features = ["system_fonts", "vello_hybrid_renderer"]
+features = ["system_fonts", "vello_gpu_renderer"]
 ```
 
 ## Example
@@ -112,7 +112,7 @@ pub fn main() {
 | audio                 | Enables playing audio via MiniAudio.                                        | Web, Android, and iOS   |
 | clipboard             | Enables clipboard support in text elements.                                 |                         |
 | vello_cpu_renderer    | Enables the Vello CPU renderer.                                             |                         |
-| vello_hybrid_renderer | Enables the Vello Hybrid renderer.                                          |                         |
+| vello_gpu_renderer | Enables the Vello Hybrid renderer.                                          |                         |
 | http_client           | Enables the HTTP client, which allows loading resources from URLs and more. |                         |
 | system_fonts          | Tells the font engine to load system fonts automatically.                   |                         |
 | png                   | Enables decoding PNG images.                                                |                         |

@@ -20,4 +20,4 @@ util = { path = "../util" }
 [dependencies.retgui]
 path = "../../retgui"
 default-features = false
-features = ["system_fonts", "vello_hybrid_renderer"]
+features = ["system_fonts", "vello_gpu_renderer"]
