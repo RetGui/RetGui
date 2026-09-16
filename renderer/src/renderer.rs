@@ -9,10 +9,7 @@ use retgui_primitives::geometry::{Affine, BezPath, Circle, Rectangle, Shape};
 
 use retgui_resource_manager::{ResourceId, ResourceManager};
 
-use crate::render_command::{
-    BoxShadowCmd, DrawBoxShadow, DrawCircleCmd, DrawCircleOutlineCmd, DrawImageCmd, DrawRectCmd, DrawRectOutlineCmd,
-    DrawTextCmd, FillBezPathCmd, PushLayerCmd, StrokeBezPathCmd,
-};
+use crate::render_command::{BoxShadowCmd, DrawBoxShadow, DrawCircleCmd, DrawCircleOutlineCmd, DrawImageCmd, DrawRectCmd, DrawRectOutlineCmd, DrawTextCmd, FillBezPathCmd, PushClipPathCmd, PushLayerCmd, StrokeBezPathCmd};
 use crate::render_list::RenderList;
 use crate::sort_commands::sort_render_list_internal;
 use crate::text_renderer_data::{TextData, TextScroll};
@@ -263,6 +260,26 @@ pub trait Renderer: Any {
             .push(RenderCommand::PushLayer(PushLayerCmd::Rect(rect, transform)));
     }
 
+    #[inline(always)]
+    fn push_clip_path(&mut self, rect: Rectangle) {
+        let transform = self.get_transform();
+        let world_rect = Rectangle::from_kurbo(transform.transform_rect_bbox(rect.to_kurbo()));
+        let previous_clip = self.render_list().current_clip;
+        let next_clip = match previous_clip {
+            Some(clip) => Some(
+                clip.intersection(&world_rect)
+                    .unwrap_or_else(|| Rectangle::new(0.0, 0.0, -1.0, -1.0)),
+            ),
+            None => Some(world_rect),
+        };
+        self.render_list_mut().clip_stack.push(previous_clip);
+        self.render_list_mut().current_clip = next_clip;
+
+        self.render_list_mut()
+            .commands
+            .push(RenderCommand::PushClipPath(PushClipPathCmd::Rect(rect, transform)));
+    }
+
     fn push_layer_with_bez_path(&mut self, path: BezPath) {
         let transform = self.get_transform();
         let world_rect = Rectangle::from_kurbo(transform.transform_rect_bbox(path.bounding_box()));
@@ -290,6 +307,16 @@ pub trait Renderer: Any {
             .pop()
             .expect("renderer layer stack underflow");
         self.render_list_mut().commands.push(RenderCommand::PopLayer);
+    }
+
+    #[inline(always)]
+    fn pop_clip_layer(&mut self) {
+        self.render_list_mut().current_clip = self
+            .render_list_mut()
+            .clip_stack
+            .pop()
+            .expect("renderer layer stack underflow");
+        self.render_list_mut().commands.push(RenderCommand::PopClipPath);
     }
 
     fn start_overlay(&mut self) {

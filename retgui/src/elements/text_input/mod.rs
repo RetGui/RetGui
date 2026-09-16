@@ -252,7 +252,7 @@ impl ElementInternals for TextInputElement {
 
         let element_data = &self.element_data;
         let padding_rectangle = element_data.layout.local_box().padding_rectangle();
-        _renderer.push_layer(padding_rectangle.scale(_scale_factor));
+        _renderer.push_clip_path(padding_rectangle.scale(_scale_factor));
 
         let text_scroll = if is_scrollable {
             Some(physical_text_scroll(
@@ -274,7 +274,7 @@ impl ElementInternals for TextInputElement {
             );
         }
 
-        _renderer.pop_layer();
+        _renderer.pop_clip_layer();
 
         self.draw_scrollbar(_renderer, _scale_factor);
 

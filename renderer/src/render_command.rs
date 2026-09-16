@@ -17,7 +17,9 @@ pub enum RenderCommand {
     DrawImage(DrawImageCmd),
     DrawText(DrawTextCmd),
     PushLayer(PushLayerCmd),
+    PushClipPath(PushClipPathCmd),
     PopLayer,
+    PopClipPath,
     FillBezPath(FillBezPathCmd),
     StartOverlay,
     StrokeBezPath(StrokeBezPathCmd),
@@ -73,6 +75,12 @@ pub struct DrawTextCmd {
 
 #[derive(Clone)]
 pub enum PushLayerCmd {
+    BezPath(BezPath, Affine),
+    Rect(Rectangle, Affine),
+}
+
+#[derive(Clone)]
+pub enum PushClipPathCmd {
     BezPath(BezPath, Affine),
     Rect(Rectangle, Affine),
 }

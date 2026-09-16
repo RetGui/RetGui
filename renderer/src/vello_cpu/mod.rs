@@ -18,17 +18,13 @@ use vello_common::kurbo::Stroke;
 use vello_common::paint::{ImageId, PaintType};
 
 use vello_cpu::{Pixmap, RenderContext, Resources};
-
 use winit::window::Window;
 
 use self::image::{draw_image, upload_image};
 use self::text::draw_text;
 use crate::RenderCommand;
 use crate::helpers::{brush_to_paint, rgba_to_encoded_u32};
-use crate::render_command::{
-    BoxShadowCmd, DrawCircleCmd, DrawCircleOutlineCmd, DrawRectCmd, DrawRectOutlineCmd, FillBezPathCmd, PushLayerCmd,
-    StrokeBezPathCmd,
-};
+use crate::render_command::{BoxShadowCmd, DrawCircleCmd, DrawCircleOutlineCmd, DrawRectCmd, DrawRectOutlineCmd, FillBezPathCmd, PushClipPathCmd, PushLayerCmd, StrokeBezPathCmd};
 use crate::render_list::RenderList;
 use crate::renderer::Renderer;
 use crate::resource_mapper::{RendererResourceId, ResourceMapper};
@@ -113,8 +109,25 @@ fn push_layer(scene: &mut RenderContext, cmd: &PushLayerCmd) {
     };
 }
 
+fn push_clip_path(scene: &mut RenderContext, cmd: &PushClipPathCmd) {
+    match cmd {
+        PushClipPathCmd::BezPath(path, transform) => {
+            scene.set_transform(*transform);
+            scene.push_clip_path(path);
+        }
+        PushClipPathCmd::Rect(rect, transform) => {
+            scene.set_transform(*transform);
+            scene.push_clip_rect(&rect.to_kurbo());
+        }
+    };
+}
+
 fn pop_layer(scene: &mut RenderContext) {
     scene.pop_layer();
+}
+
+fn pop_clip_path(scene: &mut RenderContext) {
+    scene.pop_clip_path();
 }
 
 fn draw_filled_bez_path(scene: &mut RenderContext, cmd: &FillBezPathCmd) {
@@ -361,8 +374,14 @@ impl Renderer for VelloCpuRenderer {
                 RenderCommand::PushLayer(cmd) => {
                     push_layer(&mut self.scene, cmd);
                 }
+                RenderCommand::PushClipPath(cmd) => {
+                    push_clip_path(&mut self.scene, cmd);
+                }
                 RenderCommand::PopLayer => {
                     pop_layer(&mut self.scene);
+                }
+                RenderCommand::PopClipPath => {
+                    pop_clip_path(&mut self.scene);
                 }
                 RenderCommand::FillBezPath(cmd) => {
                     draw_filled_bez_path(&mut self.scene, cmd);

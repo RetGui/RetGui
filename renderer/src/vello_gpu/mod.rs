@@ -24,10 +24,7 @@ use winit::window::Window;
 
 use crate::RenderCommand;
 use crate::helpers::brush_to_paint;
-use crate::render_command::{
-    BoxShadowCmd, DrawCircleCmd, DrawCircleOutlineCmd, DrawRectCmd, DrawRectOutlineCmd, FillBezPathCmd, PushLayerCmd,
-    StrokeBezPathCmd,
-};
+use crate::render_command::{BoxShadowCmd, DrawCircleCmd, DrawCircleOutlineCmd, DrawRectCmd, DrawRectOutlineCmd, FillBezPathCmd, PushClipPathCmd, PushLayerCmd, StrokeBezPathCmd};
 use crate::render_list::RenderList;
 use crate::renderer::Renderer;
 use crate::resource_mapper::{RendererResourceId, ResourceMapper};
@@ -193,8 +190,14 @@ impl Renderer for VelloHybridRenderer {
                 RenderCommand::PushLayer(cmd) => {
                     push_layer(cmd, &mut self.scene);
                 }
+                RenderCommand::PushClipPath(cmd) => {
+                    push_clip_layer(cmd, &mut self.scene);
+                }
                 RenderCommand::PopLayer => {
                     pop_layer(&mut self.scene);
+                }
+                RenderCommand::PopClipPath => {
+                    pop_clip_layer(&mut self.scene);
                 }
                 RenderCommand::FillBezPath(cmd) => {
                     draw_filled_bez_path(cmd, &mut self.scene);
@@ -472,8 +475,25 @@ fn push_layer(cmd: &PushLayerCmd, scene: &mut Scene) {
     };
 }
 
+fn push_clip_layer(cmd: &PushClipPathCmd, scene: &mut Scene) {
+    match cmd {
+        PushClipPathCmd::BezPath(path, transform) => {
+            scene.set_transform(*transform);
+            scene.push_clip_path(path);
+        }
+        PushClipPathCmd::Rect(rect, transform) => {
+            scene.set_transform(*transform);
+            scene.push_clip_rect(&rect.to_kurbo());
+        }
+    };
+}
+
 fn pop_layer(scene: &mut Scene) {
     scene.pop_layer();
+}
+
+fn pop_clip_layer(scene: &mut Scene) {
+    scene.pop_clip_path();
 }
 
 fn draw_filled_bez_path(cmd: &FillBezPathCmd, scene: &mut Scene) {
