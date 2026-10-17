@@ -493,7 +493,7 @@ fn pop_layer(scene: &mut Scene) {
 }
 
 fn pop_clip_layer(scene: &mut Scene) {
-    scene.pop_clip_path();
+    scene.pop_clip();
 }
 
 fn draw_filled_bez_path(cmd: &FillBezPathCmd, scene: &mut Scene) {

@@ -100,7 +100,7 @@ pub(crate) fn draw_text(cmd: &DrawTextCmd, scene: &mut Scene, resources: &mut Re
                 id: glyph.id,
                 x: glyph.x,
                 y: glyph.y,
-            }));
+            })).ok();
         }
     }
 

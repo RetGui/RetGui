@@ -127,7 +127,7 @@ fn pop_layer(scene: &mut RenderContext) {
 }
 
 fn pop_clip_path(scene: &mut RenderContext) {
-    scene.pop_clip_path();
+    scene.pop_clip();
 }
 
 fn draw_filled_bez_path(scene: &mut RenderContext, cmd: &FillBezPathCmd) {
