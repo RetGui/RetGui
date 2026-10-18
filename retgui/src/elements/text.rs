@@ -244,9 +244,9 @@ impl ElementInternals for TextElement {
         _gummy_tree: &mut GummyTree,
         _access_tree: &RetGuiAccessTree,
         _by_internal_id: &mut ElementIds,
-        _event_queue: &mut VecDeque<EventKind>,
-        _focus: &mut Option<DynElement>,
-        _focus_outline_visible: bool,
+        event_queue: &mut VecDeque<EventKind>,
+        focus: &mut Option<DynElement>,
+        focus_outline_visible: bool,
         _pending_animation_updates: &mut Vec<(DynElement, bool)>,
         event: &mut EventKind,
         _text_context: &mut TextContext,
@@ -295,6 +295,7 @@ impl ElementInternals for TextElement {
                     if selection_changed {
                         self.request_window_redraw();
                     }
+                    self.focus(elements, event_queue, focus, focus_outline_visible);
                     pb.prevent_default();
                 }
                 EventKind::PointerUp(pb) if pb.button == Some(PointerButton::Left) => {
@@ -320,6 +321,32 @@ impl ElementInternals for TextElement {
                         }
                     }
                     pointer_moved.prevent_default();
+                }
+                #[cfg(all(
+                    any(target_os = "windows", target_os = "macos", target_os = "linux"),
+                    feature = "clipboard"
+                ))]
+                EventKind::KeyDown(keyboard_event)
+                    if self.element_data.focused
+                        && !keyboard_event.is_composing
+                        && if cfg!(target_os = "macos") {
+                            keyboard_event.modifiers.meta_key()
+                        } else {
+                            keyboard_event.modifiers.control_key()
+                        }
+                        && matches!(&keyboard_event.key, winit::keyboard::Key::Character(c) if c.eq_ignore_ascii_case("c")) =>
+                {
+                    use clipboard_rs::{Clipboard, ClipboardContext};
+
+                    let range = state.selection.text_range();
+                    if !range.is_empty()
+                        && let Some(text) = state.text.get(range)
+                        && let Ok(clipboard) = ClipboardContext::new()
+                        && clipboard.set_text(text.to_owned()).is_ok()
+                    {
+                        keyboard_event.prevent_default();
+                        keyboard_event.stop_propagation();
+                    }
                 }
                 _ => {}
             }

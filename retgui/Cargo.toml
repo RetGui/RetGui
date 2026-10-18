@@ -168,3 +168,8 @@ required-features = ["integration_tests"]
 name = "radio"
 path = "tests/radio.rs"
 required-features = ["integration_tests"]
+
+[[test]]
+name = "text_copy"
+path = "tests/text_copy.rs"
+required-features = ["integration_tests", "clipboard"]
