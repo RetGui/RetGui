@@ -34,6 +34,7 @@ use web_time::{Duration, Instant};
 
 use winit::event::MouseScrollDelta;
 use winit::event_loop::ActiveEventLoop;
+use winit::icon::Icon;
 use winit::keyboard::{Key, ModifiersState, NamedKey};
 #[cfg(target_arch = "wasm32")]
 use winit::platform::web::WindowAttributesWeb;
@@ -81,6 +82,7 @@ pub(crate) struct WindowElement {
 
     advanced_window_fn: Option<WindowConstructor>,
     title: Option<String>,
+    icon: Option<Option<Icon>>,
     /// The type of renderer to use.
     ///
     /// The renderer is chosen based on the features enabled at compile time.
@@ -229,6 +231,15 @@ impl Window {
         app.elements.get_as_mut::<WindowElement>(self.inner).screenshot()
     }
 
+    /// Sets the window icon.
+    pub fn set_icon<S: 'static>(&self, app: &mut App<S>, icon: Option<Icon>) {
+        let window = app.elements.get_as_mut::<WindowElement>(self.inner);
+        if let Some(native_window) = &window.winit_window {
+            native_window.set_window_icon(icon.clone());
+        }
+        window.icon = Some(icon);
+    }
+
     pub fn close<S: 'static>(&self, app: &App<S>) {
         app.elements.get_as::<WindowElement>(self.inner).close();
     }
@@ -366,6 +377,7 @@ impl WindowElement {
                 access_tree,
                 advanced_window_fn: f.map(|f| Box::new(f) as WindowConstructor),
                 title: title.map(|title| title.to_string()),
+                icon: None,
                 renderer_type,
                 pointer_capture: Default::default(),
                 modifiers: Default::default(),
@@ -434,6 +446,11 @@ impl WindowElement {
     }
 
     pub fn set_winit_window(&mut self, window: Option<Arc<dyn WinitWindow>>) {
+        if let Some(window) = &window
+            && let Some(icon) = &self.icon
+        {
+            window.set_window_icon(icon.clone());
+        }
         self.winit_window = window;
     }
 
