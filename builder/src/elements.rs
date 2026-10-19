@@ -147,6 +147,15 @@ pub trait TinyVgBuilder: ElementBuilder<Element = TinyVg> {
 impl<B: ElementBuilder<Element = TinyVg>> TinyVgBuilder for B {}
 
 pub trait CalendarBuilder: ElementBuilder<Element = Calendar> {
+    fn on_date_selected<S: 'static>(
+        self,
+        app: &mut App<S>,
+        handler: impl Fn(&mut retgui::events::CalendarDateSelectedEvent, &mut App<S>, &mut S) + 'static,
+    ) -> Self {
+        self.element().add_date_selected_listener(app, handler);
+        self
+    }
+
     fn start_year<S: 'static>(self, app: &mut App<S>, year: i32) -> Self {
         self.element().set_start_year(app, year);
         self

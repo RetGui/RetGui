@@ -449,6 +449,21 @@ impl DropdownToggledEvent {
 }
 
 #[derive(Clone)]
+pub struct CalendarDateSelectedEvent {
+    base: BaseEvent,
+    pub date: jiff::civil::Date,
+}
+
+impl CalendarDateSelectedEvent {
+    pub fn new(target: DynElement, date: jiff::civil::Date) -> Self {
+        Self {
+            base: BaseEvent::new(target),
+            date,
+        }
+    }
+}
+
+#[derive(Clone)]
 pub struct DropdownItemSelectedEvent {
     base: BaseEvent,
     pub index: usize,
@@ -705,6 +720,15 @@ impl Event for DropdownToggledEvent {
     }
 }
 
+impl Event for CalendarDateSelectedEvent {
+    fn base(&self) -> &BaseEvent {
+        &self.base
+    }
+    fn base_mut(&mut self) -> &mut BaseEvent {
+        &mut self.base
+    }
+}
+
 impl Event for DropdownItemSelectedEvent {
     fn base(&self) -> &BaseEvent {
         &self.base
@@ -768,6 +792,7 @@ impl Event for CustomEvent {
 pub type CheckboxToggledHandler<S = ()> = Rc<dyn Fn(&mut CheckboxToggledEvent, &mut App<S>, &mut S)>;
 pub type ClickHandler<S = ()> = Rc<dyn Fn(&mut ClickEvent, &mut App<S>, &mut S)>;
 pub type CustomHandler<S = ()> = Rc<dyn Fn(&mut CustomEvent, &mut App<S>, &mut S)>;
+pub type CalendarDateSelectedHandler<S = ()> = Rc<dyn Fn(&mut CalendarDateSelectedEvent, &mut App<S>, &mut S)>;
 pub type DropdownItemSelectedHandler<S = ()> = Rc<dyn Fn(&mut DropdownItemSelectedEvent, &mut App<S>, &mut S)>;
 pub type FocusHandler<S = ()> = Rc<dyn Fn(&mut FocusEvent, &mut App<S>, &mut S)>;
 pub type KeyboardInputHandler<S = ()> = Rc<dyn Fn(&mut KeyboardEvent, &mut App<S>, &mut S)>;
@@ -788,6 +813,7 @@ pub enum EventCallbackKind<S: 'static = ()> {
     CheckboxToggled(CheckboxToggledHandler<S>),
     Click(ClickHandler<S>),
     Custom(CustomHandler<S>),
+    CalendarDateSelected(CalendarDateSelectedHandler<S>),
     DropdownItemSelected(DropdownItemSelectedHandler<S>),
     Focus(FocusHandler<S>),
     GotPointerCapture(PointerCaptureHandler<S>),
@@ -811,6 +837,7 @@ impl<S: 'static> Clone for EventCallbackKind<S> {
             Self::CheckboxToggled(handler) => Self::CheckboxToggled(handler.clone()),
             Self::Click(handler) => Self::Click(handler.clone()),
             Self::Custom(handler) => Self::Custom(handler.clone()),
+            Self::CalendarDateSelected(handler) => Self::CalendarDateSelected(handler.clone()),
             Self::DropdownItemSelected(handler) => Self::DropdownItemSelected(handler.clone()),
             Self::Focus(handler) => Self::Focus(handler.clone()),
             Self::GotPointerCapture(handler) => Self::GotPointerCapture(handler.clone()),
@@ -872,6 +899,7 @@ pub enum EventKind {
     TextInputChanged(TextInputChangedEvent),
     LinkClicked(LinkClickedEvent),
     DropdownToggled(DropdownToggledEvent),
+    CalendarDateSelected(CalendarDateSelectedEvent),
     DropdownItemSelected(DropdownItemSelectedEvent),
     SwitchToggled(SwitchToggledEvent),
     SliderValueChanged(SliderValueChangedEvent),
@@ -928,6 +956,7 @@ impl Event for EventKind {
             Self::TextInputChanged(event) => event.base(),
             Self::LinkClicked(event) => event.base(),
             Self::DropdownToggled(event) => event.base(),
+            Self::CalendarDateSelected(event) => event.base(),
             Self::DropdownItemSelected(event) => event.base(),
             Self::SwitchToggled(event) => event.base(),
             Self::SliderValueChanged(event) => event.base(),
@@ -957,6 +986,7 @@ impl Event for EventKind {
             Self::TextInputChanged(event) => event.base_mut(),
             Self::LinkClicked(event) => event.base_mut(),
             Self::DropdownToggled(event) => event.base_mut(),
+            Self::CalendarDateSelected(event) => event.base_mut(),
             Self::DropdownItemSelected(event) => event.base_mut(),
             Self::SwitchToggled(event) => event.base_mut(),
             Self::SliderValueChanged(event) => event.base_mut(),

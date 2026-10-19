@@ -119,6 +119,9 @@ pub(super) fn call_user_event_handlers<S: 'static>(
             (EventKind::KeyDown(event), EventCallbackKind::KeyboardInput(handler))
             | (EventKind::KeyUp(event), EventCallbackKind::KeyboardInput(handler)) => handler(event, app, state),
             (EventKind::PointerMoved(event), EventCallbackKind::PointerMoved(handler)) => handler(event, app, state),
+            (EventKind::CalendarDateSelected(event), EventCallbackKind::CalendarDateSelected(handler)) => {
+                handler(event, app, state)
+            }
             (EventKind::DropdownItemSelected(event), EventCallbackKind::DropdownItemSelected(handler)) => {
                 handler(event, app, state)
             }
