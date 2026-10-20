@@ -62,6 +62,9 @@ pub(super) fn interpolate_style_variant(start: &StyleVariant, end: &StyleVariant
         | (FontFamily(_), FontFamily(_))
         | (FontStyle(_), FontStyle(_))
         | (TextAlign(_), TextAlign(_))
+        | (LineBreak(_), LineBreak(_))
+        | (WhiteSpaceCollapse(_), WhiteSpaceCollapse(_))
+        | (TextAlignLast(_), TextAlignLast(_))
         | (Overflow(_), Overflow(_))
         | (Overlay(_), Overlay(_))
         | (Visible(_), Visible(_)) => discrete(start, end, t),

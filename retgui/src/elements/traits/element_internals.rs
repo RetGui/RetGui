@@ -21,8 +21,8 @@ use crate::events::{EventKind, FocusEvent, PointerId, UnfocusEvent};
 use crate::layout::GummyTree;
 use crate::style::{
     AlignContent, AlignItems, AlignSelf, Animation, BoxShadow, BoxSizing, Display, FlexDirection, FlexWrap, FontFamily,
-    FontStyle, FontWeight, JustifyContent, Overflow, Position, ScrollbarColor, Style, StyleVariant, TextAlign,
-    Underline, Unit,
+    FontStyle, FontWeight, JustifyContent, LineBreak, Overflow, Position, ScrollbarColor, Style, StyleVariant,
+    TextAlign, Underline, Unit, WhiteSpaceCollapse,
 };
 use crate::text::text_context::TextContext;
 use crate::{Color, RetGuiError};
@@ -743,6 +743,9 @@ pub trait ElementInternals: HasElementData + Any {
             StyleVariant::FontWeight(value) => self.set_font_weight(gummy_tree, value),
             StyleVariant::FontStyle(value) => self.set_font_style(gummy_tree, value),
             StyleVariant::TextAlign(value) => self.set_text_align(gummy_tree, value),
+            StyleVariant::LineBreak(value) => self.set_line_break(gummy_tree, value),
+            StyleVariant::WhiteSpaceCollapse(value) => self.set_white_space_collapse(gummy_tree, value),
+            StyleVariant::TextAlignLast(value) => self.set_text_align_last(gummy_tree, value),
             StyleVariant::Underline(value) => self.set_underline(gummy_tree, value),
             StyleVariant::Overflow(value) => self.set_overflow(gummy_tree, value[0], value[1]),
             StyleVariant::BorderColor(value) => self.set_border_color(value.top, value.right, value.bottom, value.left),
@@ -979,6 +982,24 @@ pub trait ElementInternals: HasElementData + Any {
 
     fn set_text_align(&mut self, gummy_tree: &mut GummyTree, text_align: TextAlign) {
         self.style_mut().set_text_align(text_align);
+        self.on_text_style_changed();
+        self.update_gummy_style(gummy_tree);
+    }
+
+    fn set_line_break(&mut self, gummy_tree: &mut GummyTree, value: LineBreak) {
+        self.style_mut().set_line_break(value);
+        self.on_text_style_changed();
+        self.update_gummy_style(gummy_tree);
+    }
+
+    fn set_white_space_collapse(&mut self, gummy_tree: &mut GummyTree, value: WhiteSpaceCollapse) {
+        self.style_mut().set_white_space_collapse(value);
+        self.on_text_style_changed();
+        self.update_gummy_style(gummy_tree);
+    }
+
+    fn set_text_align_last(&mut self, gummy_tree: &mut GummyTree, value: Option<TextAlign>) {
+        self.style_mut().set_text_align_last(value);
         self.on_text_style_changed();
         self.update_gummy_style(gummy_tree);
     }

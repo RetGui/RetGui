@@ -47,6 +47,9 @@ pub enum StyleVariant {
     FontWeight(FontWeight),
     FontStyle(FontStyle),
     TextAlign(TextAlign),
+    LineBreak(LineBreak),
+    WhiteSpaceCollapse(WhiteSpaceCollapse),
+    TextAlignLast(Option<TextAlign>),
     Underline(Option<Underline>),
 
     Overflow([Overflow; 2]),
@@ -108,6 +111,9 @@ pub struct Style {
     font_weight: StyleProperty<FontWeight>,
     font_style: StyleProperty<FontStyle>,
     text_align: StyleProperty<TextAlign>,
+    line_break: StyleProperty<LineBreak>,
+    white_space_collapse: StyleProperty<WhiteSpaceCollapse>,
+    text_align_last: StyleProperty<Option<TextAlign>>,
     underline: StyleProperty<Option<Underline>>,
 
     overflow: StyleProperty<[Overflow; 2]>,
@@ -174,6 +180,9 @@ impl Style {
             font_weight: StyleProperty::new(FontWeight::default()),
             font_style: StyleProperty::new(FontStyle::default()),
             text_align: StyleProperty::new(TextAlign::default()),
+            line_break: StyleProperty::new(LineBreak::default()),
+            white_space_collapse: StyleProperty::new(WhiteSpaceCollapse::default()),
+            text_align_last: StyleProperty::new(None),
             underline: StyleProperty::new(None),
             overflow: StyleProperty::new([Overflow::default(); 2]),
             border_color: StyleProperty::new(TrblRectangle::new_all(Color::BLACK)),
@@ -479,6 +488,34 @@ impl Style {
         self.text_align.set(val);
     }
 
+    pub fn get_line_break(&self) -> LineBreak {
+        *self.line_break.get()
+    }
+
+    pub fn set_line_break(&mut self, val: LineBreak) {
+        self.is_dirty = true;
+        self.line_break.set(val);
+    }
+
+    pub fn get_white_space_collapse(&self) -> WhiteSpaceCollapse {
+        *self.white_space_collapse.get()
+    }
+
+    pub fn set_white_space_collapse(&mut self, val: WhiteSpaceCollapse) {
+        self.is_dirty = true;
+        self.white_space_collapse.set(val);
+    }
+
+    pub fn get_text_align_last(&self) -> Option<TextAlign> {
+        *self.text_align_last.get()
+    }
+
+    /// Sets last-line alignment for `Text` paragraphs; not supported by `TextInput`.
+    pub fn set_text_align_last(&mut self, val: Option<TextAlign>) {
+        self.is_dirty = true;
+        self.text_align_last.set(val);
+    }
+
     pub fn get_underline(&self) -> Option<Underline> {
         self.underline.get().clone()
     }
@@ -691,11 +728,14 @@ impl Style {
             strikethrough_size: Default::default(),
             strikethrough_brush: Default::default(),
             line_height: parley::LineHeight::FontSizeRelative(line_height),
+            vertical_align: Default::default(),
             word_spacing: Default::default(),
             letter_spacing: Default::default(),
             word_break: Default::default(),
+            line_break: self.get_line_break(),
             overflow_wrap: Default::default(),
             text_wrap_mode: Default::default(),
+            white_space_collapse: self.get_white_space_collapse(),
         }
     }
 
@@ -739,6 +779,10 @@ impl Style {
             font_stack_cow_list,
         )));
         style_set.insert(parley::StyleProperty::FontSize(font_size));
+        style_set.insert(parley::StyleProperty::LineBreak(self.get_line_break()));
+        style_set.insert(parley::StyleProperty::WhiteSpaceCollapse(
+            self.get_white_space_collapse(),
+        ));
         style_set.insert(parley::StyleProperty::FontStyle(font_style));
         style_set.insert(parley::StyleProperty::FontWeight(font_weight));
         style_set.insert(parley::StyleProperty::Brush(brush));

@@ -2,6 +2,7 @@ pub use animations::animation::{Animation, Repeat};
 pub use animations::keyframe::KeyFrame;
 pub use animations::timing_function::TimingFunction;
 pub use box_shadow::BoxShadow;
+pub use parley::{LineBreak, WhiteSpaceCollapse};
 pub use styles::*;
 
 use std::borrow::Cow;
@@ -223,6 +224,19 @@ pub enum TextAlign {
     Center,
     Right,
     Justify,
+}
+
+impl From<TextAlign> for parley::Alignment {
+    fn from(value: TextAlign) -> Self {
+        match value {
+            TextAlign::Start => Self::Start,
+            TextAlign::End => Self::End,
+            TextAlign::Left => Self::Left,
+            TextAlign::Center => Self::Center,
+            TextAlign::Right => Self::Right,
+            TextAlign::Justify => Self::Justify,
+        }
+    }
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]

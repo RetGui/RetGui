@@ -19,7 +19,8 @@ use crate::events::{
 };
 use crate::style::{
     AlignContent, AlignItems, AlignSelf, Animation, BoxShadow, BoxSizing, Display, FlexDirection, FlexWrap, FontFamily,
-    FontStyle, FontWeight, JustifyContent, Overflow, Position, ScrollbarColor, TextAlign, Underline, Unit,
+    FontStyle, FontWeight, JustifyContent, LineBreak, Overflow, Position, ScrollbarColor, TextAlign, Underline, Unit,
+    WhiteSpaceCollapse,
 };
 use crate::{App, RetGuiError};
 
@@ -752,6 +753,45 @@ pub trait Element: Copy {
     fn set_text_align<S: 'static>(&self, app: &mut App<S>, text_align: TextAlign) {
         with_element_mut(self.as_dyn_element(), &mut app.elements, |element| {
             element.set_text_align(&mut app.gummy_tree, text_align)
+        });
+    }
+
+    fn get_line_break<S: 'static>(&self, app: &App<S>) -> LineBreak {
+        with_element(self.as_dyn_element(), &app.elements, |element| {
+            element.style().get_line_break()
+        })
+        .unwrap_or_default()
+    }
+
+    fn set_line_break<S: 'static>(&self, app: &mut App<S>, value: LineBreak) {
+        with_element_mut(self.as_dyn_element(), &mut app.elements, |element| {
+            element.set_line_break(&mut app.gummy_tree, value)
+        });
+    }
+
+    fn get_white_space_collapse<S: 'static>(&self, app: &App<S>) -> WhiteSpaceCollapse {
+        with_element(self.as_dyn_element(), &app.elements, |element| {
+            element.style().get_white_space_collapse()
+        })
+        .unwrap_or_default()
+    }
+
+    fn set_white_space_collapse<S: 'static>(&self, app: &mut App<S>, value: WhiteSpaceCollapse) {
+        with_element_mut(self.as_dyn_element(), &mut app.elements, |element| {
+            element.set_white_space_collapse(&mut app.gummy_tree, value)
+        });
+    }
+
+    fn get_text_align_last<S: 'static>(&self, app: &App<S>) -> Option<TextAlign> {
+        with_element(self.as_dyn_element(), &app.elements, |element| {
+            element.style().get_text_align_last()
+        })
+        .unwrap_or_default()
+    }
+
+    fn set_text_align_last<S: 'static>(&self, app: &mut App<S>, value: Option<TextAlign>) {
+        with_element_mut(self.as_dyn_element(), &mut app.elements, |element| {
+            element.set_text_align_last(&mut app.gummy_tree, value)
         });
     }
 

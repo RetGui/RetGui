@@ -6,7 +6,8 @@ use retgui::events::{
 };
 use retgui::style::{
     AlignContent, AlignItems, AlignSelf, Animation, BoxShadow, BoxSizing, Display, FlexDirection, FlexWrap, FontFamily,
-    FontStyle, FontWeight, JustifyContent, Overflow, Position, ScrollbarColor, TextAlign, Unit,
+    FontStyle, FontWeight, JustifyContent, LineBreak, Overflow, Position, ScrollbarColor, TextAlign, Unit,
+    WhiteSpaceCollapse,
 };
 use retgui::{App, Color, Gradient};
 
@@ -353,6 +354,21 @@ pub trait ElementBuilder: Sized {
 
     fn text_align<S: 'static>(self, app: &mut App<S>, text_align: TextAlign) -> Self {
         self.element().set_text_align(app, text_align);
+        self
+    }
+
+    fn line_break<S: 'static>(self, app: &mut App<S>, value: LineBreak) -> Self {
+        self.element().set_line_break(app, value);
+        self
+    }
+
+    fn white_space_collapse<S: 'static>(self, app: &mut App<S>, value: WhiteSpaceCollapse) -> Self {
+        self.element().set_white_space_collapse(app, value);
+        self
+    }
+
+    fn text_align_last<S: 'static>(self, app: &mut App<S>, value: Option<TextAlign>) -> Self {
+        self.element().set_text_align_last(app, value);
         self
     }
 

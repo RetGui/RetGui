@@ -6,7 +6,7 @@ use std::time;
 
 use gummy::{AvailableSpace, Size};
 
-use parley::{Alignment, AlignmentOptions, ContentWidths, Selection};
+use parley::{AlignmentOptions, ContentWidths, Selection};
 
 use retgui_primitives::brush::Brush;
 use retgui_primitives::geometry::{Point, Rectangle, Vec2};
@@ -67,6 +67,7 @@ pub struct TextState {
     text: SmolStr,
     scale_factor: f64,
     text_align: TextAlign,
+    text_align_last: Option<TextAlign>,
     selection: Selection,
     layout: Option<parley::Layout<Brush>>,
     cache: FxHashMap<TextHashKey, Size<f32>>,
@@ -120,6 +121,7 @@ impl Default for TextState {
             text: SmolStr::new(""),
             scale_factor: 1.0,
             text_align: Default::default(),
+            text_align_last: None,
             selection: Selection::default(),
             text_render: None,
             text_snapshot: None,
@@ -521,6 +523,7 @@ impl TextState {
         }
 
         self.text_align = style.get_text_align();
+        self.text_align_last = style.get_text_align_last();
 
         let key = TextHashKey::new(known_dimensions, available_space);
 
@@ -556,21 +559,13 @@ impl TextState {
             }
         });
 
-        let alignment = match self.text_align {
-            TextAlign::Start => Alignment::Start,
-            TextAlign::End => Alignment::End,
-            TextAlign::Left => Alignment::Left,
-            TextAlign::Center => Alignment::Center,
-            TextAlign::Right => Alignment::Right,
-            TextAlign::Justify => Alignment::Justify,
-        };
-
         let layout = self.layout.as_mut().unwrap();
         layout.break_all_lines(width_constraint);
         layout.align(
-            alignment,
+            self.text_align.into(),
             AlignmentOptions {
                 align_when_overflowing: true,
+                last_line_alignment: self.text_align_last.map(Into::into),
             },
         );
 

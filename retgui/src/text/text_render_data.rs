@@ -129,7 +129,7 @@ pub fn from_editor(layout: &Layout<Brush>) -> TextRender {
                 font_size,
                 normalized_coords: run.normalized_coords().iter().map(|coord| coord.to_bits()).collect(),
                 glyphs: glyphs.collect(),
-                font: font.font.clone(),
+                font: font.clone(),
             };
 
             text_render_line.items.push(text_render_item);
