@@ -18,7 +18,7 @@ use std::any::Any;
 use std::rc::Rc;
 use std::sync::Arc;
 
-use retgui_primitives::geometry::Point;
+use retgui_primitives::geometry::{Point, Size};
 
 use winit::dpi::{LogicalPosition, PhysicalPosition};
 use winit::event::{ButtonSource, KeyEvent, PointerKind, PointerSource};
@@ -273,6 +273,22 @@ impl ScrollEvent {
     pub fn new(target: DynElement) -> Self {
         Self {
             base: BaseEvent::new(target),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct ResizeEvent {
+    base: BaseEvent,
+    /// The new logical window size.
+    pub size: Size<f32>,
+}
+
+impl ResizeEvent {
+    pub fn new(target: DynElement, size: Size<f32>) -> Self {
+        Self {
+            base: BaseEvent::new(target),
+            size,
         }
     }
 }
@@ -610,6 +626,16 @@ impl Event for ScrollEvent {
     }
 }
 
+impl Event for ResizeEvent {
+    fn base(&self) -> &BaseEvent {
+        &self.base
+    }
+
+    fn base_mut(&mut self) -> &mut BaseEvent {
+        &mut self.base
+    }
+}
+
 impl Event for FocusEvent {
     fn base(&self) -> &BaseEvent {
         &self.base
@@ -803,6 +829,7 @@ pub type PointerLeaveHandler<S = ()> = Rc<dyn Fn(&mut PointerLeaveEvent, &mut Ap
 pub type PointerMovedHandler<S = ()> = Rc<dyn Fn(&mut PointerMovedEvent, &mut App<S>, &mut S)>;
 pub type PointerUpdateHandler<S = ()> = PointerMovedHandler<S>;
 pub type RadioValueChangedHandler<S = ()> = Rc<dyn Fn(&mut RadioValueChangedEvent, &mut App<S>, &mut S)>;
+pub type ResizeHandler<S = ()> = Rc<dyn Fn(&mut ResizeEvent, &mut App<S>, &mut S)>;
 pub type ScrollHandler<S = ()> = Rc<dyn Fn(&mut ScrollEvent, &mut App<S>, &mut S)>;
 pub type SliderValueChangedHandler<S = ()> = Rc<dyn Fn(&mut SliderValueChangedEvent, &mut App<S>, &mut S)>;
 pub type TextInputChangedHandler<S = ()> = Rc<dyn Fn(&mut TextInputChangedEvent, &mut App<S>, &mut S)>;
@@ -825,6 +852,7 @@ pub enum EventCallbackKind<S: 'static = ()> {
     PointerLeave(PointerLeaveHandler<S>),
     PointerMoved(PointerMovedHandler<S>),
     RadioValueChanged(RadioValueChangedHandler<S>),
+    Resize(ResizeHandler<S>),
     Scroll(ScrollHandler<S>),
     SliderValueChanged(SliderValueChangedHandler<S>),
     TextInputChanged(TextInputChangedHandler<S>),
@@ -849,6 +877,7 @@ impl<S: 'static> Clone for EventCallbackKind<S> {
             Self::PointerLeave(handler) => Self::PointerLeave(handler.clone()),
             Self::PointerMoved(handler) => Self::PointerMoved(handler.clone()),
             Self::RadioValueChanged(handler) => Self::RadioValueChanged(handler.clone()),
+            Self::Resize(handler) => Self::Resize(handler.clone()),
             Self::Scroll(handler) => Self::Scroll(handler.clone()),
             Self::SliderValueChanged(handler) => Self::SliderValueChanged(handler.clone()),
             Self::TextInputChanged(handler) => Self::TextInputChanged(handler.clone()),
@@ -895,6 +924,7 @@ pub enum EventKind {
     PointerMoved(PointerMovedEvent),
     PointerScroll(PointerScrollEvent),
     Scroll(ScrollEvent),
+    Resize(ResizeEvent),
     Ime(ImeEvent),
     TextInputChanged(TextInputChangedEvent),
     LinkClicked(LinkClickedEvent),
@@ -952,6 +982,7 @@ impl Event for EventKind {
             Self::PointerMoved(event) => event.base(),
             Self::PointerScroll(event) => event.base(),
             Self::Scroll(event) => event.base(),
+            Self::Resize(event) => event.base(),
             Self::Ime(event) => event.base(),
             Self::TextInputChanged(event) => event.base(),
             Self::LinkClicked(event) => event.base(),
@@ -982,6 +1013,7 @@ impl Event for EventKind {
             Self::PointerMoved(event) => event.base_mut(),
             Self::PointerScroll(event) => event.base_mut(),
             Self::Scroll(event) => event.base_mut(),
+            Self::Resize(event) => event.base_mut(),
             Self::Ime(event) => event.base_mut(),
             Self::TextInputChanged(event) => event.base_mut(),
             Self::LinkClicked(event) => event.base_mut(),

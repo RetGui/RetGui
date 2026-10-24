@@ -409,7 +409,105 @@ pub fn overlay(app: &mut App<GalleryState>) -> Container {
     container
 }
 
-pub fn multiple_windows(app: &mut App<GalleryState>) -> Container {
+fn window_resize(app: &mut App<GalleryState>, window: Window) -> Container {
+    let heading = title(app, "Window Resize");
+    let description = Text::new(
+        app,
+        "Resize the window to switch these files between tiles and a compact list.",
+    );
+    let status = Text::new(app, "Waiting for a window resize...");
+    let cards = Container::new(app);
+    cards.set_display(app, Display::Flex);
+    cards.set_flex_direction(app, FlexDirection::Column);
+    cards.set_width(app, pct(100));
+    cards.set_min_width(app, px(0));
+    cards.set_gap(app, px(8), px(8));
+
+    let children = [
+        ("README.md", "Markdown document", "4 KB"),
+        ("notes.txt", "Text document", "1 KB"),
+        ("diagram.svg", "SVG image", "12 KB"),
+    ]
+    .map(|(name, kind, size)| {
+        let label = Text::new(app, name);
+        label.set_font_size(app, 16.0);
+        label.set_font_weight(app, FontWeight::BOLD);
+        label.set_min_width(app, px(0));
+        let details = Text::new(app, size);
+        details.set_font_size(app, 13.0);
+        details.set_color(app, rgb(95, 95, 95));
+        let card = Container::new(app);
+        card.set_display(app, Display::Flex);
+        card.set_flex_direction(app, FlexDirection::Row);
+        card.set_align_items(app, AlignItems::Center);
+        card.set_justify_content(app, JustifyContent::SpaceBetween);
+        card.set_flex_grow(app, 1.0);
+        card.set_flex_shrink(app, 0.0);
+        card.set_min_width(app, px(0));
+        card.set_height(app, px(56));
+        card.set_padding_all(app, px(12));
+        card.set_gap(app, px(8), px(8));
+        card.set_border_width_all(app, px(1));
+        card.set_border_color_all(app, rgb(215, 215, 215));
+        card.set_border_radius_all(app, (3.0, 3.0));
+        card.set_background_color(app, rgb(248, 248, 248));
+        card.push(app, label);
+        card.push(app, details);
+        cards.push(app, card);
+        (card, details, kind, size)
+    });
+
+    window.add_resize_listener(app, move |event, app, _state| {
+        let wide = event.size.width >= 900.0;
+        status.set_text(
+            app,
+            &format!(
+                "Window: {:.0} x {:.0} px",
+                event.size.width, event.size.height
+            ),
+        );
+        cards.set_flex_direction(
+            app,
+            if wide {
+                FlexDirection::Row
+            } else {
+                FlexDirection::Column
+            },
+        );
+        for (card, details, kind, size) in children {
+            card.set_flex_basis(app, if wide { px(0) } else { auto() });
+            card.set_flex_direction(
+                app,
+                if wide {
+                    FlexDirection::Column
+                } else {
+                    FlexDirection::Row
+                },
+            );
+            card.set_align_items(app, if wide { AlignItems::Start } else { AlignItems::Center });
+            card.set_height(app, px(if wide { 112 } else { 56 }));
+            if wide {
+                details.set_text(app, &format!("{kind}\n{size}"));
+            } else {
+                details.set_text(app, size);
+            }
+        }
+    });
+
+    let container = Container::new(app);
+    container.set_display(app, Display::Flex);
+    container.set_flex_direction(app, FlexDirection::Column);
+    container.set_row_gap(app, px(12));
+    container.set_width(app, pct(100));
+    container.set_min_width(app, px(0));
+    container.push(app, heading);
+    container.push(app, description);
+    container.push(app, status);
+    container.push(app, cards);
+    container
+}
+
+pub fn multiple_windows(app: &mut App<GalleryState>, window: Window) -> Container {
     let radius = (1.0, 1.0);
     let border = Color::BLACK;
     let width = px(1.0);
@@ -420,6 +518,7 @@ pub fn multiple_windows(app: &mut App<GalleryState>) -> Container {
     button.set_border_radius(app, radius, radius, radius, radius);
     button.set_border_color(app, border, border, border, border);
     button.set_border_width(app, width, width, width, width);
+    button.set_width(app, px(190));
     button.add_click_listener(app, |_event, app, _| {
         let greeting = Text::new(app, "Hi!");
         greeting.set_font_size(app, 32.0);
@@ -428,10 +527,16 @@ pub fn multiple_windows(app: &mut App<GalleryState>) -> Container {
         window.push(app, greeting);
     });
     let heading = title(app, "Multiple Windows");
+    let resize = window_resize(app, window);
     let container = Container::new(app);
-    container.set_display(app, Display::Block);
+    container.set_display(app, Display::Flex);
+    container.set_flex_direction(app, FlexDirection::Column);
+    container.set_row_gap(app, px(20));
+    container.set_width(app, pct(100));
+    container.set_min_width(app, px(0));
     container.push(app, heading);
     container.push(app, button);
+    container.push(app, resize);
     container
 }
 
@@ -637,7 +742,7 @@ impl GalleryState {
     }
 }
 
-fn gallery_examples(app: &mut App<GalleryState>) -> Vec<GalleryExample> {
+fn gallery_examples(app: &mut App<GalleryState>, window: Window) -> Vec<GalleryExample> {
     let animations = animations(app);
     let audio = audio(app);
     let calendar = Calendar::new(app);
@@ -656,7 +761,7 @@ fn gallery_examples(app: &mut App<GalleryState>) -> Vec<GalleryExample> {
     let radios = radio_buttons(app);
     let checkboxes = checkbox(app);
     let scrollable = scrollable(app);
-    let windows = multiple_windows(app);
+    let windows = multiple_windows(app, window);
 
     vec![
         GalleryExample::new(app, "Animations", animations),
@@ -753,8 +858,8 @@ fn select_example(app: &mut App<GalleryState>, examples: &[GalleryExample], sele
     }
 }
 
-fn gallery(app: &mut App<GalleryState>) -> (Container, GalleryState) {
-    let examples = Rc::new(gallery_examples(app));
+fn gallery(app: &mut App<GalleryState>, window: Window) -> (Container, GalleryState) {
+    let examples = Rc::new(gallery_examples(app, window));
     let sidebar = sidebar(app);
     let content = content_pane(app);
     let buttons = examples
@@ -793,8 +898,8 @@ fn gallery(app: &mut App<GalleryState>) -> (Container, GalleryState) {
 pub fn main() {
     setup_logging();
     let mut app = App::new();
-    let (gallery, state) = gallery(&mut app);
     let window = Window::new(&mut app, "Gallery");
+    let (gallery, state) = gallery(&mut app, window);
     window.set_display(&mut app, Display::Flex);
     window.set_overflow(&mut app, Overflow::Clip, Overflow::Clip);
     window.set_width(&mut app, pct(100));

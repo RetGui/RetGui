@@ -47,7 +47,7 @@ use crate::elements::{
 };
 use crate::events::{
     EventCallback, EventCallbackKind, EventDispatcher, EventKind, EventListenerOptions, ImeEvent, KeyboardEvent,
-    PointerButtonEvent, PointerInfo, PointerMovedEvent, PointerScrollEvent, PointerState,
+    PointerButtonEvent, PointerInfo, PointerMovedEvent, PointerScrollEvent, PointerState, ResizeEvent,
 };
 use crate::layout::GummyTree;
 use crate::text::text_context::{TextContext, create_font_context};
@@ -244,7 +244,11 @@ impl<S: 'static> App<S> {
                 self.on_scale_factor_changed(window, scale_factor);
             }
             WindowEvent::SurfaceResized(new_size) => {
-                self.on_resize(window, Size::new(new_size.width as f32, new_size.height as f32));
+                self.on_resize(
+                    window,
+                    Size::new(new_size.width as f32, new_size.height as f32),
+                    user_state,
+                );
             }
             WindowEvent::Ime(ime) => self.on_ime(window, ime, user_state),
             WindowEvent::RedrawRequested => self.on_request_redraw(window),
@@ -311,7 +315,7 @@ impl<S: 'static> App<S> {
             self.run_gui_actions(user_state);
         }
         #[cfg(target_arch = "wasm32")]
-        self.process_created_renderers();
+        self.process_created_renderers(user_state);
         self.process_resources();
         self.process_accessibility_events();
         EventDispatcher::dispatch_queued_events(self, user_state);
@@ -330,12 +334,20 @@ impl<S: 'static> App<S> {
     }
 
     #[cfg(target_arch = "wasm32")]
-    fn process_created_renderers(&mut self) {
+    fn process_created_renderers(&mut self, user_state: &mut S) {
         while let Ok(created) = self.created_renderer_receiver.try_recv() {
             if self.elements.contains(created.window) {
-                self.elements
-                    .get_as_mut::<WindowElement>(created.window)
-                    .on_renderer_created(&mut self.gummy_tree, created.renderer, created.size);
+                let element = self.elements.get_as_mut::<WindowElement>(created.window);
+                if element.on_renderer_created(&mut self.gummy_tree, created.renderer, created.size) {
+                    let event = ResizeEvent::new(created.window, element.window_size());
+                    self.dispatch_event(
+                        Window {
+                            inner: created.window,
+                        },
+                        EventKind::Resize(event),
+                        user_state,
+                    );
+                }
             }
         }
     }
@@ -392,10 +404,12 @@ impl<S: 'static> App<S> {
     }
 
     /// Handles the window resize event.
-    pub fn on_resize(&mut self, window: Window, new_size: Size<f32>) {
-        self.elements
-            .get_as_mut::<WindowElement>(window.inner)
-            .on_resize(&mut self.gummy_tree, new_size);
+    pub fn on_resize(&mut self, window: Window, new_size: Size<f32>, user_state: &mut S) {
+        let element = self.elements.get_as_mut::<WindowElement>(window.inner);
+        if element.on_resize(&mut self.gummy_tree, new_size) {
+            let event = ResizeEvent::new(window.inner, element.window_size());
+            self.dispatch_event(window, EventKind::Resize(event), user_state);
+        }
     }
 
     /// Updates the tree, layouts the elements, and draws the view.

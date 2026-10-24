@@ -135,7 +135,7 @@ impl<S: 'static> HeadlessApp<S> {
             self.windows.push(*window);
         }
 
-        self.driver.app.on_resize(*window, size);
+        self.driver.app.on_resize(*window, size, &mut self.driver.state);
         self.drive();
     }
 

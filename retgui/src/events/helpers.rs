@@ -111,6 +111,7 @@ pub(super) fn call_user_event_handlers<S: 'static>(
                 handler(event, app, state)
             }
             (EventKind::Scroll(event), EventCallbackKind::Scroll(handler)) => handler(event, app, state),
+            (EventKind::Resize(event), EventCallbackKind::Resize(handler)) => handler(event, app, state),
             (EventKind::Unfocus(event), EventCallbackKind::Unfocus(handler)) => handler(event, app, state),
             (EventKind::PointerUp(event), EventCallbackKind::PointerButtonUp(handler))
             | (EventKind::PointerDown(event), EventCallbackKind::PointerButtonDown(handler)) => {

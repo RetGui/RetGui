@@ -18,6 +18,16 @@ pub(super) fn dispatch_event<S: 'static>(
     app: &mut App<S>,
     state: &mut S,
 ) {
+    // Resize does not support bubbling or capturing
+    // for performance reasons. Maybe we can add a boolean in the future
+    // and make it more flexible.
+    if matches!(event, EventKind::Resize(_)) {
+        let target = event.target();
+        event.base_mut().current_target = target;
+        call_user_event_handlers(event, false, app, state);
+        return;
+    }
+
     for target in targets.iter().rev() {
         event.base_mut().current_target = *target;
         call_user_event_handlers(event, true, app, state);
