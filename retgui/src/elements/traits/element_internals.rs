@@ -777,6 +777,7 @@ pub trait ElementInternals: HasElementData + Any {
 
     fn set_display(&mut self, gummy_tree: &mut GummyTree, display: Display) {
         self.style_mut().set_display(display);
+        self.update_accessibility_visibility();
         self.update_gummy_style(gummy_tree);
     }
 
@@ -796,7 +797,15 @@ pub trait ElementInternals: HasElementData + Any {
 
     fn set_visible(&mut self, visible: bool) {
         self.style_mut().set_visible(visible);
+        self.update_accessibility_visibility();
         self.request_window_redraw();
+    }
+
+    fn update_accessibility_visibility(&self) {
+        let data = self.element_data();
+        if let Some(key) = data.access_key {
+            data.access_tree.set_hidden(key, !self.is_visible());
+        }
     }
 
     fn set_margin(&mut self, gummy_tree: &mut GummyTree, top: Unit, right: Unit, bottom: Unit, left: Unit) {
