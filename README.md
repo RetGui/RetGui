@@ -100,7 +100,7 @@ pub fn main() {
 | Platform | Status                             | Accessibility Status |
 |----------|------------------------------------|----------------------|
 | Windows  | Officially supported               | In Progress          |
-| macOS    | Officially supported               | Planned              |
+| macOS    | Officially supported               | In Progress          |
 | Linux    | Officially supported               | Planned              |
 | Web      | Runs, but not officially supported | TBD                  |
 | Android  | Runs, but not officially supported | TBD                  |
