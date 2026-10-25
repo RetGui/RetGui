@@ -3,6 +3,7 @@
 use std::any::Any;
 use std::collections::VecDeque;
 use std::mem::replace;
+use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 #[cfg(target_arch = "wasm32")]
@@ -51,7 +52,9 @@ use crate::elements::{
     DynElement, Element, ElementIds, ElementInternals, HasElementData, RetainedElements, scrollable,
 };
 use crate::events::pointer_capture::PointerCapture;
-use crate::events::{EventKind, KeyboardEvent, PointerScrollEvent, PointerType};
+use crate::events::{
+    EventCallbackKind, EventKind, EventListenerOptions, KeyboardEvent, PointerScrollEvent, PointerType, ResizeEvent,
+};
 use crate::layout::GummyTree;
 use crate::perf_stats::{LayoutStats, PerfStats, RenderStats};
 use crate::text::text_context::TextContext;
@@ -270,6 +273,19 @@ impl Window {
     /// Get the logical size of the window.
     pub fn window_size<S: 'static>(&self, app: &App<S>) -> Size<f32> {
         app.elements.get_as::<WindowElement>(self.inner).window_size()
+    }
+
+    /// Does not do bubbling or capturing.
+    pub fn add_resize_listener<S: 'static>(
+        &self,
+        app: &mut App<S>,
+        handler: impl Fn(&mut ResizeEvent, &mut App<S>, &mut S) + 'static,
+    ) {
+        self.add_event_listener(
+            app,
+            EventCallbackKind::Resize(Rc::new(handler)),
+            EventListenerOptions::default(),
+        );
     }
 
     pub fn zoom_scale_factor<S: 'static>(&self, app: &App<S>) -> f64 {
@@ -606,15 +622,16 @@ impl WindowElement {
         self.mouse_positon
     }
 
-    pub(crate) fn on_resize(&mut self, gummy_tree: &mut GummyTree, new_size: Size<f32>) {
+    pub(crate) fn on_resize(&mut self, gummy_tree: &mut GummyTree, new_size: Size<f32>) -> bool {
         if self.window_size.width == new_size.width && self.window_size.height == new_size.height {
-            return;
+            return false;
         }
         self.mark_dirty(gummy_tree);
 
         self.window_size = new_size;
         self.resize_renderer_surface();
         self.request_redraw();
+        true
     }
 
     #[cfg(target_arch = "wasm32")]
@@ -623,14 +640,16 @@ impl WindowElement {
         gummy_tree: &mut GummyTree,
         renderer: Box<dyn Renderer>,
         new_size: Size<f32>,
-    ) {
+    ) -> bool {
         self.renderer = renderer;
-        if self.window_size.width != new_size.width || self.window_size.height != new_size.height {
+        let resized = self.window_size.width != new_size.width || self.window_size.height != new_size.height;
+        if resized {
             self.mark_dirty(gummy_tree);
             self.window_size = new_size;
         }
         self.resize_renderer_surface();
         self.request_redraw();
+        resized
     }
 
     fn resize_renderer_surface(&mut self) {
