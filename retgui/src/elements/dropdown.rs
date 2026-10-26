@@ -4,6 +4,9 @@ use std::any::Any;
 use std::collections::VecDeque;
 use std::sync::Arc;
 
+use issho::ExpandCollapseState::ExpandCollapseState;
+use issho::{AccessEvent, IsshoError};
+
 use peniko::Color;
 
 use retgui_primitives::geometry::{Affine, BezPath, Point, Rectangle, TrblRectangle, Vec2};
@@ -136,22 +139,47 @@ impl ElementInternals for DropdownElement {
         DynElement::new(element)
     }
 
-    fn set_scale_factor(&mut self, elements: &mut RetainedElements, gummy_tree: &mut GummyTree, scale_factor: f64) {
-        self.element_data.applied_scale_factor = scale_factor;
-        self.apply_borders(scale_factor);
-        self.floating_window.apply_borders(scale_factor);
-        self.arrow.apply_borders(scale_factor);
-        for child in self.element_data.children.clone() {
-            elements.dispatch_mut(child, |child, elements| {
-                child.set_scale_factor(elements, gummy_tree, scale_factor)
-            });
+    fn draw_children(
+        &self,
+        elements: &RetainedElements,
+        renderer: &mut dyn Renderer,
+        resource_manager: Arc<ResourceManager>,
+        scale_factor: f64,
+        text_context: &mut TextContext,
+    ) {
+        let floating_transform = renderer.get_transform();
+        let scroll_y = self.floating_window.layout.scroll_state.scroll_y() as f64 * scale_factor;
+        renderer.set_transform(floating_transform * Affine::translate((0.0, -scroll_y)));
+
+        for (index, child) in self.element_data.children.iter().copied().enumerate() {
+            let floating_window_box = self.floating_window.layout.computed_box;
+            let mut child_rect = elements
+                .get(child)
+                .element_data()
+                .layout
+                .local_box_in_parent()
+                .border_rectangle();
+
+            child_rect.x = 0.0;
+            child_rect.width = floating_window_box.size.width;
+
+            let is_hovered = self.currently_hovered_element == Some(index);
+            if is_hovered {
+                renderer.draw_rect(
+                    child_rect.scale(scale_factor),
+                    self.hovered_bg_brush.as_ref().unwrap().clone(),
+                );
+            }
+
+            elements.get_for_draw(child).draw_transformed(
+                elements,
+                renderer,
+                resource_manager.clone(),
+                scale_factor,
+                text_context,
+            );
         }
-        if let Some(selected_element) = &self.selected_element {
-            elements.dispatch_mut(*selected_element, |selected, elements| {
-                selected.set_scale_factor(elements, gummy_tree, scale_factor)
-            });
-        }
-        self.mark_dirty(gummy_tree);
+        renderer.set_transform(floating_transform);
     }
 
     fn apply_layout(
@@ -278,29 +306,6 @@ impl ElementInternals for DropdownElement {
         self.maybe_end_overlay(renderer);
     }
 
-    fn add_hit_testable(&self, renderer: &mut dyn Renderer, hit_testable: bool, scale_factor: f64) {
-        if !hit_testable {
-            return;
-        }
-
-        let bounds = if self.is_floating_window_hidden {
-            self.element_data
-                .layout
-                .local_box()
-                .border_rectangle()
-                .scale(scale_factor)
-        } else if let Some(cull) = renderer.render_list().cull {
-            cull.apply_transform(renderer.get_transform().inverse())
-        } else {
-            self.element_data
-                .layout
-                .local_box()
-                .border_rectangle()
-                .scale(scale_factor)
-        };
-        renderer.push_hit_testable(self.element_data.internal_id, bounds);
-    }
-
     fn on_event(
         &mut self,
         elements: &mut RetainedElements,
@@ -360,7 +365,7 @@ impl ElementInternals for DropdownElement {
 
             let pointer_id = pointer_id.unwrap();
             if is_pointer_in_select_box {
-                self.toggle_menu(elements, event_queue, &pointer_id);
+                self.toggle_menu(elements, event_queue, &pointer_id, access_tree);
             } else if !self.is_floating_window_hidden {
                 if is_pointer_in_window {
                     self.handle_child_click(
@@ -374,7 +379,7 @@ impl ElementInternals for DropdownElement {
                         &pointer_id,
                     );
                 } else {
-                    self.close_menu(event_queue);
+                    self.close_menu(event_queue, access_tree);
                 }
             }
         }
@@ -393,51 +398,49 @@ impl ElementInternals for DropdownElement {
         }
     }
 
-    fn child_layout_parent(&self) -> Option<gummy::NodeId> {
-        self.floating_window.layout.gummy_node_id
+    fn add_hit_testable(&self, renderer: &mut dyn Renderer, hit_testable: bool, scale_factor: f64) {
+        if !hit_testable {
+            return;
+        }
+
+        let bounds = if self.is_floating_window_hidden {
+            self.element_data
+                .layout
+                .local_box()
+                .border_rectangle()
+                .scale(scale_factor)
+        } else if let Some(cull) = renderer.render_list().cull {
+            cull.apply_transform(renderer.get_transform().inverse())
+        } else {
+            self.element_data
+                .layout
+                .local_box()
+                .border_rectangle()
+                .scale(scale_factor)
+        };
+        renderer.push_hit_testable(self.element_data.internal_id, bounds);
     }
 
-    fn draw_children(
-        &self,
-        elements: &RetainedElements,
-        renderer: &mut dyn Renderer,
-        resource_manager: Arc<ResourceManager>,
-        scale_factor: f64,
-        text_context: &mut TextContext,
-    ) {
-        let floating_transform = renderer.get_transform();
-        let scroll_y = self.floating_window.layout.scroll_state.scroll_y() as f64 * scale_factor;
-        renderer.set_transform(floating_transform * Affine::translate((0.0, -scroll_y)));
-
-        for (index, child) in self.element_data.children.iter().copied().enumerate() {
-            let floating_window_box = self.floating_window.layout.computed_box;
-            let mut child_rect = elements
-                .get(child)
-                .element_data()
-                .layout
-                .local_box_in_parent()
-                .border_rectangle();
-
-            child_rect.x = 0.0;
-            child_rect.width = floating_window_box.size.width;
-
-            let is_hovered = self.currently_hovered_element == Some(index);
-            if is_hovered {
-                renderer.draw_rect(
-                    child_rect.scale(scale_factor),
-                    self.hovered_bg_brush.as_ref().unwrap().clone(),
-                );
-            }
-
-            elements.get_for_draw(child).draw_transformed(
-                elements,
-                renderer,
-                resource_manager.clone(),
-                scale_factor,
-                text_context,
-            );
+    fn set_scale_factor(&mut self, elements: &mut RetainedElements, gummy_tree: &mut GummyTree, scale_factor: f64) {
+        self.element_data.applied_scale_factor = scale_factor;
+        self.apply_borders(scale_factor);
+        self.floating_window.apply_borders(scale_factor);
+        self.arrow.apply_borders(scale_factor);
+        for child in self.element_data.children.clone() {
+            elements.dispatch_mut(child, |child, elements| {
+                child.set_scale_factor(elements, gummy_tree, scale_factor)
+            });
         }
-        renderer.set_transform(floating_transform);
+        if let Some(selected_element) = &self.selected_element {
+            elements.dispatch_mut(*selected_element, |selected, elements| {
+                selected.set_scale_factor(elements, gummy_tree, scale_factor)
+            });
+        }
+        self.mark_dirty(gummy_tree);
+    }
+
+    fn child_layout_parent(&self) -> Option<gummy::NodeId> {
+        self.floating_window.layout.gummy_node_id
     }
 
     fn in_bounds(&self, point: Point) -> bool {
@@ -455,6 +458,26 @@ impl ElementInternals for DropdownElement {
         } else {
             rect.contains(&point)
         }
+    }
+
+    fn on_access_event(
+        &mut self,
+        elements: &mut RetainedElements,
+        event_queue: &mut VecDeque<EventKind>,
+        event: AccessEvent,
+    ) -> Result<(), IsshoError> {
+        match event {
+            AccessEvent::Expand => {
+                let access_tree = self.element_data.access_tree.clone();
+                self.open_menu(elements, event_queue, &access_tree);
+            }
+            AccessEvent::Collapse => {
+                let access_tree = self.element_data.access_tree.clone();
+                self.close_menu(event_queue, &access_tree);
+            }
+            _ => {}
+        }
+        Ok(())
     }
 }
 
@@ -565,18 +588,18 @@ impl DropdownElement {
         let handled = match keyboard_event.code {
             KeyCode::Enter | KeyCode::NumpadEnter | KeyCode::Space if !keyboard_event.repeat => {
                 if self.is_floating_window_hidden {
-                    self.open_menu(elements, event_queue);
+                    self.open_menu(elements, event_queue, access_tree);
                 } else {
                     if let Some(index) = self.currently_hovered_element.filter(|index| *index < item_count) {
                         self.set_selected_element(elements, gummy_tree, access_tree, by_internal_id, index);
                         self.queue_dropdown_item_selected(event_queue, index);
                     }
-                    self.close_menu(event_queue);
+                    self.close_menu(event_queue, access_tree);
                 }
                 true
             }
             KeyCode::Escape if !self.is_floating_window_hidden => {
-                self.close_menu(event_queue);
+                self.close_menu(event_queue, access_tree);
                 true
             }
             KeyCode::ArrowDown if item_count > 0 => {
@@ -831,17 +854,27 @@ impl DropdownElement {
         elements: &mut RetainedElements,
         event_queue: &mut VecDeque<EventKind>,
         pointer_id: &PointerId,
+        access_tree: &RetGuiAccessTree,
     ) {
         if self.is_floating_window_hidden {
-            self.open_menu(elements, event_queue);
+            self.open_menu(elements, event_queue, access_tree);
         } else {
-            self.close_menu(event_queue);
+            self.close_menu(event_queue, access_tree);
             self.release_pointer_capture(elements, *pointer_id);
         }
     }
 
-    fn open_menu(&mut self, elements: &RetainedElements, event_queue: &mut VecDeque<EventKind>) {
+    fn open_menu(
+        &mut self,
+        elements: &RetainedElements,
+        event_queue: &mut VecDeque<EventKind>,
+        access_tree: &RetGuiAccessTree,
+    ) {
         self.is_floating_window_hidden = false;
+        access_tree
+            .get_node_mut(self.element_data.access_key.unwrap())
+            .unwrap()
+            .set_expanded(ExpandCollapseState::Expanded);
         self.currently_hovered_element = self
             .selected_element_index
             .or_else(|| (!self.element_data.children.is_empty()).then_some(0));
@@ -852,8 +885,12 @@ impl DropdownElement {
         self.request_window_redraw();
     }
 
-    fn close_menu(&mut self, event_queue: &mut VecDeque<EventKind>) {
+    fn close_menu(&mut self, event_queue: &mut VecDeque<EventKind>, access_tree: &RetGuiAccessTree) {
         self.is_floating_window_hidden = true;
+        access_tree
+            .get_node_mut(self.element_data.access_key.unwrap())
+            .unwrap()
+            .set_expanded(ExpandCollapseState::Collapsed);
         self.queue_dropdown_toggled(event_queue, false);
         self.request_window_redraw();
     }
@@ -892,9 +929,7 @@ impl DropdownElement {
             }
 
             if should_hide_window {
-                self.is_floating_window_hidden = true;
-                self.queue_dropdown_toggled(event_queue, false);
-                self.request_window_redraw();
+                self.close_menu(event_queue, access_tree);
             }
         }
     }
@@ -936,6 +971,10 @@ impl DropdownElement {
 
         let element = elements.get_as_mut::<DropdownElement>(inner);
         element.element_data.set_accessibility_role(issho::Role::ComboBox);
+        access_tree
+            .get_node_mut(element.element_data.access_key.unwrap())
+            .unwrap()
+            .set_expanded(ExpandCollapseState::Collapsed);
         element.element_data.style.set_display(Display::Flex);
         element.element_data.style.set_align_items(AlignItems::Center);
         element

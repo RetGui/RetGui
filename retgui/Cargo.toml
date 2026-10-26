@@ -44,7 +44,7 @@ optional = true
 
 [dependencies.issho]
 git = "https://github.com/RetGui/issho.git"
-rev = "bc71fd7d3722de40cf7ffa72c24617d48d622d07"
+rev = "ed98ad8fd13e2b874a5504c69e246147487859ba"
 
 [dependencies.smallvec]
 version = "1.15.1"
