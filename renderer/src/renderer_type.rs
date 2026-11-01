@@ -1,10 +1,12 @@
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use winit::window::Window;
 
 use crate::blank_renderer::BlankRenderer;
 use crate::renderer::Renderer;
+use crate::SharedRenderer;
 #[cfg(feature = "vello_cpu_renderer")]
 use crate::vello_cpu::VelloCpuRenderer;
 #[cfg(feature = "vello_gpu_renderer")]
@@ -48,44 +50,42 @@ impl Display for RendererType {
 }
 
 impl RendererType {
-    pub async fn create(&self, window: Arc<dyn Window>) -> Box<dyn Renderer> {
-        let renderer: Box<dyn Renderer> = match self {
+    pub async fn create(&self, window: Arc<dyn Window>) -> SharedRenderer {
+        match self {
             #[cfg(feature = "vello_cpu_renderer")]
-            RendererType::VelloCPU => Box::new(VelloCpuRenderer::new(window)),
+            RendererType::VelloCPU => Arc::new(Mutex::new(VelloCpuRenderer::new(window))),
             #[cfg(feature = "vello_gpu_renderer")]
-            RendererType::VelloHybrid => Box::new(VelloHybridRenderer::new(window).await),
+            RendererType::VelloHybrid => Arc::new(Mutex::new(VelloHybridRenderer::new(window).await)),
             RendererType::Blank => {
                 // So the linter does not complain about window being unused.
                 let _ = window;
-                Box::new(BlankRenderer::default())
+                Arc::new(Mutex::new(BlankRenderer::default()))
             }
-        };
-
-        renderer
+        }
     }
 
-    pub fn create_headless(&self, width: f32, height: f32) -> Box<dyn Renderer> {
+    pub fn create_headless(&self, width: f32, height: f32) -> SharedRenderer {
         #[allow(unused_mut)]
-        let mut blank = || {
+        let mut blank = || -> SharedRenderer {
             let mut renderer = BlankRenderer::default();
             renderer.resize_surface(width, height);
-            Box::new(renderer) as Box<dyn Renderer>
+            Arc::new(Mutex::new(renderer))
         };
 
         match self {
             #[cfg(feature = "vello_cpu_renderer")]
-            RendererType::VelloCPU => Box::new(VelloCpuRenderer::new_headless(
+            RendererType::VelloCPU => Arc::new(Mutex::new(VelloCpuRenderer::new_headless(
                 width.max(1.0) as u16,
                 height.max(1.0) as u16,
-            )),
+            ))),
             #[cfg(feature = "vello_gpu_renderer")]
             RendererType::VelloHybrid => {
                 #[cfg(feature = "vello_cpu_renderer")]
                 {
-                    Box::new(VelloCpuRenderer::new_headless(
+                    Arc::new(Mutex::new(VelloCpuRenderer::new_headless(
                         width.max(1.0) as u16,
                         height.max(1.0) as u16,
-                    ))
+                    )))
                 }
                 #[cfg(not(feature = "vello_cpu_renderer"))]
                 {

@@ -11,6 +11,8 @@ use retgui_resource_manager::resource_type::ResourceType;
 use retgui_resource_manager::{ResourceId, ResourceManager};
 
 use retgui_runtime::RetGuiRuntime;
+#[cfg(not(target_arch = "wasm32"))]
+use retgui_runtime::sync::mpsc::Sender;
 
 use rustc_hash::FxHashSet;
 
@@ -22,6 +24,8 @@ use winit::window::WindowId;
 
 #[cfg(target_arch = "wasm32")]
 use crate::app::CreatedRenderer;
+#[cfg(not(target_arch = "wasm32"))]
+use crate::app::RenderThreadCommand;
 use crate::elements::{AnimationSchedule, DynElement, RetainedElements, Window, WindowElement};
 use crate::layout::GummyTree;
 use crate::style::StyleVariant;
@@ -41,6 +45,11 @@ pub(crate) struct WindowManager {
 }
 
 impl WindowManager {
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) fn windows(&self) -> impl Iterator<Item = Window> + '_ {
+        self.windows.iter().copied()
+    }
+
     pub(crate) fn new() -> Self {
         Self {
             windows: Vec::new(),
@@ -100,6 +109,7 @@ impl WindowManager {
         }
     }
 
+    #[expect(clippy::too_many_arguments, reason = "Lifecycle handling needs independently borrowed app subsystems")]
     pub(crate) fn on_resume(
         &mut self,
         elements: &mut RetainedElements,
@@ -110,6 +120,7 @@ impl WindowManager {
         pending_animation_updates: &mut Vec<(DynElement, bool)>,
         #[cfg(target_arch = "wasm32")] created_renderer_sender: &Sender<CreatedRenderer>,
         event_loop: Option<&dyn ActiveEventLoop>,
+        #[cfg(not(target_arch = "wasm32"))] renderer_sender: &Sender<RenderThreadCommand>,
     ) {
         let now = Instant::now();
         self.apply_pending_animation_updates(elements, pending_animation_updates, now);
@@ -129,6 +140,8 @@ impl WindowManager {
                 created_renderer_sender,
                 event_loop,
                 window_element.inner,
+                #[cfg(not(target_arch = "wasm32"))]
+                renderer_sender,
             );
         }
 
@@ -139,6 +152,7 @@ impl WindowManager {
         }
     }
 
+    #[expect(clippy::too_many_arguments, reason = "Lifecycle handling needs independently borrowed app subsystems")]
     pub(crate) fn on_about_to_wait(
         &mut self,
         elements: &mut RetainedElements,
@@ -150,6 +164,7 @@ impl WindowManager {
         #[cfg(target_arch = "wasm32")] created_renderer_sender: &Sender<CreatedRenderer>,
         active: bool,
         event_loop: Option<&dyn ActiveEventLoop>,
+        #[cfg(not(target_arch = "wasm32"))] renderer_sender: &Sender<RenderThreadCommand>,
     ) -> Option<Duration> {
         if !active {
             return None;
@@ -177,6 +192,8 @@ impl WindowManager {
                     created_renderer_sender,
                     event_loop,
                     window_element.inner,
+                    #[cfg(not(target_arch = "wasm32"))]
+                    renderer_sender,
                 );
             }
 
@@ -206,7 +223,12 @@ impl WindowManager {
                 && elements.get(scheduled.element).element_data().window != Some(window.inner)
         });
         if self.windows.iter().any(|w| w.inner == window.inner) {
-            elements.get_as_mut::<WindowElement>(window.inner).renderer = Box::new(BlankRenderer::default());
+            let element = elements.get_as_mut::<WindowElement>(window.inner);
+            element.renderer = Arc::new(retgui_runtime::sync::Mutex::new(BlankRenderer::default()));
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                element.pending_render = None;
+            }
             release_window_accessibility(elements, window.inner);
             elements
                 .get_as_mut::<WindowElement>(window.inner)

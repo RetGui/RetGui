@@ -651,6 +651,7 @@ impl DropdownElement {
         handled
     }
 
+    #[expect(clippy::too_many_arguments, reason = "Selection updates need independently borrowed app subsystems")]
     fn move_keyboard_selection(
         &mut self,
         elements: &mut RetainedElements,
@@ -895,6 +896,7 @@ impl DropdownElement {
         self.request_window_redraw();
     }
 
+    #[expect(clippy::too_many_arguments, reason = "Pointer handling needs independently borrowed app subsystems")]
     fn handle_child_click(
         &mut self,
         elements: &mut RetainedElements,

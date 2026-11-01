@@ -5,6 +5,7 @@ pub use render_list::RenderList;
 pub use renderer_type::RendererType;
 pub use screenshot::Screenshot;
 pub use target_item::TargetItem;
+pub use renderer::SharedRenderer;
 
 #[allow(clippy::module_inception)]
 pub mod renderer;

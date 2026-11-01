@@ -304,6 +304,7 @@ impl Renderer for VelloHybridRenderer {
             .unwrap();
 
         device_handle.queue.submit([encoder.finish()]);
+        self.window.pre_present_notify();
         device_handle.queue.present(surface_texture);
         device_handle.device.poll(wgpu::PollType::Poll).unwrap();
 
@@ -312,8 +313,11 @@ impl Renderer for VelloHybridRenderer {
 }
 
 impl VelloHybridRenderer {
+
+    /// Creates a renderer for the given window.
+    ///
+    /// On Mac, this must be called/polled on the main thread.
     pub(crate) async fn new(window: Arc<dyn Window>) -> VelloHybridRenderer {
-        // Create a vello Surface
         let surface_size = window.surface_size();
 
         let width = surface_size.width.max(1);
@@ -321,7 +325,7 @@ impl VelloHybridRenderer {
 
         let mut vello_renderer = VelloHybridRenderer {
             context: RenderContext::new(),
-            renderers: vec![],
+            renderers: Vec::new(),
             state: RenderState::Suspended,
             scene: Scene::new(width as u16, height as u16),
             surface_clear_color: Color::WHITE,

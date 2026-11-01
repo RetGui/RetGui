@@ -3745,6 +3745,7 @@ dependencies = [
  "retgui_primitives",
  "retgui_resource_manager",
  "softbuffer",
+ "tokio",
  "vello_common",
  "vello_cpu",
  "vello_gpu",

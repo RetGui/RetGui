@@ -2,7 +2,7 @@ use std::cell::Cell;
 use std::collections::{HashMap, VecDeque};
 use std::num::NonZeroUsize;
 use std::ops::Range;
-use std::rc::Rc;
+use std::sync::Arc;
 #[cfg(not(target_arch = "wasm32"))]
 use std::time::{Duration, Instant};
 
@@ -50,7 +50,7 @@ pub struct TextInputState {
     prepared_layout: Option<PreparedLayout>,
 
     pub(crate) text_render: Option<TextRender>,
-    pub(crate) text_snapshot: Option<Rc<dyn TextData>>,
+    pub(crate) text_snapshot: Option<Arc<dyn TextData>>,
     scale_factor: f64,
 
     last_click_time: Option<Instant>,
@@ -882,7 +882,7 @@ impl TextInputState {
         self.text_snapshot = self
             .text_render
             .clone()
-            .map(|render| Rc::new(TextSnapshot::new(render, true)) as Rc<dyn TextData>);
+            .map(|render| Arc::new(TextSnapshot::new(render, true)) as Arc<dyn TextData>);
     }
 }
 

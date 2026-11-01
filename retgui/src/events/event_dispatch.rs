@@ -202,7 +202,7 @@ impl EventDispatcher {
                 event_kind,
                 &pointer_id,
                 TargetSearchContext {
-                    renderer: &*app.elements.get_as::<WindowElement>(window).renderer,
+                    targets: &app.elements.get_as::<WindowElement>(window).hit_test_targets,
                     target_scratch: &mut app.target_scratch,
                     pointer_capture: capture,
                     elements: &app.elements,
@@ -249,7 +249,7 @@ impl EventDispatcher {
                     event_kind,
                     &pointer_id,
                     TargetSearchContext {
-                        renderer: &*app.elements.get_as::<WindowElement>(window).renderer,
+                        targets: &app.elements.get_as::<WindowElement>(window).hit_test_targets,
                         target_scratch: &mut app.target_scratch,
                         pointer_capture: capture,
                         elements: &app.elements,

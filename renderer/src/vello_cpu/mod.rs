@@ -407,8 +407,10 @@ impl Renderer for VelloCpuRenderer {
     fn submit(&mut self, _resource_manager: Arc<RetGuiResourceManager>) {
         self.scene.flush();
         self.scene.render(&mut self.pixmap, &mut self.resources);
-        if self.surface.is_some() {
+        if let Some(surface) = &self.surface {
+            let window = surface.window().clone();
             let buffer = self.copy_pixmap_to_softbuffer(self.pixmap.width() as usize, self.pixmap.height() as usize);
+            window.pre_present_notify();
             buffer.present().expect("Failed to present buffer");
         }
         self.scene.reset();

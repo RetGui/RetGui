@@ -2,7 +2,6 @@
 
 use std::any::Any;
 use std::collections::VecDeque;
-use std::mem::replace;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -19,13 +18,18 @@ use retgui_logging::info;
 
 use retgui_primitives::geometry::{Point, Rectangle, Size};
 
-use retgui_renderer::RendererType;
+use retgui_renderer::{RendererType, TargetItem};
 use retgui_renderer::blank_renderer::BlankRenderer;
-use retgui_renderer::renderer::{Renderer, Screenshot};
+use retgui_renderer::renderer::{Renderer as RendererBackend, Screenshot};
 
 use retgui_resource_manager::ResourceManager;
 
 use retgui_runtime::RetGuiRuntime;
+use retgui_runtime::sync::Mutex;
+#[cfg(not(target_arch = "wasm32"))]
+use retgui_runtime::sync::mpsc::Sender;
+#[cfg(not(target_arch = "wasm32"))]
+use retgui_runtime::sync::oneshot;
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::JsCast;
@@ -44,6 +48,9 @@ use winit::window::{Window as WinitWindow, WindowAttributes};
 use crate::Color;
 use crate::accessibility::RetGuiAccessTree;
 use crate::app::App;
+#[cfg(not(target_arch = "wasm32"))]
+use crate::app::RenderThreadCommand;
+use crate::app::SharedRenderer;
 #[cfg(target_arch = "wasm32")]
 use crate::app::CreatedRenderer;
 use crate::elements::element_data::ElementData;
@@ -73,7 +80,10 @@ pub struct Window {
 pub(crate) struct WindowElement {
     /// The physical window size from winit.
     pub(crate) window_size: Size<f32>,
-    pub(crate) renderer: Box<dyn Renderer>,
+    pub(crate) renderer: SharedRenderer,
+    pub(crate) hit_test_targets: Vec<TargetItem>,
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) pending_render: Option<oneshot::Receiver<()>>,
 
     // Will be empty when paused.
     pub(crate) winit_window: Option<Arc<dyn WinitWindow>>,
@@ -146,7 +156,7 @@ impl ElementInternals for WindowElement {
     fn draw(
         &self,
         elements: &RetainedElements,
-        renderer: &mut dyn Renderer,
+        renderer: &mut dyn RendererBackend,
         resource_manager: Arc<ResourceManager>,
         scale_factor: f64,
         text_context: &mut TextContext,
@@ -293,13 +303,7 @@ impl Window {
     }
 
     pub fn on_request_redraw<S: 'static>(&self, retgui_app: &mut App<S>) {
-        WindowElement::on_request_redraw(
-            &mut retgui_app.elements,
-            &mut retgui_app.gummy_tree,
-            &mut retgui_app.text_context,
-            retgui_app.resource_manager.clone(),
-            self.inner,
-        );
+        retgui_app.on_request_redraw(*self);
     }
 
     pub fn zoom_in<S: 'static>(&self, app: &mut App<S>) {
@@ -328,6 +332,7 @@ impl WindowElement {
         text_context: &mut TextContext,
         resource_manager: Arc<ResourceManager>,
         window: DynElement,
+        #[cfg(not(target_arch = "wasm32"))] renderer_sender: &Sender<RenderThreadCommand>,
     ) {
         elements.dispatch_mut(window, |window, elements| {
             (window as &mut dyn Any).downcast_mut::<Self>().unwrap().on_redraw(
@@ -335,19 +340,23 @@ impl WindowElement {
                 gummy_tree,
                 text_context,
                 resource_manager,
+                #[cfg(not(target_arch = "wasm32"))]
+                renderer_sender,
             );
         });
     }
 
+    #[expect(clippy::too_many_arguments, reason = "Window creation needs independently borrowed app subsystems")]
     pub(crate) fn create_window(
         elements: &mut RetainedElements,
         gummy_tree: &mut GummyTree,
         text_context: &mut TextContext,
         resource_manager: Arc<ResourceManager>,
         runtime: &mut RetGuiRuntime,
-        #[cfg(target_arch = "wasm32")] created_renderer_sender: &Sender<CreatedRenderer>,
+        #[cfg(target_arch = "wasm32")] create_renderer_sender: &Sender<CreatedRenderer>,
         event_loop: Option<&dyn ActiveEventLoop>,
         handle: DynElement,
+        #[cfg(not(target_arch = "wasm32"))] renderer_sender: &Sender<RenderThreadCommand>,
     ) {
         elements.dispatch_mut(handle, |window, elements| {
             (window as &mut dyn Any).downcast_mut::<Self>().unwrap().create(
@@ -357,13 +366,16 @@ impl WindowElement {
                 resource_manager,
                 runtime,
                 #[cfg(target_arch = "wasm32")]
-                created_renderer_sender,
+                create_renderer_sender,
                 event_loop,
                 handle,
+                #[cfg(not(target_arch = "wasm32"))]
+                renderer_sender,
             );
         });
     }
 
+    #[expect(clippy::too_many_arguments, reason = "Window insertion needs independently borrowed app subsystems")]
     pub fn insert<F>(
         elements: &mut RetainedElements,
         gummy_tree: &mut GummyTree,
@@ -386,7 +398,10 @@ impl WindowElement {
                 zoom_scale_factor: 1.0,
                 perf_stats,
                 mouse_positon: None,
-                renderer: Box::new(BlankRenderer::default()),
+                renderer: Arc::new(Mutex::new(BlankRenderer::default())),
+                hit_test_targets: Vec::new(),
+                #[cfg(not(target_arch = "wasm32"))]
+                pending_render: None,
                 winit_window: None,
                 headless: false,
                 redraw_requested: Arc::new(AtomicBool::new(false)),
@@ -422,6 +437,10 @@ impl WindowElement {
 
     pub fn request_redraw(&self) {
         self.redraw_requested.store(true, Ordering::Relaxed);
+        #[cfg(not(target_arch = "wasm32"))]
+        if self.pending_render.is_some() {
+            return;
+        }
         if let Some(winit_window) = &self.winit_window {
             winit_window.request_redraw();
         }
@@ -601,7 +620,14 @@ impl WindowElement {
             return false;
         }
 
-        self.perf_stats.toggle(elements, gummy_tree, &mut *self.renderer);
+        self.perf_stats.toggle(elements, gummy_tree);
+        {
+            let mut renderer = cfg_select! {
+                target_arch = "wasm32" => self.renderer.try_lock().expect("Renderer is in use"),
+                _ => self.renderer.blocking_lock(),
+            };
+            renderer.set_vsync(!self.perf_stats.is_enabled());
+        }
         self.request_redraw();
         true
     }
@@ -638,7 +664,7 @@ impl WindowElement {
     pub(crate) fn on_renderer_created(
         &mut self,
         gummy_tree: &mut GummyTree,
-        renderer: Box<dyn Renderer>,
+        renderer: SharedRenderer,
         new_size: Size<f32>,
     ) -> bool {
         self.renderer = renderer;
@@ -652,11 +678,19 @@ impl WindowElement {
         resized
     }
 
-    fn resize_renderer_surface(&mut self) {
+    pub(crate) fn resize_renderer_surface(&mut self) {
+        #[cfg(not(target_arch = "wasm32"))]
+        if self.pending_render.is_some() {
+            return;
+        }
+        let Ok(mut renderer) = self.renderer.try_lock() else {
+            return;
+        };
         let size = self.window_size;
-        self.renderer.resize_surface(size.width.max(1.0), size.height.max(1.0));
-        self.renderer
-            .set_cull(Some(Rectangle::new(0.0, 0.0, size.width, size.height)));
+        if renderer.surface_width() != size.width.max(1.0) || renderer.surface_height() != size.height.max(1.0) {
+            renderer.resize_surface(size.width.max(1.0), size.height.max(1.0));
+        }
+        renderer.set_cull(Some(Rectangle::new(0.0, 0.0, size.width, size.height)));
     }
 
     pub(crate) fn set_mouse_position(&mut self, point: Option<Point>) {
@@ -669,15 +703,33 @@ impl WindowElement {
         gummy_tree: &mut GummyTree,
         text_context: &mut TextContext,
         resource_manager: Arc<ResourceManager>,
+        #[cfg(not(target_arch = "wasm32"))] renderer_sender: &Sender<RenderThreadCommand>,
     ) {
+        #[cfg(not(target_arch = "wasm32"))]
+        if self.pending_render.is_some() {
+            self.redraw_requested.store(true, Ordering::Relaxed);
+            return;
+        }
+        let Ok(mut renderer) = self.renderer.clone().try_lock_owned() else {
+            self.redraw_requested.store(true, Ordering::Relaxed);
+            return;
+        };
         self.redraw_requested.store(false, Ordering::Relaxed);
 
         let frame_start = Instant::now();
-        self.renderer.surface_set_clear_color(Color::WHITE);
+        renderer.surface_set_clear_color(Color::WHITE);
 
         let layout_stats = self.layout_window(elements, gummy_tree, text_context, resource_manager.clone());
 
-        let render_stats = self.draw_window(elements, gummy_tree, text_context, resource_manager);
+        let render_stats = self.draw_window(
+            elements,
+            gummy_tree,
+            text_context,
+            resource_manager,
+            #[cfg(not(target_arch = "wasm32"))]
+            renderer_sender,
+            &mut *renderer,
+        );
         self.perf_stats
             .update_stats(frame_start.elapsed(), layout_stats, render_stats);
     }
@@ -695,6 +747,7 @@ impl WindowElement {
         self.set_scale_factor(elements, gummy_tree, self.effective_scale_factor());
     }
 
+    #[expect(clippy::too_many_arguments, reason = "Window creation needs independently borrowed app subsystems")]
     pub(crate) fn create(
         &mut self,
         elements: &mut RetainedElements,
@@ -705,6 +758,7 @@ impl WindowElement {
         #[cfg(target_arch = "wasm32")] created_renderer_sender: &Sender<CreatedRenderer>,
         event_loop: Option<&dyn ActiveEventLoop>,
         window: DynElement,
+        #[cfg(not(target_arch = "wasm32"))] renderer_sender: &Sender<RenderThreadCommand>,
     ) {
         let Some(event_loop) = event_loop else {
             if self.headless {
@@ -712,11 +766,20 @@ impl WindowElement {
             }
 
             self.headless = true;
-            self.renderer = self
+            let renderer = self
                 .renderer_type
                 .create_headless(self.window_size.width, self.window_size.height);
+            self.renderer = renderer;
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                self.pending_render = None;
+            }
             self.resize_renderer_surface();
-            self.on_redraw(elements, gummy_tree, text_context, resource_manager);
+            self.on_redraw(
+                elements, gummy_tree, text_context, resource_manager,
+                #[cfg(not(target_arch = "wasm32"))]
+                renderer_sender,
+            );
             return;
         };
 
@@ -754,18 +817,16 @@ impl WindowElement {
         cfg_select! {
             not(target_arch = "wasm32") => {
                 let _ = window;
-                let renderer = runtime.tokio_runtime_mut().block_on(async {
-                    let renderer: Box<dyn Renderer> = renderer_type.create(winit_window.clone()).await;
-                    renderer
-                });
+                let renderer = runtime.tokio_runtime_mut().block_on(renderer_type.create(winit_window.clone()));
                 self.renderer = renderer;
+                self.pending_render = None;
                 info!("Created renderer")
             }
             _ => {
                 let window_copy_2 = winit_window.clone();
                 let created_renderer_sender = created_renderer_sender.clone();
                 runtime.runtime_spawn(async move {
-                    let renderer: Box<dyn Renderer> = renderer_type.create(window_copy_2.clone()).await;
+                    let renderer = renderer_type.create(window_copy_2.clone()).await;
                     let size = Size::new(
                         window_copy_2.surface_size().width as f32,
                         window_copy_2.surface_size().height as f32,
@@ -781,7 +842,11 @@ impl WindowElement {
         }
 
         {
-            self.on_redraw(elements, gummy_tree, text_context, resource_manager);
+            self.on_redraw(
+                elements, gummy_tree, text_context, resource_manager,
+                #[cfg(not(target_arch = "wasm32"))]
+                renderer_sender,
+            );
             let root = self
                 .element_data
                 .access_root
@@ -858,9 +923,10 @@ impl WindowElement {
         gummy_tree: &mut GummyTree,
         text_context: &mut TextContext,
         resource_manager: Arc<ResourceManager>,
+        #[cfg(not(target_arch = "wasm32"))] renderer_sender: &Sender<RenderThreadCommand>,
+        renderer: &mut dyn RendererBackend,
     ) -> RenderStats {
         let total_start = Instant::now();
-        let mut renderer = replace(&mut self.renderer, Box::new(BlankRenderer::default()));
 
         let build_list_start = Instant::now();
         renderer.clear();
@@ -868,7 +934,7 @@ impl WindowElement {
 
         self.draw_transformed(
             elements,
-            &mut *renderer,
+            renderer,
             resource_manager.clone(),
             scale_factor,
             text_context,
@@ -877,24 +943,42 @@ impl WindowElement {
 
         let debug_overlay_start = Instant::now();
         self.perf_stats
-            .draw(elements, gummy_tree, &mut *renderer, text_context, scale_factor);
+            .draw(elements, gummy_tree, renderer, text_context, scale_factor);
         let debug_overlay = debug_overlay_start.elapsed();
-
-        if let Some(winit_window) = &self.winit_window {
-            winit_window.pre_present_notify();
-        }
 
         let (sort, prepare, submit) = {
             let sort_start = Instant::now();
             renderer.sort_render_list();
+            self.hit_test_targets.clear();
+            std::mem::swap(&mut self.hit_test_targets, &mut renderer.render_list_mut().targets);
             let sort = sort_start.elapsed();
 
             let window = Rectangle::new(0.0, 0.0, renderer.surface_width(), renderer.surface_height());
             let prepare_start = Instant::now();
             renderer.prepare(resource_manager.clone(), window);
             let prepare = prepare_start.elapsed();
+
             let submit_start = Instant::now();
-            renderer.submit(resource_manager.clone());
+
+            cfg_select! {
+                target_arch = "wasm32" => {
+                    renderer.submit(resource_manager.clone());
+                }
+                _ => {
+                    let (completed, completion) = oneshot::channel();
+                    if renderer_sender
+                        .try_send(RenderThreadCommand::Submit {
+                            render: self.renderer.clone(),
+                            completed,
+                        })
+                        .is_err()
+                    {
+                        self.request_redraw();
+                    } else {
+                        self.pending_render = Some(completion);
+                    }
+                }
+            }
             let submit = submit_start.elapsed();
 
             (sort, prepare, submit)
@@ -903,13 +987,19 @@ impl WindowElement {
         if self.perf_stats.is_enabled() {
             self.request_redraw();
         }
-        self.renderer = renderer;
 
         RenderStats::new(total_start.elapsed(), build_list, debug_overlay, sort, prepare, submit)
     }
 
     fn screenshot(&mut self) -> Screenshot {
-        self.renderer.screenshot()
+        #[cfg(not(target_arch = "wasm32"))]
+        if let Some(completion) = self.pending_render.take() {
+            completion.blocking_recv().expect("Render thread stopped before completing submission");
+        }
+        cfg_select! {
+            target_arch = "wasm32" => self.renderer.try_lock().expect("Renderer is in use").screenshot(),
+            _ => self.renderer.blocking_lock().screenshot(),
+        }
     }
 
     fn close(&self) {
@@ -937,5 +1027,103 @@ fn collect_tab_navigation_elements(
         }
         navigation_elements.push((*child, is_keyboard_focusable));
         collect_tab_navigation_elements(elements, &grandchildren, navigation_elements);
+    }
+}
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod render_lock_tests {
+    use super::*;
+    use std::sync::mpsc;
+    use winit::event::{ElementState, KeyEvent};
+    use winit::keyboard::{KeyCode, KeyLocation, PhysicalKey};
+    use retgui_renderer::RenderList;
+
+    struct TestRenderer {
+        inner: BlankRenderer,
+        started: mpsc::Sender<()>,
+        release: Option<mpsc::Receiver<()>>,
+        vsync: Arc<AtomicBool>,
+    }
+
+    impl RendererBackend for TestRenderer {
+        fn surface_width(&self) -> f32 { self.inner.surface_width() }
+        fn surface_height(&self) -> f32 { self.inner.surface_height() }
+        fn resize_surface(&mut self, w: f32, h: f32) { self.inner.resize_surface(w, h); }
+        fn surface_set_clear_color(&mut self, color: Color) { self.inner.surface_set_clear_color(color); }
+        fn set_vsync(&mut self, enabled: bool) { self.vsync.store(enabled, Ordering::SeqCst); }
+        fn render_list(&self) -> &RenderList { self.inner.render_list() }
+        fn render_list_mut(&mut self) -> &mut RenderList { self.inner.render_list_mut() }
+        fn prepare(&mut self, _: Arc<ResourceManager>, _: Rectangle) {}
+        fn submit(&mut self, _: Arc<ResourceManager>) {
+            if let Some(release) = self.release.take() {
+                self.started.send(()).unwrap();
+                release.recv_timeout(Duration::from_secs(5)).unwrap();
+            }
+        }
+    }
+
+    #[test]
+    fn renderer_stays_shared_and_f3_updates_vsync_under_lock() {
+        let mut app = App::<()>::new();
+        let window = Window::new_with_renderer(&mut app, "test", RendererType::Blank);
+        let (started_tx, started_rx) = mpsc::channel();
+        let (release_tx, release_rx) = mpsc::channel();
+        let vsync = Arc::new(AtomicBool::new(true));
+        let shared: SharedRenderer = Arc::new(Mutex::new(TestRenderer {
+            inner: BlankRenderer::default(),
+            started: started_tx,
+            release: Some(release_rx),
+            vsync: vsync.clone(),
+        }));
+        app.elements.get_as_mut::<WindowElement>(window.inner).renderer = shared.clone();
+        app.on_request_redraw(window);
+        started_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+        assert!(shared.try_lock().is_err());
+
+        // These operations must finish while the worker is holding the lock.
+        app.on_request_redraw(window);
+        app.on_resize(window, Size::new(160.0, 120.0), &mut ());
+        release_tx.send(()).unwrap();
+        app.on_keyboard_input(window, KeyEvent {
+            physical_key: PhysicalKey::Code(KeyCode::F3),
+            logical_key: Key::Named(NamedKey::F3),
+            text: None,
+            location: KeyLocation::Standard,
+            state: ElementState::Pressed,
+            repeat: false,
+            text_with_all_modifiers: None,
+            key_without_modifiers: Key::Named(NamedKey::F3),
+        }, &mut ());
+        let element = app.elements.get_as::<WindowElement>(window.inner);
+        assert!(Arc::ptr_eq(&shared, &element.renderer));
+        assert!(element.perf_stats_enabled());
+        assert!(!vsync.load(Ordering::SeqCst));
+
+        app.elements.get_as_mut::<WindowElement>(window.inner)
+            .pending_render.take().unwrap().blocking_recv().unwrap();
+        app.elements.get_as_mut::<WindowElement>(window.inner).resize_renderer_surface();
+        app.on_request_redraw(window);
+        if let Some(completion) = app.elements.get_as_mut::<WindowElement>(window.inner).pending_render.take() {
+            completion.blocking_recv().unwrap();
+        }
+        assert!(!vsync.load(Ordering::SeqCst));
+        let element = app.elements.get_as::<WindowElement>(window.inner);
+        assert!(Arc::ptr_eq(&shared, &element.renderer));
+        assert_eq!(shared.try_lock().unwrap().surface_width(), 160.0);
+    }
+
+    #[test]
+    fn headless_redraw_keeps_the_same_shared_renderer() {
+        let mut app = App::<()>::new();
+        let window = Window::new_with_renderer(&mut app, "test", RendererType::Blank);
+        app.on_resume(None);
+        let shared = app.elements.get_as::<WindowElement>(window.inner).renderer.clone();
+        for _ in 0..2 {
+            app.on_request_redraw(window);
+            let element = app.elements.get_as::<WindowElement>(window.inner);
+            assert!(element.pending_render.is_none());
+            assert!(Arc::ptr_eq(&shared, &element.renderer));
+            assert!(shared.try_lock().is_ok());
+        }
     }
 }

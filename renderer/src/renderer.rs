@@ -1,8 +1,8 @@
 pub use crate::screenshot::Screenshot;
 
 use std::any::Any;
-use std::rc::Rc;
 use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use retgui_primitives::Color;
 use retgui_primitives::geometry::{Affine, BezPath, Circle, Rectangle, Shape};
@@ -14,6 +14,8 @@ use crate::render_list::RenderList;
 use crate::sort_commands::sort_render_list_internal;
 use crate::text_renderer_data::{TextData, TextScroll};
 use crate::{Brush, RenderCommand, TargetItem};
+
+pub type SharedRenderer = Arc<Mutex<dyn Renderer + Send>>;
 
 pub trait Renderer: Any {
     // Surface Functions
@@ -192,7 +194,7 @@ pub trait Renderer: Any {
     #[inline(always)]
     fn draw_text(
         &mut self,
-        data: Rc<dyn TextData>,
+        data: Arc<dyn TextData>,
         rect: Rectangle,
         text_scroll: Option<TextScroll>,
         show_cursor: bool,
@@ -203,7 +205,7 @@ pub trait Renderer: Any {
     #[inline(always)]
     fn draw_text_ref(
         &mut self,
-        data: &Rc<dyn TextData>,
+        data: &Arc<dyn TextData>,
         rect: Rectangle,
         text_scroll: Option<TextScroll>,
         show_cursor: bool,

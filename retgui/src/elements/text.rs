@@ -1,5 +1,4 @@
 use std::collections::VecDeque;
-use std::rc::Rc;
 use std::sync::Arc;
 #[cfg(not(target_arch = "wasm32"))]
 use std::time;
@@ -56,8 +55,8 @@ pub(crate) struct TextElement {
 
 #[derive(Clone)]
 pub struct TextState {
-    pub(crate) text_render: Option<Rc<TextRender>>,
-    text_snapshot: Option<Rc<dyn TextData>>,
+    pub(crate) text_render: Option<Arc<TextRender>>,
+    text_snapshot: Option<Arc<dyn TextData>>,
     pub(crate) override_brush: Option<Brush>,
     pub(crate) last_click_time: Option<Instant>,
     pub(crate) click_count: u32,
@@ -98,20 +97,6 @@ impl crate::elements::HasElementData for TextElement {
 
     fn element_data_mut(&mut self) -> &mut ElementData {
         &mut self.element_data
-    }
-}
-
-impl TextData for TextElement {
-    fn get_text_renderer(&self) -> Option<&TextRender> {
-        self.state.text_render.as_deref()
-    }
-
-    fn override_brush(&self) -> Option<&Brush> {
-        self.state.override_brush.as_ref()
-    }
-
-    fn use_glyph_cache(&self) -> bool {
-        self.state.use_glyph_cache
     }
 }
 
@@ -611,7 +596,7 @@ impl TextState {
         }
 
         let layout = self.layout.as_ref().unwrap();
-        self.text_render = Some(Rc::new(text_render_data::from_editor(layout)));
+        self.text_render = Some(Arc::new(text_render_data::from_editor(layout)));
         self.current_render_key = self.current_layout_key;
 
         self.update_text_selection(selection_brush);
@@ -662,7 +647,7 @@ impl TextState {
 
     fn update_text_selection(&mut self, selection_brush: Brush) {
         if let Some(layout) = self.layout.as_ref() {
-            let text_renderer = Rc::make_mut(self.text_render.as_mut().unwrap());
+            let text_renderer = Arc::make_mut(self.text_render.as_mut().unwrap());
             for line in text_renderer.lines.iter_mut() {
                 line.selections.clear();
             }
@@ -683,18 +668,18 @@ impl TextState {
 
     fn refresh_text_snapshot(&mut self) {
         self.text_snapshot = self.text_render.clone().map(|render| {
-            Rc::new(TextSnapshot::from_shared(
+            Arc::new(TextSnapshot::from_shared(
                 render,
                 self.override_brush.clone(),
                 self.use_glyph_cache,
-            )) as Rc<dyn TextData>
+            )) as Arc<dyn TextData>
         });
     }
 }
 
 #[cfg(test)]
 mod animation_tests {
-    use std::rc::Rc;
+    use std::sync::Arc;
     use std::time::Duration;
 
     use retgui_renderer::text_renderer_data::TextRender;
@@ -707,7 +692,7 @@ mod animation_tests {
     fn animated_brush_refreshes_snapshot_without_cloning_glyph_data() {
         let mut app = App::<()>::new();
         let text = Text::new(&mut app, "animated");
-        let render = Rc::new(TextRender {
+        let render = Arc::new(TextRender {
             lines: Vec::new(),
             cursor: None,
             override_brush: None,
@@ -736,6 +721,6 @@ mod animation_tests {
         let snapshot = text.state.text_snapshot.as_ref().unwrap();
         assert!(snapshot.override_brush().is_some());
         assert_ne!(snapshot.override_brush(), Some(&Brush::Color(Color::BLACK)));
-        assert!(Rc::ptr_eq(text.state.text_render.as_ref().unwrap(), &render));
+        assert!(Arc::ptr_eq(text.state.text_render.as_ref().unwrap(), &render));
     }
 }

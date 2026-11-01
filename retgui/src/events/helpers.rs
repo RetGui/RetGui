@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use retgui_primitives::geometry::Point;
 
-use retgui_renderer::renderer::Renderer;
+use retgui_renderer::TargetItem;
 
 use rustc_hash::FxHashMap;
 
@@ -29,7 +29,7 @@ pub(super) fn nearest_common_ancestor(a: DynElement, b: DynElement, elements: &R
 }
 
 pub(super) struct TargetSearchContext<'a> {
-    pub renderer: &'a dyn Renderer,
+    pub targets: &'a [TargetItem],
     pub target_scratch: &'a mut Vec<DynElement>,
     pub pointer_capture: &'a PointerCapture,
     pub elements: &'a RetainedElements,
@@ -44,7 +44,7 @@ pub(super) fn find_target(
     context: TargetSearchContext<'_>,
 ) -> DynElement {
     let TargetSearchContext {
-        renderer,
+        targets,
         target_scratch,
         pointer_capture,
         elements,
@@ -60,7 +60,6 @@ pub(super) fn find_target(
         Point::new(point.x * scale, point.y * scale)
     });
 
-    let targets = &renderer.render_list().targets;
     target_scratch.extend(targets.iter().rev().filter_map(|item| {
         physical_mouse_position
             .is_some_and(|point| item.rectangle.contains(&point))

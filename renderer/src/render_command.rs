@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use retgui_primitives::Color;
 use retgui_primitives::brush::Brush;
@@ -67,7 +67,7 @@ pub struct DrawImageCmd {
 #[derive(Clone)]
 pub struct DrawTextCmd {
     pub rect: Rectangle,
-    pub data: Rc<dyn TextData>,
+    pub data: Arc<dyn TextData>,
     pub text_scroll: Option<TextScroll>,
     pub show_cursor: bool,
     pub transform: Affine,

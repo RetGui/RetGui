@@ -8,7 +8,7 @@ use retgui_primitives::Color;
 use retgui_primitives::geometry::{Rectangle, TrblRectangle};
 
 use retgui_renderer::renderer::Renderer;
-use retgui_renderer::text_renderer_data::{TextData, TextScroll};
+use retgui_renderer::text_renderer_data::TextScroll;
 
 use retgui_resource_manager::ResourceManager;
 
@@ -31,7 +31,6 @@ use crate::layout::layout_context::{GummyTextInputContext, LayoutContext, TextHa
 use crate::style::{Display, Style, Unit};
 use crate::text::RangedStyles;
 use crate::text::text_context::TextContext;
-use crate::text::text_render_data::TextRender;
 
 mod text_input_state;
 
@@ -643,12 +642,6 @@ impl TextInputElement {
         self.state.set_ranged_styles(ranged_styles);
         self.mark_dirty(gummy_tree);
         self
-    }
-}
-
-impl TextData for TextInputElement {
-    fn get_text_renderer(&self) -> Option<&TextRender> {
-        self.state.text_render.as_ref()
     }
 }
 

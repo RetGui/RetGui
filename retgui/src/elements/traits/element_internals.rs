@@ -219,6 +219,7 @@ pub trait ElementInternals: HasElementData + Any {
     }
 
     /// Handles default events.
+    #[expect(clippy::too_many_arguments, reason = "Element event callbacks receive independently borrowed app subsystems")]
     fn on_event(
         &mut self,
         _elements: &mut RetainedElements,

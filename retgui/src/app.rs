@@ -4,6 +4,8 @@ use std::future::Future;
 use std::sync::Arc;
 #[cfg(target_arch = "wasm32")]
 use std::sync::mpsc::{Receiver, Sender, channel};
+#[cfg(not(target_arch = "wasm32"))]
+use std::thread;
 use std::time::Duration;
 
 use issho::AccessEvent;
@@ -16,14 +18,13 @@ use retgui_logging::info;
 
 use retgui_primitives::geometry::{Point, Size};
 
-#[cfg(target_arch = "wasm32")]
-use retgui_renderer::renderer::Renderer;
-
 use retgui_resource_manager::resource_type::ResourceType;
 use retgui_resource_manager::{ResourceError, ResourceId, ResourceManager};
 
 #[cfg(not(target_arch = "wasm32"))]
 use retgui_runtime::task::yield_now;
+#[cfg(not(target_arch = "wasm32"))]
+use retgui_runtime::sync::{mpsc, oneshot};
 use retgui_runtime::{RetGuiRuntime, RetGuiRuntimeHandle};
 
 use rustc_hash::FxHashMap;
@@ -34,7 +35,7 @@ use winit::dpi::PhysicalPosition;
 use winit::event::{ElementState, Ime, KeyEvent, MouseButton, MouseScrollDelta, PointerKind, WindowEvent};
 use winit::event_loop::ActiveEventLoop;
 use winit::window::WindowId;
-
+pub(crate) use retgui_renderer::SharedRenderer;
 use crate::RetGuiError;
 use crate::accessibility::RetGuiAccessTree;
 #[cfg(feature = "audio")]
@@ -56,8 +57,35 @@ use crate::window_manager::WindowManager;
 #[cfg(target_arch = "wasm32")]
 pub(crate) struct CreatedRenderer {
     pub(crate) window: DynElement,
-    pub(crate) renderer: Box<dyn Renderer>,
+    pub(crate) renderer: SharedRenderer,
     pub(crate) size: Size<f32>,
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) enum RenderThreadCommand {
+    Submit {
+        render: SharedRenderer,
+        completed: oneshot::Sender<()>,
+    },
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn spawn_render_thread(resource_manager: Arc<ResourceManager>) -> mpsc::Sender<RenderThreadCommand> {
+    let (render_sender, mut receiver) = mpsc::channel::<RenderThreadCommand>(1);
+    thread::spawn(move || {
+        while let Some(command) = receiver.blocking_recv() {
+            match command {
+                RenderThreadCommand::Submit { render, completed } => {
+                    {
+                        let mut renderer = render.blocking_lock();
+                        renderer.submit(resource_manager.clone());
+                    }
+                    let _ = completed.send(());
+                }
+            }
+        }
+    });
+    render_sender
 }
 
 pub struct App<S: 'static = ()> {
@@ -86,6 +114,9 @@ pub struct App<S: 'static = ()> {
     pub(crate) resource_manager: Arc<ResourceManager>,
 
     pub(crate) runtime: RetGuiRuntime,
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) render_sender: mpsc::Sender<RenderThreadCommand>,
 
     #[cfg(target_arch = "wasm32")]
     pub(crate) created_renderer_sender: Sender<CreatedRenderer>,
@@ -128,6 +159,9 @@ impl<S: 'static> App<S> {
         #[cfg(target_arch = "wasm32")]
         let (created_renderer_sender, created_renderer_receiver) = channel();
 
+        #[cfg(not(target_arch = "wasm32"))]
+        let render_sender = spawn_render_thread(resource_manager.clone());
+
         Self {
             event_dispatcher: EventDispatcher::new(),
             text_context,
@@ -149,6 +183,8 @@ impl<S: 'static> App<S> {
             in_progress_resources: VecDeque::new(),
             resource_manager,
             runtime,
+            #[cfg(not(target_arch = "wasm32"))]
+            render_sender,
             #[cfg(target_arch = "wasm32")]
             created_renderer_sender,
             #[cfg(target_arch = "wasm32")]
@@ -293,7 +329,11 @@ impl<S: 'static> App<S> {
             #[cfg(target_arch = "wasm32")]
             &self.created_renderer_sender,
             event_loop,
+            #[cfg(not(target_arch = "wasm32"))]
+            &self.render_sender,
         );
+        #[cfg(not(target_arch = "wasm32"))]
+        self.poll_render_completions();
     }
 
     pub fn on_about_to_wait(
@@ -319,7 +359,7 @@ impl<S: 'static> App<S> {
         self.process_resources();
         self.process_accessibility_events();
         EventDispatcher::dispatch_queued_events(self, user_state);
-        self.window_manager.on_about_to_wait(
+        let next_update = self.window_manager.on_about_to_wait(
             &mut self.elements,
             &mut self.gummy_tree,
             &mut self.text_context,
@@ -330,7 +370,12 @@ impl<S: 'static> App<S> {
             &self.created_renderer_sender,
             self.active,
             event_loop,
-        )
+            #[cfg(not(target_arch = "wasm32"))]
+            &self.render_sender,
+        );
+        #[cfg(not(target_arch = "wasm32"))]
+        self.poll_render_completions();
+        next_update
     }
 
     #[cfg(target_arch = "wasm32")]
@@ -545,6 +590,8 @@ impl<S: 'static> App<S> {
     }
 
     fn on_request_redraw_internal(&mut self, window: Window) {
+        #[cfg(not(target_arch = "wasm32"))]
+        self.poll_render_completions();
         let animation_schedule = self.window_manager.animation_tick(
             &mut self.elements,
             &mut self.gummy_tree,
@@ -553,13 +600,19 @@ impl<S: 'static> App<S> {
             &window,
         );
         self.update_resources();
+
         WindowElement::on_request_redraw(
             &mut self.elements,
             &mut self.gummy_tree,
             &mut self.text_context,
             self.resource_manager.clone(),
             window.inner,
+            #[cfg(not(target_arch = "wasm32"))]
+            &self.render_sender,
         );
+
+        #[cfg(not(target_arch = "wasm32"))]
+        self.poll_render_completions();
 
         if animation_schedule == AnimationSchedule::NextFrame
             && self
@@ -569,6 +622,33 @@ impl<S: 'static> App<S> {
                 .is_some()
         {
             self.elements.get_as::<WindowElement>(window.inner).request_redraw();
+        }
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    fn poll_render_completions(&mut self) {
+        for window in self.window_manager.windows() {
+            let window = self.elements.get_as_mut::<WindowElement>(window.inner);
+            if let Some(mut completion) = window.pending_render.take() {
+                if window.headless {
+                    completion.blocking_recv()
+                        .expect("Render thread stopped before completing submission");
+                    window.resize_renderer_surface();
+                    continue;
+                }
+                match completion.try_recv() {
+                    Ok(()) => {
+                        window.resize_renderer_surface();
+                        if window.redraw_requested() {
+                            window.request_redraw();
+                        }
+                    }
+                    Err(oneshot::error::TryRecvError::Empty) => window.pending_render = Some(completion),
+                    Err(oneshot::error::TryRecvError::Closed) => {
+                        panic!("Render thread stopped before completing submission");
+                    }
+                }
+            }
         }
     }
 

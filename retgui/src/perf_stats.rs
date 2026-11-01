@@ -1,5 +1,5 @@
 use std::any::Any;
-use std::rc::Rc;
+use std::sync::Arc;
 #[cfg(not(target_arch = "wasm32"))]
 use std::time::{Duration, Instant};
 
@@ -140,11 +140,9 @@ impl PerfStats {
         &mut self,
         elements: &mut RetainedElements,
         gummy_tree: &mut GummyTree,
-        renderer: &mut dyn Renderer,
     ) {
         self.enabled = !self.enabled;
         self.reset(elements, gummy_tree);
-        renderer.set_vsync(!self.enabled);
     }
 
     pub(crate) fn update_stats(&mut self, total: Duration, layout: LayoutStats, render: RenderStats) {
@@ -263,7 +261,7 @@ impl PerfStats {
         gummy_tree: &mut GummyTree,
         text_context: &mut TextContext,
         scale_factor: f64,
-    ) -> (Size<f32>, Rc<dyn TextData>) {
+    ) -> (Size<f32>, Arc<dyn TextData>) {
         let text = self.text;
         let scale_changed = (self.scale_factor - scale_factor).abs() > f64::EPSILON;
         self.scale_factor = scale_factor;
@@ -287,7 +285,7 @@ impl PerfStats {
             text_inner
                 .state
                 .try_update_text_render(text_context, Brush::Color(Color::TRANSPARENT), text_brush, true);
-            let snapshot: Rc<dyn TextData> = Rc::new(TextSnapshot::from_shared(
+            let snapshot: Arc<dyn TextData> = Arc::new(TextSnapshot::from_shared(
                 text_inner
                     .state
                     .text_render

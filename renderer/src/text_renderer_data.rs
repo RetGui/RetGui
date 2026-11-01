@@ -1,5 +1,4 @@
-use std::rc::Rc;
-
+use std::sync::Arc;
 use peniko::kurbo::{Affine, Line};
 
 use retgui_primitives::brush::Brush;
@@ -69,7 +68,7 @@ pub struct TextRenderGlyph {
     pub y: f32,
 }
 
-pub trait TextData {
+pub trait TextData: Send + Sync {
     fn get_text_renderer(&self) -> Option<&TextRender>;
 
     /// Overrides the brushes stored in individual text runs.
@@ -86,7 +85,7 @@ pub trait TextData {
 
 #[derive(Clone, Debug)]
 pub struct TextSnapshot {
-    render: Rc<TextRender>,
+    render: Arc<TextRender>,
     override_brush: Option<Brush>,
     use_glyph_cache: bool,
 }
@@ -95,13 +94,13 @@ impl TextSnapshot {
     pub fn new(render: TextRender, use_glyph_cache: bool) -> Self {
         let override_brush = render.override_brush.clone();
         Self {
-            render: Rc::new(render),
+            render: Arc::new(render),
             override_brush,
             use_glyph_cache,
         }
     }
 
-    pub fn from_shared(render: Rc<TextRender>, override_brush: Option<Brush>, use_glyph_cache: bool) -> Self {
+    pub fn from_shared(render: Arc<TextRender>, override_brush: Option<Brush>, use_glyph_cache: bool) -> Self {
         Self {
             render,
             override_brush,

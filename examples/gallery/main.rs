@@ -612,7 +612,7 @@ pub fn radio_buttons(app: &mut App<GalleryState>) -> Container {
     let group = RadioGroup::new(app, "Pick a color");
     let green = Image::new(
         app,
-        ResourceId::Url("https://www.iconsdb.com/icons/preview/green/square-xxl.png".to_string()),
+        ResourceId::StaticBytes(include_bytes!("assets/green-square.png")),
     );
     green.set_border_width_all(app, px(1));
     green.set_border_color_all(app, rgba(0, 0, 0, 0));

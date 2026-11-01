@@ -9,6 +9,7 @@ vello_gpu_renderer = ["dep:vello_gpu", "dep:vello_common", "dep:glifo", "dep:wgp
 vello_gpu_renderer_webgl = ["wgpu/webgl"]
 
 [dependencies]
+tokio = { workspace = true, features = ["sync"] }
 
 [dependencies.glifo]
 version = "0.4.0"
