@@ -2,17 +2,16 @@ use std::sync::Arc;
 
 use kurbo::Affine;
 
-use vello_common::color::PremulRgba8;
-use vello_common::kurbo;
-use vello_common::paint::{ImageId, ImageSource, PaintType};
-use vello_common::pixmap::Pixmap;
-use vello_hybrid::{Renderer as VelloRenderer, Resources, Scene};
-
-use wgpu::CommandEncoder;
+use vello_common::paint::{ImageSource, PaintType, TextureRegion};
+use vello_common::peniko::ImageAlphaType;
+use vello_common::pixmap::{PixelMetadata, Pixmap};
+use vello_common::{TextureId, kurbo};
+use vello_gpu::{Scene, TextureBindings};
+use wgpu::util::DeviceExt;
 
 use crate::render_command::DrawImageCmd;
 use crate::resource_mapper::{RendererResourceId, ResourceMapper};
-use crate::vello_hybrid::render_context::DeviceHandle;
+use crate::vello_gpu::render_context::DeviceHandle;
 use retgui_resource_manager::ResourceManager;
 use retgui_resource_manager::image::ImageResource;
 use retgui_resource_manager::resource::Resource;
@@ -22,9 +21,7 @@ pub(crate) fn upload_image(
     cmd: &DrawImageCmd,
     resource_manager: Arc<ResourceManager>,
     resource_mapper: &mut ResourceMapper,
-    resources: &mut Resources,
-    renderer: &mut VelloRenderer,
-    encoder: &mut Option<CommandEncoder>,
+    texture_bindings: &mut TextureBindings,
     device_handle: &DeviceHandle,
 ) -> Option<RendererResourceId> {
     let resource = resource_manager.get(&cmd.resource_id)?;
@@ -34,33 +31,46 @@ pub(crate) fn upload_image(
     let resource_id = if let Some(resource_id) = resource_mapper.get(&cmd.resource_id) {
         resource_id
     } else {
-        let encoder = encoder.get_or_insert_with(|| {
-            device_handle
-                .device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: Some("Update image atlas encoder"),
-                })
-        });
-        let premul_data: Vec<PremulRgba8> = image
-            .image
-            .as_chunks::<4>()
-            .0
-            .iter()
-            .map(|rgba| {
-                let alpha = u16::from(rgba[3]);
-                let premultiply = |component| (alpha * (u16::from(component)) / 255) as u8;
-                PremulRgba8 {
-                    r: premultiply(rgba[0]),
-                    g: premultiply(rgba[1]),
-                    b: premultiply(rgba[2]),
-                    a: alpha as u8,
-                }
-            })
-            .collect();
-        let pixmap = Pixmap::from_parts(premul_data, image.get_width() as u16, image.get_height() as u16);
-        let image_id = renderer.upload_image(resources, &device_handle.device, &device_handle.queue, encoder, &pixmap);
-
-        let renderer_resource_id = RendererResourceId(image_id.as_u32() as u64);
+        let width = u16::try_from(image.get_width()).ok().filter(|&v| v > 0)?;
+        let height = u16::try_from(image.get_height()).ok().filter(|&v| v > 0)?;
+        let max_dimension = device_handle.device.limits().max_texture_dimension_2d;
+        if u32::from(width) > max_dimension || u32::from(height) > max_dimension {
+            return None;
+        }
+        let pixmap = Pixmap::from_parts(
+            image.image.as_raw().clone(),
+            width,
+            height,
+            PixelMetadata::new(ImageAlphaType::Alpha, true),
+        );
+        let image_id = resource_mapper
+            .resources
+            .values()
+            .map(|id| id.0)
+            .max()
+            .unwrap_or(0)
+            .checked_add(1)?;
+        let texture = device_handle.device.create_texture_with_data(
+            &device_handle.queue,
+            &wgpu::TextureDescriptor {
+                label: Some("RetGui image"),
+                size: wgpu::Extent3d {
+                    width: u32::from(width),
+                    height: u32::from(height),
+                    depth_or_array_layers: 1,
+                },
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: wgpu::TextureFormat::Rgba8Unorm,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING,
+                view_formats: &[],
+            },
+            wgpu::util::TextureDataOrder::LayerMajor,
+            pixmap.data_as_u8_slice(),
+        );
+        texture_bindings.insert(TextureId(image_id), texture.create_view(&Default::default()));
+        let renderer_resource_id = RendererResourceId(image_id);
 
         resource_mapper.add_mapping(cmd.resource_id.clone(), renderer_resource_id.clone());
 
@@ -93,10 +103,7 @@ pub(crate) fn draw_image(
     scene.reset_paint_transform();
 
     let vello_image = vello_common::paint::Image {
-        image: ImageSource::OpaqueId {
-            id: ImageId::new(resource_id.0 as u32),
-            may_have_transparency: true,
-        },
+        image: ImageSource::external_texture(TextureId(resource_id.0), TextureRegion::Full, true),
         sampler: Default::default(),
     };
 

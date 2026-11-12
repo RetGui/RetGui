@@ -15,8 +15,8 @@ mod screenshot;
 mod sort_commands;
 mod target_item;
 pub mod text_renderer_data;
-#[cfg(feature = "vello_hybrid_renderer")]
-pub mod vello_hybrid;
+#[cfg(feature = "vello_gpu_renderer")]
+pub mod vello_gpu;
 
 pub use render_command::RenderCommand;
 pub use render_list::RenderList;

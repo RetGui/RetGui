@@ -17,14 +17,13 @@ use retgui_primitives::geometry::{Rectangle, TOLERANCE};
 use retgui_resource_manager::ResourceManager;
 
 use vello_common::filter_effects::{Filter, FilterFunction};
-use vello_common::paint::ImageId;
-use vello_common::{kurbo, peniko};
+use vello_common::{TextureId, kurbo, peniko};
 
-use vello_hybrid::{RenderSize, Renderer as VelloRenderer, Resources, Scene, TextureBindings};
+use vello_gpu::{RenderTarget, Renderer as VelloRenderer, Resources, Scene, TextureBindings};
 
 use winit::window::Window;
 
-use wgpu::{CommandEncoder, CurrentSurfaceTexture, TextureFormat};
+use wgpu::{CurrentSurfaceTexture, TextureFormat};
 
 use crate::RenderCommand;
 use crate::helpers::brush_to_paint;
@@ -33,9 +32,9 @@ use crate::render_list::RenderList;
 use crate::renderer::Renderer;
 use crate::resource_mapper::{RendererResourceId, ResourceMapper};
 use crate::sort_commands::SortedCommands;
-use crate::vello_hybrid::image::{draw_image, upload_image};
-use crate::vello_hybrid::render_context::{RenderContext, RenderSurface, create_vello_renderer};
-use crate::vello_hybrid::text::draw_text;
+use crate::vello_gpu::image::{draw_image, upload_image};
+use crate::vello_gpu::render_context::{RenderContext, RenderSurface, create_vello_renderer};
+use crate::vello_gpu::text::draw_text;
 
 pub struct ActiveRenderState {
     // The fields MUST be in this order, so that the surface is dropped before the window
@@ -51,7 +50,7 @@ enum RenderState {
     Suspended,
 }
 
-pub struct VelloHybridRenderer {
+pub struct VelloGpuRenderer {
     // The vello RenderContext which is a global context that lasts for the
     // lifetime of the application
     context: RenderContext,
@@ -78,7 +77,7 @@ pub struct VelloHybridRenderer {
     render_list: RenderList,
 }
 
-impl Renderer for VelloHybridRenderer {
+impl Renderer for VelloGpuRenderer {
     fn surface_width(&self) -> f32 {
         match &self.state {
             RenderState::Active(active_render_state) => active_render_state.window_width,
@@ -155,9 +154,8 @@ impl Renderer for VelloHybridRenderer {
             },
         );
 
-        let (renderer, resources) = self.renderers[surface.dev_id].as_mut().unwrap();
+        let (_renderer, resources) = self.renderers[surface.dev_id].as_mut().unwrap();
         let device_handle = &self.context.devices[surface.dev_id];
-        let mut image_encoder = None;
 
         let render_list = &self.render_list;
         SortedCommands::draw(render_list, &render_list.overlay, &mut |command: &RenderCommand| {
@@ -171,9 +169,7 @@ impl Renderer for VelloHybridRenderer {
                         cmd,
                         resource_manager.clone(),
                         &mut self.resource_mapper,
-                        resources,
-                        renderer,
-                        &mut image_encoder,
+                        &mut self.texture_bindings,
                         device_handle,
                     ) {
                         draw_image(cmd, &mut self.scene, resource_manager.clone(), resource_id);
@@ -210,24 +206,11 @@ impl Renderer for VelloHybridRenderer {
             .get_all_renderer_resource_ids()
             .any(|resource_id| !self.resources_seen.contains(resource_id));
         if has_unseen_resources {
-            let encoder = image_encoder.get_or_insert_with(|| {
-                device_handle
-                    .device
-                    .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                        label: Some("Update image atlas encoder"),
-                    })
-            });
-            VelloHybridRenderer::delete_unseen_resources(
+            Self::delete_unseen_resources(
                 &mut self.resources_seen,
-                renderer,
-                encoder,
-                resources,
+                &mut self.texture_bindings,
                 &mut self.resource_mapper,
             );
-        }
-
-        if let Some(encoder) = image_encoder {
-            device_handle.queue.submit([encoder.finish()]);
         }
     }
 
@@ -267,11 +250,6 @@ impl Renderer for VelloHybridRenderer {
             }
         };
 
-        let render_size = RenderSize {
-            width: surface.config.width,
-            height: surface.config.height,
-        };
-
         let mut encoder = device_handle
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -286,33 +264,34 @@ impl Renderer for VelloHybridRenderer {
             .render(
                 &self.scene,
                 resources,
-                &device_handle.device,
-                &device_handle.queue,
                 &mut encoder,
-                &render_size,
-                &texture_view,
+                RenderTarget {
+                    view: &texture_view,
+                    depth_view: None,
+                },
                 &self.texture_bindings,
+                Default::default(),
             )
             .unwrap();
 
         device_handle.queue.submit([encoder.finish()]);
 
         // Queue the texture to be presented on the surface
-        surface_texture.present();
+        device_handle.queue.present(surface_texture);
 
         self.scene.reset();
     }
 }
 
-impl VelloHybridRenderer {
-    pub(crate) async fn new(window: Arc<dyn Window>) -> VelloHybridRenderer {
+impl VelloGpuRenderer {
+    pub(crate) async fn new(window: Arc<dyn Window>) -> VelloGpuRenderer {
         // Create a vello Surface
         let surface_size = window.surface_size();
 
         let width = surface_size.width.max(1);
         let height = surface_size.height.max(1);
 
-        let mut vello_renderer = VelloHybridRenderer {
+        let mut vello_renderer = VelloGpuRenderer {
             context: RenderContext::new(),
             renderers: vec![],
             state: RenderState::Suspended,
@@ -332,9 +311,9 @@ impl VelloHybridRenderer {
                 width,
                 height,
                 present_mode_for_vsync(true),
-                #[cfg(feature = "vello_hybrid_renderer_webgl")]
+                #[cfg(feature = "vello_gpu_renderer_webgl")]
                 TextureFormat::Rgba8Unorm,
-                #[cfg(not(feature = "vello_hybrid_renderer_webgl"))]
+                #[cfg(not(feature = "vello_gpu_renderer_webgl"))]
                 TextureFormat::Bgra8Unorm,
             )
             .await;
@@ -357,16 +336,14 @@ impl VelloHybridRenderer {
 
     pub(crate) fn delete_unseen_resources(
         resources_seen: &mut HashSet<RendererResourceId>,
-        renderer: &mut VelloRenderer,
-        encoder: &mut CommandEncoder,
-        resources: &mut Resources,
+        texture_bindings: &mut TextureBindings,
         resource_mapper: &mut ResourceMapper,
     ) {
         resource_mapper.resources.retain(|_key, value| {
             if resources_seen.contains(value) {
                 true
             } else {
-                renderer.destroy_image(resources, encoder, ImageId::new(value.0 as u32));
+                texture_bindings.remove(TextureId(value.0));
 
                 false
             }

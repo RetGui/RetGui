@@ -1,4 +1,4 @@
-use vello_hybrid::{RenderTargetConfig, Renderer, Resources};
+use vello_gpu::{RenderTargetConfig, Renderer, Resources};
 use wgpu::{Adapter, Device, Features, Instance, Limits, MemoryHints, Queue, Surface, SurfaceConfiguration, SurfaceTarget, TextureFormat};
 
 /// Simple render context that maintains wgpu state for rendering the pipeline.
@@ -35,10 +35,19 @@ pub(crate) struct RenderSurface<'s> {
 pub(crate) fn create_vello_renderer(render_cx: &RenderContext, surface: &RenderSurface) -> (Renderer, Resources) {
     Renderer::new(
         &render_cx.devices[surface.dev_id].device,
+        &render_cx.devices[surface.dev_id].queue,
         &RenderTargetConfig {
             format: surface.config.format,
-            width: surface.config.width,
-            height: surface.config.height,
+            width: surface
+                .config
+                .width
+                .try_into()
+                .expect("Surface width exceeds Vello limit"),
+            height: surface
+                .config
+                .height
+                .try_into()
+                .expect("Surface height exceeds Vello limit"),
         },
     )
 }
@@ -46,9 +55,9 @@ pub(crate) fn create_vello_renderer(render_cx: &RenderContext, surface: &RenderS
 impl RenderContext {
     /// Creates a new render context
     pub(crate) fn new() -> Self {
-        #[cfg(not(feature = "vello_hybrid_renderer_webgl"))]
+        #[cfg(not(feature = "vello_gpu_renderer_webgl"))]
         let backends = wgpu::Backends::from_env().unwrap_or_default();
-        #[cfg(feature = "vello_hybrid_renderer_webgl")]
+        #[cfg(feature = "vello_gpu_renderer_webgl")]
         let backends = wgpu::Backends::GL;
         let flags = wgpu::InstanceFlags::from_build_config().with_env();
         let backend_options = wgpu::BackendOptions::from_env_or_default();
@@ -106,6 +115,7 @@ impl RenderContext {
             desired_maximum_frame_latency: 2,
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
             view_formats: vec![],
+            color_space: Default::default(),
         };
         let surface = RenderSurface {
             surface,
@@ -150,14 +160,14 @@ impl RenderContext {
         let adapter = wgpu::util::initialize_adapter_from_env_or_default(&self.instance, compatible_surface)
             .await
             .ok()?;
-        #[cfg(feature = "vello_hybrid_renderer_webgl")]
+        #[cfg(feature = "vello_gpu_renderer_webgl")]
         let limits = Limits {
             max_color_attachments: 4,
             max_texture_dimension_2d: adapter.limits().max_texture_dimension_2d,
             max_buffer_size: adapter.limits().max_buffer_size,
             ..Limits::downlevel_webgl2_defaults()
         };
-        #[cfg(not(feature = "vello_hybrid_renderer_webgl"))]
+        #[cfg(not(feature = "vello_gpu_renderer_webgl"))]
         let limits = Limits::default();
 
         let (device, queue) = adapter

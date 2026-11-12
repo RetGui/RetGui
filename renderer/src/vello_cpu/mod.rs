@@ -15,7 +15,7 @@ use softbuffer::Buffer;
 
 use vello_common::filter_effects::{Filter, FilterFunction};
 use vello_common::kurbo::Stroke;
-use vello_common::paint::{ImageId, PaintType};
+use vello_common::paint::PaintType;
 use vello_cpu::{Pixmap, RenderContext, Resources};
 
 use winit::window::Window;
@@ -45,6 +45,7 @@ pub(crate) struct VelloCpuRenderer {
     window_height: u16,
     resources: Resources,
     render_list: RenderList,
+    images: std::collections::HashMap<RendererResourceId, Arc<Pixmap>>,
     resource_mapper: ResourceMapper,
     resources_seen: HashSet<RendererResourceId>,
 }
@@ -217,6 +218,7 @@ impl VelloCpuRenderer {
             window_height: height,
             resources: Resources::new(),
             render_list: Default::default(),
+            images: Default::default(),
             resource_mapper: ResourceMapper::new(),
             resources_seen: HashSet::with_capacity(20),
         }
@@ -234,6 +236,7 @@ impl VelloCpuRenderer {
             window_height: height,
             resources: Resources::new(),
             render_list: Default::default(),
+            images: Default::default(),
             resource_mapper: ResourceMapper::new(),
             resources_seen: HashSet::with_capacity(20),
         }
@@ -244,7 +247,7 @@ impl VelloCpuRenderer {
             if self.resources_seen.contains(value) {
                 true
             } else {
-                self.resources.destroy_image(ImageId::new(value.0 as u32));
+                self.images.remove(value);
 
                 false
             }
@@ -321,10 +324,16 @@ impl Renderer for VelloCpuRenderer {
                     if let Some(resource_id) = upload_image(
                         cmd,
                         resource_manager.clone(),
-                        &mut self.resources,
+                        &mut self.images,
                         &mut self.resource_mapper,
                     ) {
-                        draw_image(cmd, &mut self.scene, resource_manager.clone(), resource_id);
+                        draw_image(
+                            cmd,
+                            &mut self.scene,
+                            resource_manager.clone(),
+                            resource_id,
+                            &self.images,
+                        );
                     }
 
                     // Track the resources used.

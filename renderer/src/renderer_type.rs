@@ -9,20 +9,20 @@ use crate::blank_renderer::BlankRenderer;
 use crate::renderer::Renderer;
 #[cfg(feature = "vello_cpu_renderer")]
 use crate::vello_cpu::VelloCpuRenderer;
-#[cfg(feature = "vello_hybrid_renderer")]
-use crate::vello_hybrid::VelloHybridRenderer;
+#[cfg(feature = "vello_gpu_renderer")]
+use crate::vello_gpu::VelloGpuRenderer;
 
 /// An enumeration of the available renderer types for RetGui.
 ///
 /// Depending on compile-time features, different renderers can be enabled.
-/// When the `vello_hybrid_renderer` feature is enabled, the [`VelloHybrid`](RendererType::VelloHybrid)
+/// When the `vello_gpu_renderer` feature is enabled, the [`VelloGPU`](RendererType::VelloGPU)
 /// variant is available; otherwise, the [`Blank`](RendererType::Blank) variant is used.
 #[derive(Copy, Clone, Debug)]
 pub enum RendererType {
     #[cfg(feature = "vello_cpu_renderer")]
     VelloCPU,
-    #[cfg(feature = "vello_hybrid_renderer")]
-    VelloHybrid,
+    #[cfg(feature = "vello_gpu_renderer")]
+    VelloGPU,
     Blank,
 }
 
@@ -30,7 +30,7 @@ pub enum RendererType {
 impl Default for RendererType {
     fn default() -> Self {
         cfg_select! {
-            feature = "vello_hybrid_renderer" => RendererType::VelloHybrid,
+            feature = "vello_gpu_renderer" => RendererType::VelloGPU,
             feature = "vello_cpu_renderer" => RendererType::VelloCPU,
             _ => RendererType::Blank,
         }
@@ -42,8 +42,8 @@ impl Display for RendererType {
         match self {
             #[cfg(feature = "vello_cpu_renderer")]
             RendererType::VelloCPU => write!(f, "vello/cpu"),
-            #[cfg(feature = "vello_hybrid_renderer")]
-            RendererType::VelloHybrid => write!(f, "vello/hybrid"),
+            #[cfg(feature = "vello_gpu_renderer")]
+            RendererType::VelloGPU => write!(f, "vello/gpu"),
             RendererType::Blank => write!(f, "blank"),
         }
     }
@@ -54,8 +54,8 @@ impl RendererType {
         let renderer: Rc<RefCell<dyn Renderer>> = match self {
             #[cfg(feature = "vello_cpu_renderer")]
             RendererType::VelloCPU => Rc::new(RefCell::new(VelloCpuRenderer::new(window))),
-            #[cfg(feature = "vello_hybrid_renderer")]
-            RendererType::VelloHybrid => Rc::new(RefCell::new(VelloHybridRenderer::new(window).await)),
+            #[cfg(feature = "vello_gpu_renderer")]
+            RendererType::VelloGPU => Rc::new(RefCell::new(VelloGpuRenderer::new(window).await)),
             RendererType::Blank => {
                 // So the linter does not complain about window being unused.
                 let _ = window;
@@ -80,8 +80,8 @@ impl RendererType {
                 width.max(1.0) as u16,
                 height.max(1.0) as u16,
             ))),
-            #[cfg(feature = "vello_hybrid_renderer")]
-            RendererType::VelloHybrid => {
+            #[cfg(feature = "vello_gpu_renderer")]
+            RendererType::VelloGPU => {
                 #[cfg(feature = "vello_cpu_renderer")]
                 {
                     Rc::new(RefCell::new(VelloCpuRenderer::new_headless(

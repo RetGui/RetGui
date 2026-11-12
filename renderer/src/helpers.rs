@@ -6,23 +6,23 @@ use retgui_primitives::gradient::{Extend, GradientKind, HueDirection};
 
 #[cfg(any(
     feature = "vello_cpu_renderer",
-    feature = "vello_hybrid_renderer",
-    feature = "vello_hybrid_renderer_webgl"
+    feature = "vello_gpu_renderer",
+    feature = "vello_gpu_renderer_webgl"
 ))]
 use vello_common::paint::PaintType;
 
 #[cfg(any(
     feature = "vello_cpu_renderer",
-    feature = "vello_hybrid_renderer",
-    feature = "vello_hybrid_renderer_webgl"
+    feature = "vello_gpu_renderer",
+    feature = "vello_gpu_renderer_webgl"
 ))]
 use crate::Brush;
 use crate::text_renderer_data::TextRenderLine;
 
 #[cfg(any(
     feature = "vello_cpu_renderer",
-    feature = "vello_hybrid_renderer",
-    feature = "vello_hybrid_renderer_webgl"
+    feature = "vello_gpu_renderer",
+    feature = "vello_gpu_renderer_webgl"
 ))]
 pub(crate) fn brush_to_paint(rect: Rectangle, brush: &Brush) -> PaintType {
     match brush {
