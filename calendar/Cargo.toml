@@ -6,7 +6,7 @@ edition.workspace = true
 [dependencies]
 sys-locale = "0.3.2"
 
-icu = { version = "2.2", features = ["compiled_data"] }
+icu = { version = "2.4.0", features = ["compiled_data"] }
 
 jiff.workspace = true
 
@@ -19,4 +19,4 @@ features = [
 ]
 
 [target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
-web-sys = { version = "0.3.103", features = ["Window", "Navigator"] }
+web-sys = { version = "0.3.107", features = ["Window", "Navigator"] }
