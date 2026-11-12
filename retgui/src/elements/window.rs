@@ -410,6 +410,10 @@ impl WindowInternal {
             retgui_app.text_context.borrow_mut().as_mut().unwrap(),
             retgui_app.resource_manager.clone(),
         );
+        retgui_app.update_hit_test_targets(
+            self.element_data.internal_id,
+            &mut self.renderer.borrow_mut().render_list_mut().targets,
+        );
     }
 
     pub(crate) fn zoom_in(&mut self) {

@@ -1,5 +1,6 @@
+use retgui_renderer::TargetItem;
 use std::cell::RefCell;
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::rc::{Rc, Weak};
 use std::sync::Arc;
 use std::time::Instant as JobInstant;
@@ -30,7 +31,7 @@ use crate::RetGuiOptions;
 use crate::accessibility::ACCESS_TREE;
 #[cfg(feature = "audio")]
 use crate::elements::{AUDIO_CONTEXT, AudioInner};
-use crate::elements::{DynElement, ElementIdMap, ElementInternals, Window, scrollable, set_focus_outline_visible};
+use crate::elements::{DynElement, ElementData as _, ElementIdMap, ElementInternals, Window, scrollable, set_focus_outline_visible};
 use crate::events::{EventDispatcher, EventKind, ImeEvent, KeyboardEvent, PointerButtonEvent, PointerInfo, PointerMovedEvent, PointerScrollEvent, PointerState};
 use crate::layout::GummyTree;
 use crate::text::text_context::TextContext;
@@ -68,6 +69,7 @@ pub struct App {
 
     pub(crate) runtime: RetGuiRuntime,
 
+    hit_test_targets: HashMap<u64, Vec<TargetItem>>,
     pub(super) target_scratch: Vec<Rc<RefCell<dyn ElementInternals>>>,
     #[allow(dead_code)]
     pub(crate) retgui_options: RetGuiOptions,
@@ -106,6 +108,7 @@ impl App {
             resource_manager,
             reload_fonts: false,
             runtime,
+            hit_test_targets: HashMap::new(),
             target_scratch: Vec::new(),
             retgui_options,
             active: false,
@@ -173,6 +176,8 @@ impl App {
                 );
             }
             WindowEvent::CloseRequested => {
+                self.hit_test_targets
+                    .remove(&window.inner.borrow().element_data().internal_id);
                 return WINDOW_MANAGER.with_borrow_mut(|window_manager| {
                     window_manager.close_window(&window);
                     if window_manager.is_empty() {
@@ -432,26 +437,34 @@ impl App {
         let has_active_animations =
             WINDOW_MANAGER.with_borrow_mut(|window_manager| window_manager.animation_tick(&window, delta));
         self.update_resources();
-        window.on_redraw(
-            self.text_context.borrow_mut().as_mut().unwrap(),
-            self.resource_manager.clone(),
-        );
+        window.on_request_redraw(self);
 
         if has_active_animations && window.winit_window().is_some() {
             window.request_redraw();
         }
     }
 
+    pub(crate) fn update_hit_test_targets(&mut self, window_id: u64, targets: &mut Vec<TargetItem>) {
+        let cached = self.hit_test_targets.entry(window_id).or_default();
+        std::mem::swap(cached, targets);
+        targets.clear();
+        TargetItem::sort_items_by_overlay_depth(cached);
+    }
+
     fn dispatch_event(&mut self, window: Window, mut event: EventKind) -> bool {
         let mouse_pos = window.mouse_position();
-        let binding = window.inner.borrow().renderer.clone();
-        let renderer = &mut *binding.borrow_mut();
+        let window_id = window.inner.borrow().element_data().internal_id;
+        let targets = self
+            .hit_test_targets
+            .get(&window_id)
+            .map(Vec::as_slice)
+            .unwrap_or_default();
         self.event_dispatcher.borrow_mut().dispatch_event(
             &mut event,
             mouse_pos,
             window.inner.clone(),
             self.text_context.borrow_mut().as_mut().unwrap(),
-            renderer,
+            targets,
             &mut self.target_scratch,
         )
     }

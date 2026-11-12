@@ -6,7 +6,7 @@ use crate::events::{PointerButton, PointerId};
 
 use retgui_primitives::geometry::Point;
 
-use retgui_renderer::renderer::Renderer;
+use retgui_renderer::TargetItem;
 
 use crate::app::{FOCUS, dequeue_event};
 use crate::elements::{DynElement, ElementInternals};
@@ -222,7 +222,7 @@ impl EventDispatcher {
         mouse_position: Option<Point>,
         root: Rc<RefCell<dyn ElementInternals>>,
         text_context: &mut TextContext,
-        renderer: &mut dyn Renderer,
+        hit_test_targets: &[TargetItem],
         target_scratch: &mut Vec<Rc<RefCell<dyn ElementInternals>>>,
     ) -> bool {
         let pointer_capture = root
@@ -249,7 +249,7 @@ impl EventDispatcher {
                 &root,
                 mouse_position,
                 event_kind,
-                renderer,
+                hit_test_targets,
                 target_scratch,
                 &pointer_capture,
                 pointer_id,
@@ -303,7 +303,7 @@ impl EventDispatcher {
                     &root,
                     mouse_position,
                     event_kind,
-                    renderer,
+                    hit_test_targets,
                     target_scratch,
                     &pointer_capture.borrow(),
                     &pointer_id,

@@ -1,6 +1,5 @@
 use crate::events::PointerId;
 use retgui_primitives::geometry::Point;
-use retgui_renderer::renderer::Renderer;
 use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::rc::Rc;
@@ -50,7 +49,7 @@ pub(super) fn find_target(
     root: &Rc<RefCell<dyn ElementInternals>>,
     mouse_position: Option<Point>,
     message: &EventKind,
-    renderer: &mut dyn Renderer,
+    hit_test_targets: &[TargetItem],
     target_scratch: &mut Vec<Rc<RefCell<dyn ElementInternals>>>,
     pointer_capture: &PointerCapture,
     pointer_id: &PointerId,
@@ -66,9 +65,7 @@ pub(super) fn find_target(
     });
 
     ELEMENTS.with_borrow_mut(|elements| {
-        let targets = &mut renderer.render_list_mut().targets;
-        TargetItem::sort_items_by_overlay_depth(targets);
-        target_scratch.extend(targets.iter().rev().filter_map(|target_item| {
+        target_scratch.extend(hit_test_targets.iter().rev().filter_map(|target_item| {
             if !physical_mouse_position.is_some_and(|point| target_item.rectangle.contains(&point)) {
                 return None;
             }
