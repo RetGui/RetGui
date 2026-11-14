@@ -9,6 +9,7 @@ use retgui_resource_manager::ResourceManager;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::Arc;
+use retgui_renderer::RenderList;
 
 /// A helper to push children.
 pub fn push_child_to_element(parent: &mut dyn ElementInternals, child: Rc<RefCell<dyn ElementInternals>>) {
@@ -132,7 +133,7 @@ pub fn apply_generic_leaf_layout(
 
 pub fn draw_generic_container(
     element: &mut dyn ElementInternals,
-    renderer: &mut dyn Renderer,
+    render_list: &mut RenderList,
     resource_manager: Arc<ResourceManager>,
     text_context: &mut TextContext,
     scale_factor: f64,
@@ -141,14 +142,14 @@ pub fn draw_generic_container(
         return;
     }
 
-    element.maybe_start_overlay(renderer);
+    element.maybe_start_overlay(render_list);
 
-    element.add_hit_testable(renderer, true, scale_factor);
-    element.draw_borders(renderer, scale_factor);
-    element.maybe_start_layer(renderer, scale_factor);
-    element.draw_children(renderer, resource_manager.clone(), scale_factor, text_context);
-    element.maybe_end_layer(renderer);
-    element.draw_scrollbar(renderer, scale_factor);
+    element.add_hit_testable(render_list, true, scale_factor);
+    element.draw_borders(render_list, scale_factor);
+    element.maybe_start_layer(render_list, scale_factor);
+    element.draw_children(render_list, resource_manager.clone(), scale_factor, text_context);
+    element.maybe_end_layer(render_list);
+    element.draw_scrollbar(render_list, scale_factor);
 
-    element.maybe_end_overlay(renderer);
+    element.maybe_end_overlay(render_list);
 }

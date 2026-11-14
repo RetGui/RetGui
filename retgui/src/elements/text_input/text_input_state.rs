@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::num::NonZeroUsize;
 use std::ops::Range;
+use std::sync::Arc;
 #[cfg(not(target_arch = "wasm32"))]
 use std::time::{Duration, Instant};
 
@@ -50,7 +51,7 @@ pub struct TextInputState {
     content_widths: Option<ContentWidths>,
     prepared_layout: Option<PreparedLayout>,
 
-    pub(crate) text_render: Option<TextRender>,
+    pub(crate) text_render: Option<Arc<TextRender>>,
     scale_factor: f64,
 
     last_click_time: Option<Instant>,
@@ -264,7 +265,7 @@ impl TextInputState {
             self.size_cache.insert(key, size);
             if !self.is_rendered_for(key) {
                 self.current_render_key = Some(key);
-                self.text_render = Some(text_render_data::from_editor(layout));
+                self.text_render = Some(Arc::new(text_render_data::from_editor(layout)));
             }
             return size;
         }
@@ -295,7 +296,7 @@ impl TextInputState {
         self.presented_layout_key = Some(key);
         self.current_render_key = Some(key);
         let layout = self.editor.try_layout().unwrap();
-        self.text_render = Some(text_render_data::from_editor(layout));
+        self.text_render = Some(Arc::new(text_render_data::from_editor(layout)));
         self.is_layout_dirty = false;
         size
     }
@@ -872,6 +873,7 @@ impl TextInputState {
             })
             .collect();
         let text_renderer = self.text_render.as_mut().unwrap();
+        let text_renderer = Arc::make_mut(text_renderer);
         for line in text_renderer.lines.iter_mut() {
             line.backgrounds.clear();
         }

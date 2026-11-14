@@ -285,15 +285,7 @@ impl Renderer for VelloCpuRenderer {
         self.clear_color = color;
     }
 
-    fn render_list(&self) -> &RenderList {
-        &self.render_list
-    }
-
-    fn render_list_mut(&mut self) -> &mut RenderList {
-        &mut self.render_list
-    }
-
-    fn prepare(&mut self, resource_manager: Arc<RetGuiResourceManager>, window: Rectangle) {
+    fn prepare(&mut self, render_list: &mut RenderList, resource_manager: Arc<RetGuiResourceManager>, window: Rectangle) {
         self.resources_seen.clear();
 
         // Clear the bg color.
@@ -311,7 +303,6 @@ impl Renderer for VelloCpuRenderer {
         self.scene.set_fill_rule(Fill::NonZero);
         self.scene.set_transform(Affine::IDENTITY);
 
-        let render_list = &self.render_list;
         SortedCommands::draw(render_list, &render_list.overlay, &mut |command: &RenderCommand| {
             match command {
                 RenderCommand::DrawRect(cmd) => {
@@ -371,7 +362,7 @@ impl Renderer for VelloCpuRenderer {
         self.delete_unseen_resources();
     }
 
-    fn submit(&mut self, _resource_manager: Arc<RetGuiResourceManager>) {
+    fn submit(&mut self) {
         self.scene.flush();
         self.scene.render(&mut self.pixmap, &mut self.resources);
         if self.surface.is_some() {

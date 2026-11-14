@@ -1,5 +1,4 @@
-use std::cell::RefCell;
-use std::rc::{Rc, Weak};
+use std::sync::Arc;
 #[cfg(not(target_arch = "wasm32"))]
 use std::time::{Duration, Instant};
 
@@ -8,9 +7,8 @@ use gummy::AvailableSpace;
 use retgui_primitives::brush::Brush;
 use retgui_primitives::geometry::{Rectangle, Size};
 
-use retgui_renderer::renderer::Renderer;
-use retgui_renderer::text_renderer_data::TextData;
-
+use retgui_renderer::RenderList;
+use retgui_renderer::text_renderer_data::TextRender;
 #[cfg(target_arch = "wasm32")]
 use web_time::{Duration, Instant};
 
@@ -40,10 +38,27 @@ pub(crate) struct RenderStats {
     submit: Duration,
 }
 
+pub struct FrameStats {
+    pub(crate) start: Instant,
+    pub(crate) total: Duration,
+    pub(crate) layout: LayoutStats,
+    pub(crate) render: RenderStats,
+}
+
+impl FrameStats {
+    pub(crate) fn finish_render(&mut self, sort: Duration, prepare: Duration, submit: Duration) {
+        self.render.sort = sort;
+        self.render.prepare = prepare;
+        self.render.submit = submit;
+        self.render.total += sort + prepare + submit;
+        self.total = self.start.elapsed();
+    }
+}
+
 pub(crate) struct PerfStats {
     enabled: bool,
     text: Text,
-    text_data: Weak<RefCell<dyn TextData>>,
+    text_data: Arc<TextRender>,
     frames_since_sample: u32,
     sample_start: Instant,
     frame_total: Duration,
@@ -113,13 +128,15 @@ impl PerfStats {
             text_inner.set_font_size(16.0);
             text_inner.set_text_brush(Brush::Color(Color::WHITE));
         }
-        let text_data_rc: Rc<RefCell<dyn TextData>> = text.inner.clone();
-        let text_data = Rc::downgrade(&text_data_rc);
 
         let mut stats = Self {
             enabled: false,
             text,
-            text_data,
+            text_data: Arc::new(TextRender {
+                lines: Vec::new(),
+                cursor: None,
+                override_brush: None,
+            }),
             frames_since_sample: 0,
             sample_start: Instant::now(),
             frame_total: Duration::from_secs(0),
@@ -135,19 +152,21 @@ impl PerfStats {
         self.enabled
     }
 
-    pub(crate) fn toggle(&mut self, renderer: &mut dyn Renderer) {
+    pub(crate) fn toggle(&mut self) {
         self.enabled = !self.enabled;
         self.reset();
-        renderer.set_vsync(!self.enabled);
     }
 
     pub(crate) fn update_stats(&mut self, total: Duration, layout: LayoutStats, render: RenderStats) {
+        if self.enabled {
+            self.frames_since_sample += 1;
+        }
         self.frame_total = total;
         self.layout = layout;
         self.render = render;
     }
 
-    pub(crate) fn draw(&mut self, renderer: &mut dyn Renderer, text_context: &mut TextContext, scale_factor: f64) {
+    pub(crate) fn draw(&mut self, render_list: &mut RenderList, text_context: &mut TextContext, scale_factor: f64) {
         if !self.enabled {
             return;
         }
@@ -155,18 +174,18 @@ impl PerfStats {
         self.update_debug_text();
         let text_size = self.layout_text(text_context, scale_factor);
 
-        renderer.start_overlay();
+        render_list.start_overlay();
         let panel = Rectangle::new(
             FPS_OVERLAY_MARGIN,
             FPS_OVERLAY_MARGIN,
             text_size.width + FPS_OVERLAY_PADDING_X * 2.0,
             text_size.height + FPS_OVERLAY_PADDING_Y * 2.0,
         );
-        renderer.draw_rect(
+        render_list.draw_rect(
             panel.scale(scale_factor),
             Brush::Color(Color::from_rgba8(16, 16, 18, 215)),
         );
-        renderer.draw_rect_outline(
+        render_list.draw_rect_outline(
             panel.scale(scale_factor),
             Brush::Color(Color::from_rgba8(255, 255, 255, 70)),
             scale_factor,
@@ -178,8 +197,8 @@ impl PerfStats {
             text_size.width,
             text_size.height,
         );
-        renderer.draw_text(self.text_data.clone(), text_rect.scale(scale_factor), None, false);
-        renderer.end_overlay();
+        render_list.draw_text(self.text_data.clone(), text_rect.scale(scale_factor), None, false, true);
+        render_list.end_overlay();
     }
 
     fn reset(&mut self) {
@@ -193,7 +212,6 @@ impl PerfStats {
     }
 
     fn update_debug_text(&mut self) {
-        self.frames_since_sample += 1;
         let elapsed = self.sample_start.elapsed();
         if elapsed < FPS_SAMPLE_INTERVAL {
             return;
@@ -262,6 +280,7 @@ impl PerfStats {
         text_inner
             .state
             .try_update_text_render(text_context, Brush::Color(Color::TRANSPARENT), text_brush, true);
+        self.text_data = text_inner.state.text_render.clone().unwrap();
 
         Size::new(size.width, size.height)
     }

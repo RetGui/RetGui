@@ -42,6 +42,7 @@ mod options;
 mod perf_stats;
 mod utils;
 mod window_manager;
+mod render_message;
 
 #[cfg(target_os = "android")]
 thread_local! {

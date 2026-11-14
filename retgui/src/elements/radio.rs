@@ -16,7 +16,7 @@ use retgui_renderer::renderer::Renderer;
 use retgui_resource_manager::ResourceManager;
 
 use winit::keyboard::KeyCode;
-
+use retgui_renderer::RenderList;
 use crate::app::{GUMMY_TREE, queue_event};
 use crate::elements::element_data::ElementData;
 use crate::elements::element_id::create_unique_element_id;
@@ -115,7 +115,7 @@ impl ElementInternals for RadioInner {
 
     fn draw(
         &mut self,
-        renderer: &mut dyn Renderer,
+        render_list: &mut RenderList,
         resource_manager: Arc<ResourceManager>,
         _scale_factor: f64,
         _text_context: &mut TextContext,
@@ -124,29 +124,29 @@ impl ElementInternals for RadioInner {
             return;
         }
 
-        self.maybe_start_overlay(renderer);
+        self.maybe_start_overlay(render_list);
 
-        self.add_hit_testable(renderer, true, _scale_factor);
-        self.draw_borders(renderer, _scale_factor);
-        self.maybe_start_layer(renderer, _scale_factor);
+        self.add_hit_testable(render_list, true, _scale_factor);
+        self.draw_borders(render_list, _scale_factor);
+        self.maybe_start_layer(render_list, _scale_factor);
 
-        let container_transform = renderer.get_transform();
+        let container_transform = render_list.get_transform();
         let scroll_y = self.element_data.scroll().scroll_y() as f64 * _scale_factor;
-        renderer.set_transform(container_transform * Affine::translate((0.0, -scroll_y)));
+        render_list.set_transform(container_transform * Affine::translate((0.0, -scroll_y)));
 
         if !self.hide_radio {
             if self.is_selected() {
-                renderer.draw_circle_outline(
+                render_list.draw_circle_outline(
                     self.circle.scale(_scale_factor),
                     Brush::Color(rgb(0, 100, 255)),
                     _scale_factor as f32,
                 );
-                renderer.draw_circle(
+                render_list.draw_circle(
                     self.circle.expand(-4.0).scale(_scale_factor),
                     Brush::Color(rgb(0, 100, 255)),
                 );
             } else {
-                renderer.draw_circle_outline(
+                render_list.draw_circle_outline(
                     self.circle.scale(_scale_factor),
                     Brush::Color(rgb(150, 150, 150)),
                     _scale_factor as f32,
@@ -154,13 +154,13 @@ impl ElementInternals for RadioInner {
             }
         }
 
-        renderer.set_transform(container_transform);
+        render_list.set_transform(container_transform);
 
-        self.draw_children(renderer, resource_manager, _scale_factor, _text_context);
-        self.maybe_end_layer(renderer);
-        self.draw_scrollbar(renderer, _scale_factor);
+        self.draw_children(render_list, resource_manager, _scale_factor, _text_context);
+        self.maybe_end_layer(render_list);
+        self.draw_scrollbar(render_list, _scale_factor);
 
-        self.maybe_end_overlay(renderer);
+        self.maybe_end_overlay(render_list);
     }
 
     fn on_event(&mut self, event: &mut EventKind, _text_context: &mut TextContext) {

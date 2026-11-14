@@ -48,6 +48,10 @@ impl HeadlessDriver {
         }
 
         self.app.on_about_to_wait(None);
+        let windows = WINDOW_MANAGER.with_borrow(|manager| manager.windows().to_vec());
+        for window in windows {
+            window.wait_for_render();
+        }
         events_processed
     }
 
@@ -345,10 +349,14 @@ mod harness_tests {
     #[test]
     fn headless_cpu_renderer_produces_a_screenshot() {
         run("headless screenshot", |test| {
+            let content = Container::new()
+                .width(px(80))
+                .height(px(40))
+                .background_color(crate::Color::from_rgb8(255, 0, 0));
             let window = Window::new_with_renderer("Screenshot", RendererType::VelloCPU)
                 .width(px(80))
                 .height(px(40))
-                .push(Container::new().width(px(80)).height(px(40)));
+                .push(content.clone());
 
             test.open(&window, Size::new(80.0, 40.0));
             let screenshot = test.screenshot(&window);
@@ -356,6 +364,13 @@ mod harness_tests {
             assert_eq!(screenshot.width, 80);
             assert_eq!(screenshot.height, 40);
             assert_eq!(screenshot.pixels.len(), 80 * 40 * 4);
+            let center = (20 * 80 + 40) * 4;
+            assert_eq!(&screenshot.pixels[center..center + 4], &[255, 0, 0, 255]);
+
+            content.background_color(crate::Color::from_rgb8(0, 255, 0));
+            test.drive();
+            let updated = test.screenshot(&window);
+            assert_eq!(&updated.pixels[center..center + 4], &[0, 255, 0, 255]);
         });
     }
 }

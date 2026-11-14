@@ -5,7 +5,7 @@ use std::cell::RefCell;
 use std::rc::{Rc, Weak};
 use std::sync::Arc;
 
-use retgui_renderer::Brush;
+use retgui_renderer::{Brush, RenderList};
 
 use retgui_primitives::geometry::{Affine, Point, Vec2};
 
@@ -173,7 +173,7 @@ impl ElementInternals for DropdownInner {
 
     fn draw(
         &mut self,
-        renderer: &mut dyn Renderer,
+        render_list: &mut RenderList,
         resource_manager: Arc<ResourceManager>,
         scale_factor: f64,
         text_context: &mut TextContext,
@@ -182,15 +182,15 @@ impl ElementInternals for DropdownInner {
             return;
         }
 
-        self.maybe_start_overlay(renderer);
+        self.maybe_start_overlay(render_list);
 
         // We draw the borders before we start any layers, so that we don't clip the borders.
-        self.draw_borders(renderer, scale_factor);
+        self.draw_borders(render_list, scale_factor);
         if self.is_floating_window_hidden {
-            self.add_hit_testable(renderer, true, scale_factor);
+            self.add_hit_testable(render_list, true, scale_factor);
         }
 
-        self.draw_selected_element(renderer, resource_manager.clone(), text_context, scale_factor);
+        self.draw_selected_element(render_list, resource_manager.clone(), text_context, scale_factor);
 
         // Draw the arrow
         let arrow_rect = self
@@ -215,25 +215,25 @@ impl ElementInternals for DropdownInner {
         path.close_path();
         path.apply_affine((Affine::IDENTITY).then_translate(Vec2::new(0.0, arrow_rect.height as f64 / 4.0)));
         let arrow_color = Color::from_rgba8(75, 75, 77, 255);
-        renderer.fill_bez_path(path, Brush::Color(arrow_color));
+        render_list.fill_bez_path(path, Brush::Color(arrow_color));
 
         if !self.is_floating_window_hidden {
-            renderer.start_overlay();
+            render_list.start_overlay();
             // If the dropdown menu is open, then we must add a hit testable after we start
             // an overlay, so that it is properly sorted in the event target selection phase.
-            self.add_hit_testable(renderer, true, scale_factor);
+            self.add_hit_testable(render_list, true, scale_factor);
 
-            let dropdown_transform = renderer.get_transform();
+            let dropdown_transform = render_list.get_transform();
             let floating_offset = Affine::translate((
                 0.0,
                 self.element_data.layout.computed_box.size.height as f64 * scale_factor,
             ));
-            renderer.set_transform(
+            render_list.set_transform(
                 dropdown_transform * floating_offset * self.floating_window.layout.local_transform(scale_factor),
             );
-            let render_transform = renderer.get_transform();
+            let render_transform = render_list.get_transform();
             let logical_transform = Affine::scale(1.0 / scale_factor) * render_transform * Affine::scale(scale_factor);
-            let logical_clip = renderer.get_clip().map(|clip| clip.scale(1.0 / scale_factor));
+            let logical_clip = render_list.get_clip().map(|clip| clip.scale(1.0 / scale_factor));
             self.floating_window
                 .layout
                 .update_render_state(logical_transform, logical_clip);
@@ -241,9 +241,9 @@ impl ElementInternals for DropdownInner {
             let current_style = self.floating_window.style.as_ref();
             self.floating_window
                 .layout
-                .draw_borders(renderer, current_style, scale_factor);
+                .draw_borders(render_list, current_style, scale_factor);
 
-            renderer.push_layer(
+            render_list.push_layer(
                 self.floating_window
                     .layout
                     .local_box()
@@ -251,24 +251,24 @@ impl ElementInternals for DropdownInner {
                     .scale(scale_factor),
             );
 
-            self.draw_children(renderer, resource_manager.clone(), scale_factor, text_context);
+            self.draw_children(render_list, resource_manager.clone(), scale_factor, text_context);
 
-            renderer.pop_layer();
+            render_list.pop_layer();
 
             draw_scrollbar(
                 &self.floating_window.style,
                 &self.floating_window.layout,
-                renderer,
+                render_list,
                 scale_factor,
             );
-            renderer.set_transform(dropdown_transform);
-            renderer.end_overlay();
+            render_list.set_transform(dropdown_transform);
+            render_list.end_overlay();
         }
 
-        self.maybe_end_overlay(renderer);
+        self.maybe_end_overlay(render_list);
     }
 
-    fn add_hit_testable(&mut self, renderer: &mut dyn Renderer, hit_testable: bool, scale_factor: f64) {
+    fn add_hit_testable(&mut self, render_list: &mut RenderList, hit_testable: bool, scale_factor: f64) {
         if !hit_testable {
             return;
         }
@@ -279,8 +279,8 @@ impl ElementInternals for DropdownInner {
                 .local_box()
                 .border_rectangle()
                 .scale(scale_factor)
-        } else if let Some(cull) = renderer.render_list().cull {
-            cull.apply_transform(renderer.get_transform().inverse())
+        } else if let Some(cull) = render_list.cull {
+            cull.apply_transform(render_list.get_transform().inverse())
         } else {
             self.element_data
                 .layout
@@ -288,7 +288,7 @@ impl ElementInternals for DropdownInner {
                 .border_rectangle()
                 .scale(scale_factor)
         };
-        renderer.push_hit_testable(self.element_data.internal_id, bounds);
+        render_list.push_hit_testable(self.element_data.internal_id, bounds);
     }
 
     fn on_event(&mut self, event: &mut EventKind, _text_context: &mut TextContext) {
@@ -385,14 +385,14 @@ impl ElementInternals for DropdownInner {
 
     fn draw_children(
         &mut self,
-        renderer: &mut dyn Renderer,
+        render_list: &mut RenderList,
         resource_manager: Arc<ResourceManager>,
         scale_factor: f64,
         text_context: &mut TextContext,
     ) {
-        let floating_transform = renderer.get_transform();
+        let floating_transform = render_list.get_transform();
         let scroll_y = self.floating_window.layout.scroll_state.scroll_y() as f64 * scale_factor;
-        renderer.set_transform(floating_transform * Affine::translate((0.0, -scroll_y)));
+        render_list.set_transform(floating_transform * Affine::translate((0.0, -scroll_y)));
 
         for (index, child) in self.element_data.children.iter().enumerate() {
             let floating_window_box = self.floating_window.layout.computed_box;
@@ -409,7 +409,7 @@ impl ElementInternals for DropdownInner {
 
             let is_hovered = self.currently_hovered_element == Some(index);
             if is_hovered {
-                renderer.draw_rect(
+                render_list.draw_rect(
                     child_rect.scale(scale_factor),
                     self.hovered_bg_brush.as_ref().unwrap().clone(),
                 );
@@ -418,9 +418,9 @@ impl ElementInternals for DropdownInner {
             child
                 .inner
                 .borrow_mut()
-                .draw_transformed(renderer, resource_manager.clone(), scale_factor, text_context);
+                .draw_transformed(render_list, resource_manager.clone(), scale_factor, text_context);
         }
-        renderer.set_transform(floating_transform);
+        render_list.set_transform(floating_transform);
     }
 
     fn in_bounds(&self, point: Point) -> bool {
@@ -752,18 +752,16 @@ impl DropdownInner {
 
     fn draw_selected_element(
         &mut self,
-        renderer: &mut dyn Renderer,
+        render_list: &mut RenderList,
         resource_manager: Arc<ResourceManager>,
         text_context: &mut TextContext,
         scale_factor: f64,
     ) {
         if let Some(selected_element) = &self.selected_element {
-            // This clone is a presentation-only preview. Its subtree must not
-            // intercept pointer events intended for the dropdown itself.
-            let target_count = renderer.render_list().targets.len();
+            let target_count = render_list.targets.len();
             let mut binding = selected_element.borrow_mut();
-            binding.draw_transformed(renderer, resource_manager.clone(), scale_factor, text_context);
-            renderer.render_list_mut().targets.truncate(target_count);
+            binding.draw_transformed(render_list, resource_manager.clone(), scale_factor, text_context);
+            render_list.targets.truncate(target_count);
         }
     }
 

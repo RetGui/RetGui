@@ -1,13 +1,13 @@
 use std::cell::RefCell;
 use std::rc::Weak;
-
+use std::sync::Arc;
 use retgui_primitives::Color;
 use retgui_primitives::brush::Brush;
 use retgui_primitives::geometry::{Affine, BezPath, Circle, Rectangle, Vec2};
 
 use retgui_resource_manager::ResourceId;
 
-use crate::text_renderer_data::{TextData, TextScroll};
+use crate::text_renderer_data::{TextRender, TextScroll};
 
 #[derive(Clone)]
 pub enum RenderCommand {
@@ -66,9 +66,10 @@ pub struct DrawImageCmd {
 #[derive(Clone)]
 pub struct DrawTextCmd {
     pub rect: Rectangle,
-    pub data: Weak<RefCell<dyn TextData>>,
+    pub data: Arc<TextRender>,
     pub text_scroll: Option<TextScroll>,
     pub show_cursor: bool,
+    pub use_glyph_cache: bool,
     pub transform: Affine,
 }
 

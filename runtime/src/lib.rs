@@ -135,6 +135,11 @@ impl RetGuiRuntime {
 }
 
 impl RetGuiRuntimeHandle {
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn block_on_local<F: Future>(&self, future: F) -> F::Output {
+        LOCAL_SET.with(|local_set| self.tokio_runtime.block_on(local_set.run_until(future)))
+    }
+
     pub fn update_local_set(&self) {
         #[cfg(not(target_arch = "wasm32"))]
         LOCAL_SET.with(|local_set| {

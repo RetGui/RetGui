@@ -18,6 +18,7 @@ use crate::style::{Overflow, Style};
 use retgui_primitives::geometry::borders::CssRoundedRect;
 use retgui_primitives::geometry::{Rectangle, Size};
 use retgui_renderer::renderer::Renderer;
+use retgui_renderer::RenderList;
 
 /**
 
@@ -593,7 +594,7 @@ fn scroll_delta_y_in_logical_pixels(delta: ScrollDelta, scale_factor: f64, logic
     }
 }
 
-pub fn draw_scrollbar(style: &Style, layout: &Layout, renderer: &mut dyn Renderer, scale_factor: f64) {
+pub fn draw_scrollbar(style: &Style, layout: &Layout, render_list: &mut RenderList, scale_factor: f64) {
     if !(layout.is_scrollable_layout() && style.get_overflow()[1] == Overflow::Scroll) {
         return;
     }
@@ -610,9 +611,9 @@ pub fn draw_scrollbar(style: &Style, layout: &Layout, renderer: &mut dyn Rendere
     let border_spec = CssRoundedRect::new(thumb_rect.to_kurbo(), [0.0, 0.0, 0.0, 0.0], scrollbar_thumb_radius);
     let computed_border_spec = CssComputedBorder::new(border_spec);
 
-    renderer.draw_rect(track_rect, scrollbar_brush.track_color);
+    render_list.draw_rect(track_rect, scrollbar_brush.track_color);
     draw_borders_generic(
-        renderer,
+        render_list,
         &computed_border_spec,
         border_color.to_array(),
         scrollbar_brush.thumb_color,

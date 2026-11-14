@@ -9,8 +9,7 @@ use std::time::Duration;
 use retgui_primitives::brush::Brush;
 use retgui_primitives::geometry::{Affine, ElementBox, Point, TrblRectangle};
 
-use retgui_renderer::renderer::Renderer;
-
+use retgui_renderer::RenderList;
 use retgui_resource_manager::ResourceManager;
 
 use crate::events::PointerId;
@@ -68,22 +67,22 @@ pub trait ElementInternals: ElementData + Any + Drop {
     /// A helper to draw all children.
     fn draw_children(
         &mut self,
-        renderer: &mut dyn Renderer,
+        render_list: &mut RenderList,
         resource_manager: Arc<ResourceManager>,
         scale_factor: f64,
         text_context: &mut TextContext,
     ) {
-        let parent_transform = renderer.get_transform();
+        let parent_transform = render_list.get_transform();
         let scroll_y = self.element_data().scroll().scroll_y() as f64 * scale_factor;
-        renderer.set_transform(parent_transform * Affine::translate((0.0, -scroll_y)));
+        render_list.set_transform(parent_transform * Affine::translate((0.0, -scroll_y)));
 
         for child in &self.element_data().children {
             child
                 .inner
                 .borrow_mut()
-                .draw_transformed(renderer, resource_manager.clone(), scale_factor, text_context);
+                .draw_transformed(render_list, resource_manager.clone(), scale_factor, text_context);
         }
-        renderer.set_transform(parent_transform);
+        render_list.set_transform(parent_transform);
     }
 
     /// A helper to re-apply the style to the layout node when dirty.
@@ -120,21 +119,21 @@ pub trait ElementInternals: ElementData + Any + Drop {
 
     fn draw_transformed(
         &mut self,
-        renderer: &mut dyn Renderer,
+        render_list: &mut RenderList,
         resource_manager: Arc<ResourceManager>,
         scale_factor: f64,
         text_context: &mut TextContext,
     ) {
-        let parent_transform = renderer.get_transform();
+        let parent_transform = render_list.get_transform();
         let local_transform = self.element_data().layout.local_transform(scale_factor);
         let render_transform = parent_transform * local_transform;
-        renderer.set_transform(render_transform);
+        render_list.set_transform(render_transform);
 
         let logical_transform = Affine::scale(1.0 / scale_factor) * render_transform * Affine::scale(scale_factor);
         let physical_clip = if self.style().get_overlay() {
-            renderer.render_list().cull
+            render_list.cull
         } else {
-            renderer.get_clip()
+            render_list.get_clip()
         };
         let logical_clip = physical_clip.map(|clip| clip.scale(1.0 / scale_factor));
         let scale_changed = self.element_data().access_scale_factor != scale_factor;
@@ -150,14 +149,14 @@ pub trait ElementInternals: ElementData + Any + Drop {
                 .set_accessibility_bounds_from_layout(scale_factor);
         }
 
-        self.draw(renderer, resource_manager, scale_factor, text_context);
-        renderer.set_transform(parent_transform);
+        self.draw(render_list, resource_manager, scale_factor, text_context);
+        render_list.set_transform(parent_transform);
     }
 
     /// Draws this element in its own local coordinate space.
     fn draw(
         &mut self,
-        _renderer: &mut dyn Renderer,
+        _render_list: &mut RenderList,
         _resource_manager: Arc<ResourceManager>,
         _scale_factor: f64,
         _text_context: &mut TextContext,
@@ -189,10 +188,10 @@ pub trait ElementInternals: ElementData + Any + Drop {
         self.element_data_mut().apply_borders(scale_factor);
     }
 
-    fn add_hit_testable(&mut self, renderer: &mut dyn Renderer, hit_testable: bool, scale_factor: f64) {
+    fn add_hit_testable(&mut self, render_list: &mut RenderList, hit_testable: bool, scale_factor: f64) {
         if hit_testable {
             let id = self.element_data().internal_id;
-            renderer.push_hit_testable(
+            render_list.push_hit_testable(
                 id,
                 self.element_data()
                     .layout
@@ -203,49 +202,48 @@ pub trait ElementInternals: ElementData + Any + Drop {
         }
     }
 
-    fn draw_borders(&self, renderer: &mut dyn Renderer, scale_factor: f64) {
+    fn draw_borders(&self, render_list: &mut RenderList, scale_factor: f64) {
         let current_style = self.element_data().style();
 
         self.element_data()
             .layout
-            .draw_borders(renderer, current_style, scale_factor);
+            .draw_borders(render_list, current_style, scale_factor);
     }
 
-    fn maybe_start_overlay(&self, renderer: &mut dyn Renderer) {
+    fn maybe_start_overlay(&self, render_list: &mut RenderList) {
         if self.style().get_overlay() {
-            renderer.start_overlay();
+            render_list.start_overlay();
         }
     }
 
-    fn maybe_end_overlay(&self, renderer: &mut dyn Renderer) {
+    fn maybe_end_overlay(&self, render_list: &mut RenderList) {
         if self.style().get_overlay() {
-            renderer.end_overlay();
+            render_list.end_overlay();
         }
     }
 
-    fn maybe_start_layer(&self, renderer: &mut dyn Renderer, scale_factor: f64) {
+    fn maybe_start_layer(&self, render_list: &mut RenderList, scale_factor: f64) {
         let element_data = self.element_data();
         let padding_rectangle = element_data.layout.local_box().padding_rectangle().scale(scale_factor);
 
         if self.should_start_new_layer() {
-            renderer.push_layer(padding_rectangle);
+            render_list.push_layer(padding_rectangle);
         }
     }
 
-    fn maybe_end_layer(&self, renderer: &mut dyn Renderer) {
+    fn maybe_end_layer(&self, render_list: &mut RenderList) {
         if self.should_start_new_layer() {
-            renderer.pop_layer();
+            render_list.pop_layer();
         }
     }
 
-    fn draw_scrollbar(&mut self, renderer: &mut dyn Renderer, scale_factor: f64) {
+    fn draw_scrollbar(&mut self, render_list: &mut RenderList, scale_factor: f64) {
         let element_data = self.element_data();
-        draw_scrollbar(&element_data.style, &element_data.layout, renderer, scale_factor);
+        draw_scrollbar(&element_data.style, &element_data.layout, render_list, scale_factor);
     }
 
     fn should_start_new_layer(&self) -> bool {
         let element_data = self.element_data();
-
         element_data.style().get_overflow()[1] == Overflow::Scroll
     }
 

@@ -17,6 +17,7 @@ use crate::style::{AlignItems, Display, FlexDirection, JustifyContent, Unit};
 use crate::text::text_context::TextContext;
 use crate::{px, rgb};
 use retgui_renderer::renderer::Renderer;
+use retgui_renderer::RenderList;
 use retgui_resource_manager::ResourceManager;
 
 #[derive(Clone)]
@@ -99,12 +100,12 @@ impl ElementInternals for CalendarInner {
 
     fn draw(
         &mut self,
-        renderer: &mut dyn Renderer,
+        render_list: &mut RenderList,
         resource_manager: Arc<ResourceManager>,
         scale_factor: f64,
         text_context: &mut TextContext,
     ) {
-        draw_generic_container(self, renderer, resource_manager, text_context, scale_factor);
+        draw_generic_container(self, render_list, resource_manager, text_context, scale_factor);
     }
 
     fn on_event(&mut self, event: &mut EventKind, _text_context: &mut TextContext) {

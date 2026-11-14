@@ -13,6 +13,7 @@ use retgui_resource_manager::ResourceManager;
 use std::cell::RefCell;
 use std::rc::{Rc, Weak};
 use std::sync::Arc;
+use retgui_renderer::RenderList;
 
 #[derive(Clone)]
 pub struct CheckboxGroup {
@@ -78,12 +79,12 @@ impl ElementInternals for CheckboxGroupInner {
 
     fn draw(
         &mut self,
-        renderer: &mut dyn Renderer,
+        render_list: &mut RenderList,
         resource_manager: Arc<ResourceManager>,
         scale_factor: f64,
         text_context: &mut TextContext,
     ) {
-        draw_generic_container(self, renderer, resource_manager, text_context, scale_factor);
+        draw_generic_container(self, render_list, resource_manager, text_context, scale_factor);
     }
 
     fn on_event(&mut self, event: &mut EventKind, _text_context: &mut TextContext) {

@@ -2,7 +2,7 @@ mod text_input_state;
 
 use retgui_primitives::Color;
 use retgui_primitives::geometry::{Rectangle, TrblRectangle};
-use retgui_renderer::text_renderer_data::{TextData, TextScroll};
+use retgui_renderer::text_renderer_data::TextScroll;
 use std::cell::RefCell;
 use std::ops::Deref;
 use std::rc::{Rc, Weak};
@@ -20,7 +20,7 @@ use retgui_resource_manager::ResourceManager;
 use winit::dpi::{LogicalPosition, LogicalSize};
 use winit::event::{Ime, MouseButton as PointerButton};
 use winit::window::{ImeCapabilities, ImeEnableRequest, ImeHint, ImePurpose, ImeRequest, ImeRequestData};
-
+use retgui_renderer::RenderList;
 use crate::app::{ELEMENTS, WINDOW_MANAGER, request_apply_layout};
 use crate::elements::element_data::ElementData;
 use crate::elements::text_input::text_input_state::TextInputState;
@@ -213,7 +213,7 @@ impl ElementInternals for TextInputInner {
 
     fn draw(
         &mut self,
-        _renderer: &mut dyn Renderer,
+        render_list: &mut RenderList,
         _resource_manager: Arc<ResourceManager>,
         _scale_factor: f64,
         _text_context: &mut TextContext,
@@ -224,20 +224,14 @@ impl ElementInternals for TextInputInner {
 
         let text_position = self.get_computed_box_transformed().content_rectangle();
         self.state.set_origin(&text_position.position());
-
-        self.maybe_start_overlay(_renderer);
-
-        self.add_hit_testable(_renderer, true, _scale_factor);
-
+        self.maybe_start_overlay(render_list);
+        self.add_hit_testable(render_list, true, _scale_factor);
         let content_rectangle = self.element_data.layout.local_box().content_rectangle();
-
-        self.draw_borders(_renderer, _scale_factor);
-
+        self.draw_borders(render_list, _scale_factor);
         let is_scrollable = self.element_data.is_scrollable();
-
         let element_data = &self.element_data;
         let padding_rectangle = element_data.layout.local_box().padding_rectangle();
-        _renderer.push_layer(padding_rectangle.scale(_scale_factor));
+        render_list.push_layer(padding_rectangle.scale(_scale_factor));
 
         let text_scroll = if is_scrollable {
             Some(physical_text_scroll(
@@ -250,19 +244,18 @@ impl ElementInternals for TextInputInner {
         };
 
         if self.state.text_render.as_ref().is_some() {
-            _renderer.draw_text(
-                self.me.clone(),
+            render_list.draw_text(
+                self.state.text_render.clone().unwrap(),
                 content_rectangle.scale(_scale_factor),
                 text_scroll,
                 self.is_focused() && self.state.editor().raw_selection().is_collapsed() && self.state.cursor_visible(),
+                true,
             );
         }
 
-        _renderer.pop_layer();
-
-        self.draw_scrollbar(_renderer, _scale_factor);
-
-        self.maybe_end_overlay(_renderer);
+        render_list.pop_layer();
+        self.draw_scrollbar(render_list, _scale_factor);
+        self.maybe_end_overlay(render_list);
     }
 
     fn on_event(&mut self, event: &mut EventKind, text_context: &mut TextContext) {
@@ -633,12 +626,6 @@ impl TextInputInner {
         self.state.set_ranged_styles(ranged_styles);
         self.mark_dirty();
         self
-    }
-}
-
-impl TextData for TextInputInner {
-    fn get_text_renderer(&self) -> Option<&TextRender> {
-        self.state.text_render.as_ref()
     }
 }
 

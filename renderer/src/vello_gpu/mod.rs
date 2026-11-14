@@ -119,15 +119,7 @@ impl Renderer for VelloGpuRenderer {
         self.window.request_redraw();
     }
 
-    fn render_list(&self) -> &RenderList {
-        &self.render_list
-    }
-
-    fn render_list_mut(&mut self) -> &mut RenderList {
-        &mut self.render_list
-    }
-
-    fn prepare(&mut self, resource_manager: Arc<ResourceManager>, window: Rectangle) {
+    fn prepare(&mut self, render_list: &mut RenderList, resource_manager: Arc<ResourceManager>, window: Rectangle) {
         let render_state = match &mut self.state {
             RenderState::Active(state) => state,
             _ => panic!("!!!"),
@@ -157,7 +149,6 @@ impl Renderer for VelloGpuRenderer {
         let (_renderer, resources) = self.renderers[surface.dev_id].as_mut().unwrap();
         let device_handle = &self.context.devices[surface.dev_id];
 
-        let render_list = &self.render_list;
         SortedCommands::draw(render_list, &render_list.overlay, &mut |command: &RenderCommand| {
             match command {
                 RenderCommand::DrawCircle(cmd) => draw_circle(&mut self.scene, cmd),
@@ -214,7 +205,7 @@ impl Renderer for VelloGpuRenderer {
         }
     }
 
-    fn submit(&mut self, _resource_manager: Arc<ResourceManager>) {
+    fn submit(&mut self) {
         let render_state = match &mut self.state {
             RenderState::Active(state) => state,
             _ => panic!("Todo: Handle a suspended render state."),

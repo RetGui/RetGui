@@ -13,7 +13,7 @@ use retgui_resource_manager::ResourceManager;
 
 use winit::event::ElementState;
 use winit::keyboard::KeyCode;
-
+use retgui_renderer::RenderList;
 use crate::app::queue_event;
 use crate::elements::element_data::ElementData;
 use crate::elements::traits::clone_element;
@@ -396,7 +396,7 @@ impl ElementInternals for SliderInner {
 
     fn draw(
         &mut self,
-        _renderer: &mut dyn Renderer,
+        render_list: &mut RenderList,
         _resource_manager: Arc<ResourceManager>,
         _scale_factor: f64,
         _text_context: &mut TextContext,
@@ -405,18 +405,18 @@ impl ElementInternals for SliderInner {
             return;
         }
 
-        self.maybe_start_overlay(_renderer);
+        self.maybe_start_overlay(render_list);
 
-        self.add_hit_testable(_renderer, true, _scale_factor);
+        self.add_hit_testable(render_list, true, _scale_factor);
 
-        self.draw_borders(_renderer, _scale_factor);
-        self.draw_track(_renderer, _scale_factor);
-        self.draw_thumb(_renderer, _scale_factor);
+        self.draw_borders(render_list, _scale_factor);
+        self.draw_track(render_list, _scale_factor);
+        self.draw_thumb(render_list, _scale_factor);
 
-        self.maybe_end_overlay(_renderer);
+        self.maybe_end_overlay(render_list);
     }
 
-    fn add_hit_testable(&mut self, renderer: &mut dyn Renderer, hit_testable: bool, scale_factor: f64) {
+    fn add_hit_testable(&mut self, render_list: &mut RenderList, hit_testable: bool, scale_factor: f64) {
         if !hit_testable {
             return;
         }
@@ -433,7 +433,7 @@ impl ElementInternals for SliderInner {
         let top = track.top().min(thumb.top());
         let right = track.right().max(thumb.right());
         let bottom = track.bottom().max(thumb.bottom());
-        renderer.push_hit_testable(
+        render_list.push_hit_testable(
             self.element_data.internal_id,
             Rectangle::new(left, top, right - left, bottom - top).scale(scale_factor),
         );

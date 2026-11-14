@@ -21,14 +21,8 @@ pub(crate) fn draw_text(cmd: &DrawTextCmd, scene: &mut Scene, resources: &mut Re
         .with_translation(kurbo::Vec2::new(cmd.rect.x as f64, cmd.rect.y as f64))
         .then_translate(kurbo::Vec2::new(0.0, -scroll as f64));
 
-    let text_data = cmd.data.upgrade();
-    if text_data.is_none() {
-        return;
-    }
-    let text_data = text_data.unwrap();
-    let text_data = text_data.borrow();
-    let use_glyph_cache = text_data.use_glyph_cache();
-    let text_render = text_data.get_text_renderer().expect("Text render not found");
+    let text_render = cmd.data.clone();
+    let use_glyph_cache = cmd.use_glyph_cache;
 
     let text_paint_bounds = text_bounds(&text_render.lines).unwrap_or_else(|| Rectangle::new(0.0, 0.0, 0.0, 0.0));
 

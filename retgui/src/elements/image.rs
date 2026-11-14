@@ -7,7 +7,7 @@ use std::sync::Arc;
 use retgui_resource_manager::{ResourceId, ResourceManager};
 
 use retgui_renderer::renderer::Renderer;
-
+use retgui_renderer::RenderList;
 use retgui_resource_manager::resource_type::ResourceType;
 
 use crate::app::{GUMMY_TREE, PENDING_RESOURCES};
@@ -77,7 +77,7 @@ impl ElementInternals for ImageInner {
 
     fn draw(
         &mut self,
-        _renderer: &mut dyn Renderer,
+        render_list: &mut RenderList,
         _resource_manager: Arc<ResourceManager>,
         _scale_factor: f64,
         _text_context: &mut TextContext,
@@ -86,18 +86,18 @@ impl ElementInternals for ImageInner {
             return;
         }
 
-        self.maybe_start_overlay(_renderer);
+        self.maybe_start_overlay(render_list);
 
-        self.add_hit_testable(_renderer, true, _scale_factor);
+        self.add_hit_testable(render_list, true, _scale_factor);
 
         // We draw the borders before we start any layers, so that we don't clip the borders.
-        self.draw_borders(_renderer, _scale_factor);
+        self.draw_borders(render_list, _scale_factor);
 
         let content_rectangle = self.element_data.layout.local_box().content_rectangle();
 
-        _renderer.draw_image(content_rectangle.scale(_scale_factor), self.resource_id.clone());
+        render_list.draw_image(content_rectangle.scale(_scale_factor), self.resource_id.clone());
 
-        self.maybe_end_overlay(_renderer);
+        self.maybe_end_overlay(render_list);
     }
 }
 

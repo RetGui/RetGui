@@ -24,8 +24,7 @@ use retgui_primitives::brush::Brush;
 use retgui_primitives::geometry::{Point, Rectangle, Vec2};
 
 use retgui_renderer::renderer::Renderer;
-use retgui_renderer::text_renderer_data::TextData;
-
+use retgui_renderer::RenderList;
 use retgui_resource_manager::ResourceManager;
 
 use crate::elements::element_data::ElementData;
@@ -57,7 +56,7 @@ pub(crate) struct TextInner {
 
 #[derive(Clone)]
 pub struct TextState {
-    pub(crate) text_render: Option<TextRender>,
+    pub(crate) text_render: Option<Arc<TextRender>>,
     pub(crate) last_click_time: Option<Instant>,
     pub(crate) click_count: u32,
     pub(crate) pointer_down: bool,
@@ -108,16 +107,6 @@ impl crate::elements::ElementData for TextInner {
 
     fn element_data_mut(&mut self) -> &mut ElementData {
         &mut self.element_data
-    }
-}
-
-impl TextData for TextInner {
-    fn get_text_renderer(&self) -> Option<&TextRender> {
-        self.state.text_render.as_ref()
-    }
-
-    fn use_glyph_cache(&self) -> bool {
-        self.state.use_glyph_cache
     }
 }
 
@@ -209,7 +198,7 @@ impl ElementInternals for TextInner {
 
     fn draw(
         &mut self,
-        _renderer: &mut dyn Renderer,
+        render_list: &mut RenderList,
         _resource_manager: Arc<ResourceManager>,
         _scale_factor: f64,
         _text_context: &mut TextContext,
@@ -217,18 +206,12 @@ impl ElementInternals for TextInner {
         if !self.is_visible() {
             return;
         }
-
-        self.maybe_start_overlay(_renderer);
-
-        self.add_hit_testable(_renderer, true, _scale_factor);
-
+        self.maybe_start_overlay(render_list);
+        self.add_hit_testable(render_list, true, _scale_factor);
         let content_rectangle = self.element_data.layout.local_box().content_rectangle();
-
-        self.draw_borders(_renderer, _scale_factor);
-
-        _renderer.draw_text(self.me.clone(), content_rectangle.scale(_scale_factor), None, false);
-
-        self.maybe_end_overlay(_renderer);
+        self.draw_borders(render_list, _scale_factor);
+        render_list.draw_text(self.state.text_render.clone().unwrap(), content_rectangle.scale(_scale_factor), None, false, self.state.use_glyph_cache);
+        self.maybe_end_overlay(render_list);
     }
 
     fn on_event(&mut self, event: &mut EventKind, _text_context: &mut TextContext) {
@@ -319,6 +302,7 @@ impl ElementInternals for TextInner {
     fn set_text_brush(&mut self, brush: Brush) {
         self.style_mut().set_text_brush(brush.clone());
         if let Some(text_render) = &mut self.state.text_render {
+            let text_render = Arc::make_mut(text_render);
             text_render.override_brush = Some(brush);
         }
         self.request_window_redraw();
@@ -546,7 +530,7 @@ impl TextState {
         let layout = self.layout.as_ref().unwrap();
         let mut text_render = text_render_data::from_editor(layout);
         text_render.override_brush = Some(text_brush);
-        self.text_render = Some(text_render);
+        self.text_render = Some(Arc::new(text_render));
         self.current_render_key = self.current_layout_key;
 
         self.update_text_selection(selection_brush);
@@ -597,6 +581,7 @@ impl TextState {
     fn update_text_selection(&mut self, selection_brush: Brush) {
         if let Some(layout) = self.layout.as_ref() {
             let text_renderer = self.text_render.as_mut().unwrap();
+            let text_renderer = Arc::make_mut(text_renderer);
             for line in text_renderer.lines.iter_mut() {
                 line.selections.clear();
             }

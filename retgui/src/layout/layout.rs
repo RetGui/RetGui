@@ -3,7 +3,7 @@ use gummy::NodeId;
 use retgui_primitives::geometry::borders::{BOTTOM, CssRoundedRect, LEFT, RIGHT, TOP};
 use retgui_primitives::geometry::{Affine, BezPath, Border, ElementBox, Margin, Padding, Point, Rectangle, Shape, Size, TrblRectangle, Vec2};
 
-use retgui_renderer::Brush;
+use retgui_renderer::{Brush, RenderList};
 use retgui_renderer::render_command::DrawBoxShadow;
 
 use retgui_renderer::renderer::Renderer;
@@ -434,14 +434,14 @@ impl Layout {
         }
     }
 
-    pub fn draw_borders(&self, renderer: &mut dyn Renderer, current_style: &Style, scale_factor: f64) {
+    pub fn draw_borders(&self, render_list: &mut RenderList, current_style: &Style, scale_factor: f64) {
         if let Some(cache_box_shadows) = &self.cache_box_shadows {
             for shadow in &cache_box_shadows.box_shadows {
                 if shadow.inset {
                     continue;
                 }
 
-                renderer.draw_outset_box_shadow(DrawBoxShadow {
+                render_list.draw_outset_box_shadow(DrawBoxShadow {
                     inset: false,
                     offset: shadow.offset,
                     outline: cache_box_shadows.outline.to_path(),
@@ -455,7 +455,7 @@ impl Layout {
 
         if let Some(computed_outline) = &self.computed_outline {
             draw_borders_generic(
-                renderer,
+                render_list,
                 computed_outline,
                 current_style.get_outline_color().to_array(),
                 Brush::Color(Color::TRANSPARENT),
@@ -473,10 +473,10 @@ impl Layout {
                 // Draw the background.
                 if let Brush::Color(bg_color) = &background_color {
                     if bg_color.components[3] != 0.0 {
-                        renderer.draw_rect(padding_rect, Brush::Color(*bg_color));
+                        render_list.draw_rect(padding_rect, Brush::Color(*bg_color));
                     }
                 } else {
-                    renderer.draw_rect(padding_rect, background_color);
+                    render_list.draw_rect(padding_rect, background_color);
                 }
 
                 // Draw a simple border
@@ -484,7 +484,7 @@ impl Layout {
                 let border_color = current_style.get_border_color().top;
 
                 if thickness != 0.0 && border_color.components[3] != 0.0 {
-                    renderer.draw_rect_outline(
+                    render_list.draw_rect_outline(
                         border_rect,
                         Brush::Color(border_color),
                         thickness as f64 * scale_factor,
@@ -493,7 +493,7 @@ impl Layout {
             }
             ComputedBorder::CssComputed(computed_border) => {
                 draw_borders_generic(
-                    renderer,
+                    render_list,
                     computed_border,
                     current_style.get_border_color().to_array(),
                     background_color,
@@ -507,7 +507,7 @@ impl Layout {
                     continue;
                 }
 
-                renderer.draw_outset_box_shadow(DrawBoxShadow {
+                render_list.draw_outset_box_shadow(DrawBoxShadow {
                     inset: true,
                     offset: shadow.offset,
                     outline: cache_box_shadows.inline.to_path(),
@@ -527,7 +527,7 @@ impl Layout {
 }
 
 pub(crate) fn draw_borders_generic(
-    renderer: &mut dyn Renderer,
+    render_list: &mut RenderList,
     computed_border: &CssComputedBorder,
     side_colors: [Color; 4],
     bg_brush: Brush,
@@ -535,17 +535,17 @@ pub(crate) fn draw_borders_generic(
     if let Brush::Color(bg_color) = bg_brush {
         if bg_color.components[3] != 0.0 {
             let background_path = computed_border.background.clone();
-            renderer.fill_bez_path(background_path, Brush::Color(bg_color));
+            render_list.fill_bez_path(background_path, Brush::Color(bg_color));
         }
     } else {
         let background_path = computed_border.background.clone();
-        renderer.fill_bez_path(background_path, bg_brush);
+        render_list.fill_bez_path(background_path, bg_brush);
     }
 
     for (side_index, side) in computed_border.sides.iter().enumerate() {
         if let Some(side) = side {
             let side = side.clone();
-            renderer.fill_bez_path(side, Brush::Color(side_colors[side_index]));
+            render_list.fill_bez_path(side, Brush::Color(side_colors[side_index]));
         }
     }
 }

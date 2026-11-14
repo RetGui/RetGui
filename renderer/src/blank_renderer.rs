@@ -39,15 +39,8 @@ impl Renderer for BlankRenderer {
 
     fn surface_set_clear_color(&mut self, _color: Color) {}
 
-    fn render_list(&self) -> &RenderList {
-        &self.render_list
-    }
 
-    fn render_list_mut(&mut self) -> &mut RenderList {
-        &mut self.render_list
-    }
+    fn prepare(&mut self, _render_list: &mut RenderList, _resource_manager: Arc<ResourceManager>, _window: Rectangle) {}
 
-    fn prepare(&mut self, _resource_manager: Arc<ResourceManager>, _window: Rectangle) {}
-
-    fn submit(&mut self, _resource_manager: Arc<ResourceManager>) {}
+    fn submit(&mut self) {}
 }

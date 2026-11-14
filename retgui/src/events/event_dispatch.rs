@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
+use std::ops::{Deref, DerefMut};
 use std::rc::{Rc, Weak};
 
 use crate::events::{PointerButton, PointerId};
@@ -9,7 +10,7 @@ use retgui_primitives::geometry::Point;
 use retgui_renderer::TargetItem;
 
 use crate::app::{FOCUS, dequeue_event};
-use crate::elements::{DynElement, ElementInternals};
+use crate::elements::{DynElement, ElementInternals, WindowInternal};
 use crate::events::helpers::{call_user_event_handlers, find_target, freeze_target_list, nearest_common_ancestor};
 use crate::events::{ClickEvent, ClickTrigger, Event, EventKind, PointerEnterEvent, PointerLeaveEvent};
 use crate::text::text_context::TextContext;
@@ -222,17 +223,17 @@ impl EventDispatcher {
         mouse_position: Option<Point>,
         root: Rc<RefCell<dyn ElementInternals>>,
         text_context: &mut TextContext,
-        hit_test_targets: &[TargetItem],
-        target_scratch: &mut Vec<Rc<RefCell<dyn ElementInternals>>>,
     ) -> bool {
-        let pointer_capture = root
+        let window: Rc<RefCell<WindowInternal>> = root
             .borrow()
             .element_data()
             .window
             .as_ref()
             .and_then(|w| w.upgrade())
-            .map(|w| w.borrow().pointer_capture.clone())
-            .unwrap();
+            .expect("Could not get window");
+        let pointer_capture = window.borrow().pointer_capture.clone();
+        let hit_test_targets = window.borrow().hit_test_targets.clone();
+        let target_scratch = window.borrow().target_scratch.clone();
 
         let mut targets: VecDeque<Rc<RefCell<dyn ElementInternals>>> = VecDeque::new();
         let mut is_pointer_captured = false;
@@ -249,8 +250,8 @@ impl EventDispatcher {
                 &root,
                 mouse_position,
                 event_kind,
-                hit_test_targets,
-                target_scratch,
+                hit_test_targets.borrow().as_slice(),
+                target_scratch.borrow_mut().deref_mut(),
                 &pointer_capture,
                 pointer_id,
             );
@@ -303,8 +304,8 @@ impl EventDispatcher {
                     &root,
                     mouse_position,
                     event_kind,
-                    hit_test_targets,
-                    target_scratch,
+                    hit_test_targets.borrow().as_slice(),
+                    target_scratch.borrow_mut().deref_mut(),
                     &pointer_capture.borrow(),
                     &pointer_id,
                 );

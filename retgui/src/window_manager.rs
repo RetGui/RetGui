@@ -6,7 +6,7 @@ use retgui_renderer::blank_renderer::BlankRenderer;
 
 use winit::event_loop::ActiveEventLoop;
 use winit::window::WindowId;
-
+use retgui_runtime::RetGuiRuntime;
 use crate::app::{App, GUMMY_TREE};
 use crate::elements::{ElementData, ElementInternals, Window};
 
@@ -25,6 +25,10 @@ impl WindowManager {
 
     pub(crate) fn add_window(&mut self, window: Window) {
         self.windows.push(window);
+    }
+
+    pub(crate) fn windows(&self) -> &[Window] {
+        &self.windows
     }
 
     /// Schedules an element for animation updates. If the window
@@ -89,10 +93,20 @@ impl WindowManager {
             return;
         }
 
-        // Create windows that were created during the program run.
+        // Check each window for pending work.
         for window_element in &self.windows {
+            // Create windows that were created during the program run.
             if window_element.winit_window().is_none() {
                 window_element.create(retgui_app, event_loop);
+            }
+
+            let should_redraw = {
+                let inner = window_element.inner.borrow();
+                inner.redraw_requested()
+                    && inner.render_buffers.has_available()
+            };
+            if should_redraw {
+                window_element.request_redraw();
             }
         }
     }
@@ -103,13 +117,11 @@ impl WindowManager {
             .any(|window| window.inner.borrow().perf_stats_enabled())
     }
 
-    pub fn close_window(&mut self, window: &Window) {
+    pub fn close_window(&mut self, window: &Window, runtime: &RetGuiRuntime) {
         self.windows.retain(|w| {
             let is_target = Rc::ptr_eq(&w.inner, &window.inner);
-
             if is_target {
-                w.set_winit_window(None);
-                w.inner.borrow_mut().renderer = Rc::new(RefCell::new(BlankRenderer::default()));
+                window.inner.borrow_mut().close_internal(runtime);
             }
 
             !is_target

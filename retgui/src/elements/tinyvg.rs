@@ -18,7 +18,7 @@ use retgui_primitives::geometry::{Affine, BezPath, Point, Rectangle, Shape, TOLE
 use retgui_primitives::gradient::{ColorStop, Gradient};
 
 use retgui_renderer::renderer::Renderer;
-
+use retgui_renderer::RenderList;
 use retgui_resource_manager::resource_type::ResourceType;
 use retgui_resource_manager::{ResourceId, ResourceManager};
 
@@ -90,7 +90,7 @@ impl ElementInternals for TinyVgInner {
 
     fn draw(
         &mut self,
-        renderer: &mut dyn Renderer,
+        render_list: &mut RenderList,
         resource_manager: Arc<ResourceManager>,
         scale_factor: f64,
         _text_context: &mut TextContext,
@@ -99,32 +99,25 @@ impl ElementInternals for TinyVgInner {
             return;
         }
 
-        self.maybe_start_overlay(renderer);
-
-        self.add_hit_testable(renderer, true, scale_factor);
-
+        self.maybe_start_overlay(render_list);
+        self.add_hit_testable(render_list, true, scale_factor);
         // We draw the borders before we start any layers, so that we don't clip the borders.
-        self.draw_borders(renderer, scale_factor);
-
+        self.draw_borders(render_list, scale_factor);
         let content_rectangle = self.element_data.layout.local_box().content_rectangle();
-
         let mut color = None;
         if let Brush::Color(c) = self.style().get_text_brush()
             && c != rgba(0, 0, 0, 0)
         {
             color = Some(c);
         }
-
-        // Go through the tiny vg commands and draw them using the renderer trait.
         Self::draw_tiny_vg(
-            renderer,
+            render_list,
             content_rectangle.scale(scale_factor),
             &resource_manager,
             self.resource_id.clone(),
             &color,
         );
-
-        self.maybe_end_overlay(renderer);
+        self.maybe_end_overlay(render_list);
     }
 }
 
@@ -205,7 +198,7 @@ impl TinyVgInner {
     }
 
     pub(crate) fn draw_tiny_vg(
-        renderer: &mut dyn Renderer,
+        render_list: &mut RenderList,
         rectangle: Rectangle,
         resource_manager: &Arc<ResourceManager>,
         resource_id: ResourceId,
@@ -239,8 +232,8 @@ impl TinyVgInner {
             rectangle.height as f64 / svg_height as f64,
         );
 
-        let old_transform = renderer.get_transform();
-        renderer.set_transform(old_transform * vg_transform);
+        let old_transform = render_list.get_transform();
+        render_list.set_transform(old_transform * vg_transform);
 
         for command in &tiny_vg.draw_commands {
             match command {
@@ -254,19 +247,19 @@ impl TinyVgInner {
                         path.close_path();
                     }
                     let brush = get_brush(&data.style, &tiny_vg.color_table, override_color);
-                    fill_path(renderer, path, brush);
+                    fill_path(render_list, path, brush);
                 }
                 DrawCommand::FillRectangles(data) => {
                     let brush = get_brush(&data.style, &tiny_vg.color_table, override_color);
                     for rectangle in &data.rectangles {
                         let rect =
                             kurbo::Rect::new(rectangle.x.0, rectangle.y.0, rectangle.width.0, rectangle.height.0);
-                        fill_path(renderer, rect.into_path(TOLERANCE), brush.clone());
+                        fill_path(render_list, rect.into_path(TOLERANCE), brush.clone());
                     }
                 }
                 DrawCommand::FillPath(data) => {
                     draw_path(
-                        renderer,
+                        render_list,
                         &data.path,
                         &data.style,
                         None,
@@ -283,7 +276,7 @@ impl TinyVgInner {
                         path.line_to(to_kurbo_point(line.end));
                     }
 
-                    stroke_path(renderer, &path, data.line_width.0, brush);
+                    stroke_path(render_list, &path, data.line_width.0, brush);
                 }
                 DrawCommand::DrawLineLoop(data) => {
                     let brush = get_brush(&data.line_style, &tiny_vg.color_table, override_color);
@@ -297,7 +290,7 @@ impl TinyVgInner {
                         path.close_path();
                     }
 
-                    stroke_path(renderer, &path, data.line_width.0, brush);
+                    stroke_path(render_list, &path, data.line_width.0, brush);
                 }
                 DrawCommand::DrawLineStrip(data) => {
                     let brush = get_brush(&data.style, &tiny_vg.color_table, override_color);
@@ -310,11 +303,11 @@ impl TinyVgInner {
                         }
                     }
 
-                    stroke_path(renderer, &path, data.line_width.0, brush);
+                    stroke_path(render_list, &path, data.line_width.0, brush);
                 }
                 DrawCommand::DrawLinePath(data) => {
                     draw_path(
-                        renderer,
+                        render_list,
                         &data.path,
                         &data.style,
                         Some(&data.line_width),
@@ -333,10 +326,10 @@ impl TinyVgInner {
                     }
 
                     let fill_brush = get_brush(&data.fill_style, &tiny_vg.color_table, override_color);
-                    fill_path(renderer, path.clone(), fill_brush);
+                    fill_path(render_list, path.clone(), fill_brush);
 
                     let line_brush = get_brush(&data.line_style, &tiny_vg.color_table, override_color);
-                    stroke_path(renderer, &path, data.line_width.0, line_brush);
+                    stroke_path(render_list, &path, data.line_width.0, line_brush);
                 }
                 DrawCommand::OutlineFillRectangles(data) => {
                     let fill_brush = get_brush(&data.fill_style, &tiny_vg.color_table, override_color);
@@ -346,13 +339,13 @@ impl TinyVgInner {
                         let rect =
                             kurbo::Rect::new(rectangle.x.0, rectangle.y.0, rectangle.width.0, rectangle.height.0);
                         let rect_path = rect.into_path(TOLERANCE);
-                        fill_path(renderer, rect_path.clone(), fill_brush.clone());
-                        stroke_path(renderer, &rect_path, data.line_width.0, line_brush.clone());
+                        fill_path(render_list, rect_path.clone(), fill_brush.clone());
+                        stroke_path(render_list, &rect_path, data.line_width.0, line_brush.clone());
                     }
                 }
                 DrawCommand::OutlineFillPath(data) => {
                     draw_path(
-                        renderer,
+                        render_list,
                         &data.path,
                         &data.fill_style,
                         None,
@@ -360,7 +353,7 @@ impl TinyVgInner {
                         override_color,
                     );
                     draw_path(
-                        renderer,
+                        render_list,
                         &data.path,
                         &data.line_style,
                         Some(&data.line_width),
@@ -372,7 +365,7 @@ impl TinyVgInner {
             }
         }
 
-        renderer.set_transform(old_transform);
+        render_list.set_transform(old_transform);
     }
 }
 
@@ -384,17 +377,17 @@ fn to_peniko_color(color: RgbaF32) -> Color {
     Color::from(AlphaColor::new([color.0, color.1, color.2, color.3]))
 }
 
-fn fill_path(renderer: &mut dyn Renderer, path: BezPath, brush: Brush) {
-    renderer.fill_bez_path(path, brush);
+fn fill_path(render_list: &mut RenderList, path: BezPath, brush: Brush) {
+    render_list.fill_bez_path(path, brush);
 }
 
-fn stroke_path(renderer: &mut dyn Renderer, path: &BezPath, line_width: f64, brush: Brush) {
+fn stroke_path(render_list: &mut RenderList, path: &BezPath, line_width: f64, brush: Brush) {
     let outline = kurbo::stroke(path, &Stroke::new(line_width), &StrokeOpts::default(), TOLERANCE);
-    renderer.fill_bez_path(outline, brush);
+    render_list.fill_bez_path(outline, brush);
 }
 
 fn draw_path(
-    renderer: &mut dyn Renderer,
+    render_list: &mut RenderList,
     path: &Path,
     fill_style: &Style,
     line_width: Option<&Unit>,
@@ -405,9 +398,9 @@ fn draw_path(
     let brush = get_brush(fill_style, color_table, override_color);
 
     if let Some(line_width) = line_width {
-        stroke_path(renderer, &bezier_path, line_width.0, brush);
+        stroke_path(render_list, &bezier_path, line_width.0, brush);
     } else {
-        fill_path(renderer, bezier_path, brush);
+        fill_path(render_list, bezier_path, brush);
     }
 }
 

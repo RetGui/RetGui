@@ -10,7 +10,7 @@ use peniko::kurbo;
 
 use retgui_primitives::geometry::{Affine, Rectangle, TrblRectangle};
 
-use retgui_renderer::Brush;
+use retgui_renderer::{Brush, RenderList};
 use retgui_renderer::renderer::Renderer;
 
 use retgui_resource_manager::ResourceManager;
@@ -109,7 +109,7 @@ impl ElementInternals for CheckboxInner {
 
     fn draw(
         &mut self,
-        renderer: &mut dyn Renderer,
+        renderer: &mut RenderList,
         resource_manager: Arc<ResourceManager>,
         _scale_factor: f64,
         _text_context: &mut TextContext,
