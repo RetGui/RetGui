@@ -330,12 +330,6 @@ impl App {
     /// Handles the window resize event.
     pub fn on_resize(&mut self, window: Window, new_size: Size<f32>) {
         window.on_resize(new_size);
-        if new_size.width <= 0.0 || new_size.height <= 0.0 || !self.active {
-            return;
-        }
-        window.wait_for_render();
-        self.on_redraw_requested(window.clone());
-        window.wait_for_render();
     }
 
     /// Updates the tree, layouts the elements, and draws the view.

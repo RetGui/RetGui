@@ -70,7 +70,7 @@ pub struct VelloGpuRenderer {
     resource_mapper: ResourceMapper,
     resources_seen: HashSet<RendererResourceId>,
 
-    window: Arc<dyn Window>,
+    request_redraw: Box<dyn Fn() + Send + Sync>,
 
     texture_bindings: TextureBindings,
 
@@ -107,6 +107,10 @@ impl Renderer for VelloGpuRenderer {
         self.surface_clear_color = color;
     }
 
+    fn set_redraw_callback(&mut self, callback: Box<dyn Fn() + Send + Sync>) {
+        self.request_redraw = callback;
+    }
+
     fn set_vsync(&mut self, enabled: bool) {
         let render_state = match &mut self.state {
             RenderState::Active(state) => state,
@@ -115,7 +119,6 @@ impl Renderer for VelloGpuRenderer {
 
         render_state.surface.config.present_mode = present_mode_for_vsync(enabled);
         self.context.configure_surface(&render_state.surface);
-        self.window.request_redraw();
     }
 
     fn prepare(&mut self, render_list: &mut RenderList, resource_manager: Arc<ResourceManager>, window: Rectangle) {
@@ -225,12 +228,12 @@ impl Renderer for VelloGpuRenderer {
             CurrentSurfaceTexture::Success(surface_texture) => surface_texture,
             CurrentSurfaceTexture::Outdated | CurrentSurfaceTexture::Suboptimal(_) => {
                 self.context.configure_surface(surface);
-                self.window.request_redraw();
+                (self.request_redraw)();
                 self.scene.reset();
                 return;
             }
             CurrentSurfaceTexture::Occluded | CurrentSurfaceTexture::Timeout => {
-                self.window.request_redraw();
+                (self.request_redraw)();
                 self.scene.reset();
                 return;
             }
@@ -281,7 +284,9 @@ impl VelloGpuRenderer {
         let width = surface_size.width.max(1);
         let height = surface_size.height.max(1);
 
+        let redraw_window = window.clone();
         let mut vello_renderer = VelloGpuRenderer {
+            request_redraw: Box::new(move || redraw_window.request_redraw()),
             context: RenderContext::new(),
             renderers: vec![],
             state: RenderState::Suspended,
@@ -289,7 +294,6 @@ impl VelloGpuRenderer {
             surface_clear_color: Color::WHITE,
             resource_mapper: ResourceMapper::new(),
             resources_seen: HashSet::with_capacity(20),
-            window: window.clone(),
             texture_bindings: Default::default(),
         };
 

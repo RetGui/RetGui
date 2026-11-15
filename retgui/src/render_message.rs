@@ -64,7 +64,7 @@ impl RenderBuffers {
 #[cfg(not(target_arch = "wasm32"))]
 pub enum RenderMessage {
     /// Set the render thread's renderer.
-    SetRenderer(Box<dyn Renderer + Send>),
+    SetRenderer(Box<dyn Renderer + Send>, Option<winit::event_loop::EventLoopProxy>),
     /// Set the render thread's resource manager.
     SetResourceManager(Arc<ResourceManager>),
     /// Render a frame.
