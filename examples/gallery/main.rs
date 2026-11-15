@@ -105,6 +105,41 @@ pub fn text() -> Container {
         .push(right_aligned_text)
 }
 
+pub fn variable_fonts() -> Container {
+    let preview = Text::new(
+        "The quick brown fox jumps over the lazy dog.\nABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz 0123456789",
+    )
+    .font_family(retgui::style::FontFamily::new("Roboto"))
+    .font_size(36.0)
+    .font_weight(FontWeight::NORMAL);
+    let weight_label = Text::new("Weight: 400");
+    let preview_for_slider = preview.clone();
+    let label_for_slider = weight_label.clone();
+    let weight = Slider::new(20.0)
+        .min(100.0)
+        .max(900.0)
+        .step(1.0)
+        .value(400.0)
+        .width(px(300.0))
+        .height(px(10.0))
+        .margin_vertical(px(10.0))
+        .on_slider_value_changed(move |event| {
+            let weight = event.value.round() as u16;
+            preview_for_slider.clone().font_weight(FontWeight(weight));
+            label_for_slider.clone().text(&format!("Weight: {weight}"));
+        });
+
+    Container::new()
+        .display(Display::Flex)
+        .flex_direction(FlexDirection::Column)
+        .row_gap(px(12.0))
+        .push(title("Variable Fonts"))
+        .push(Text::new("Roboto: drag the slider to explore font weights from 100 to 900."))
+        .push(weight_label)
+        .push(weight)
+        .push(preview)
+}
+
 pub fn tinyvg() -> Container {
     let container = Container::new();
 
@@ -570,6 +605,7 @@ fn gallery_examples() -> Vec<GalleryExample> {
         GalleryExample::new("Text Input", text_input()),
         GalleryExample::new("Dropdown", dropdown()),
         GalleryExample::new("Text", text()),
+        GalleryExample::new("Variable Fonts", variable_fonts()),
         GalleryExample::new("TinyVG", tinyvg()),
         GalleryExample::new("Image", images()),
         GalleryExample::new("Gradients", gradient()),

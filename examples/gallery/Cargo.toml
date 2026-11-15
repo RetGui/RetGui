@@ -24,7 +24,6 @@ features = ["json", "rustls"]
 path = "../../retgui"
 default-features = false
 features = [
-    "system_fonts",
     "http_client",
     "jpeg",
     "png",
