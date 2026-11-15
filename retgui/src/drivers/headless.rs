@@ -175,6 +175,11 @@ impl HeadlessApp {
         self.drive();
     }
 
+    pub fn modifiers_changed(&mut self, window: &Window, modifiers: winit::keyboard::ModifiersState) {
+        self.driver.send_event(window.clone(), WindowEvent::ModifiersChanged(modifiers.into()));
+        self.drive();
+    }
+
     pub fn frame(&mut self, window: &Window) {
         self.driver.send_event(window.clone(), WindowEvent::RedrawRequested);
         self.driver.tick();

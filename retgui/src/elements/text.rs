@@ -222,7 +222,15 @@ impl ElementInternals for TextInner {
 
         // Handle selection.
         if self.selectable {
+            if matches!(event, EventKind::PointerDown(pb) if pb.button == Some(PointerButton::Left)) {
+                self.focus();
+            }
             let text_position = self.get_computed_box_transformed().content_rectangle();
+            #[cfg(all(
+                any(target_os = "windows", target_os = "macos", target_os = "linux"),
+                feature = "clipboard"
+            ))]
+            let focused = self.is_focused();
 
             let state: &mut TextState = &mut self.state;
             match event {
@@ -283,6 +291,32 @@ impl ElementInternals for TextInner {
                         }
                     }
                     pointer_moved.prevent_default();
+                }
+                #[cfg(all(
+                    any(target_os = "windows", target_os = "macos", target_os = "linux"),
+                    feature = "clipboard"
+                ))]
+                EventKind::KeyDown(keyboard_event)
+                    if focused
+                        && !keyboard_event.is_composing
+                        && if cfg!(target_os = "macos") {
+                            keyboard_event.modifiers.meta_key()
+                        } else {
+                            keyboard_event.modifiers.control_key()
+                        }
+                        && matches!(&keyboard_event.key, winit::keyboard::Key::Character(c) if c.eq_ignore_ascii_case("c")) =>
+                {
+                    use clipboard_rs::{Clipboard, ClipboardContext};
+
+                    let range = state.selection.text_range();
+                    if !range.is_empty()
+                        && let Some(text) = state.text.get(range)
+                        && let Ok(clipboard) = ClipboardContext::new()
+                        && clipboard.set_text(text.to_owned()).is_ok()
+                    {
+                        keyboard_event.prevent_default();
+                        keyboard_event.stop_propagation();
+                    }
                 }
                 _ => {}
             }
