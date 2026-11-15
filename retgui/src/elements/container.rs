@@ -16,14 +16,14 @@ use crate::events::EventKind;
 use crate::layout::GummyTree;
 use crate::text::text_context::TextContext;
 
+/// Stores one or more elements.
+///
+/// If overflow is set to scroll, it will become scrollable.
 #[derive(Clone)]
 pub struct Container {
     pub(crate) inner: Rc<RefCell<ContainerInner>>,
 }
 
-/// Stores one or more elements.
-///
-/// If overflow is set to scroll, it will become scrollable.
 #[derive(Clone)]
 pub(crate) struct ContainerInner {
     element_data: ElementData,
@@ -98,6 +98,8 @@ impl ElementInternals for ContainerInner {
 }
 
 impl Container {
+
+    /// Creates an empty container.
     pub fn new() -> Self {
         Self {
             inner: ContainerInner::new(),
