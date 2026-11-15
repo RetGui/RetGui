@@ -38,6 +38,7 @@ pub mod text;
 
 mod accessibility;
 mod app;
+mod clipboard;
 mod options;
 mod perf_stats;
 mod utils;

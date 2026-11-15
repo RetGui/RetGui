@@ -306,13 +306,11 @@ impl ElementInternals for TextInner {
                         }
                         && matches!(&keyboard_event.key, winit::keyboard::Key::Character(c) if c.eq_ignore_ascii_case("c")) =>
                 {
-                    use clipboard_rs::{Clipboard, ClipboardContext};
 
                     let range = state.selection.text_range();
                     if !range.is_empty()
                         && let Some(text) = state.text.get(range)
-                        && let Ok(clipboard) = ClipboardContext::new()
-                        && clipboard.set_text(text.to_owned()).is_ok()
+                        && crate::clipboard::copy(text.to_owned())
                     {
                         keyboard_event.prevent_default();
                         keyboard_event.stop_propagation();

@@ -32,6 +32,9 @@ impl ApplicationHandler for WinitDriver {
     }
 
     fn window_event(&mut self, event_loop: &dyn ActiveEventLoop, window_id: WindowId, event: WindowEvent) {
+        if let Some(context) = self.app.text_context.borrow_mut().as_mut() {
+            self.app.clipboard.receive(&event, context);
+        }
         let Some(window) = self.app.window_by_id(window_id) else {
             return;
         };

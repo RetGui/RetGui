@@ -56,6 +56,7 @@ fn audio_ui_update_due(last_update: Option<Instant>, now: Instant) -> bool {
 }
 
 pub struct App {
+    pub(crate) clipboard: crate::clipboard::Clipboard,
     pub(crate) event_dispatcher: Rc<RefCell<EventDispatcher>>,
     /// The text context is used to manage fonts and text rendering. It is only valid between resume and pause.
     pub(crate) text_context: Rc<RefCell<Option<TextContext>>>,
@@ -103,6 +104,7 @@ impl App {
             text_context,
             resource_manager,
             reload_fonts: false,
+            clipboard: Default::default(),
             runtime,
             retgui_options,
             active: false,
@@ -220,6 +222,9 @@ impl App {
     }
 
     pub fn on_about_to_wait(&mut self, event_loop: Option<&dyn ActiveEventLoop>) {
+        if let Some(context) = self.text_context.borrow_mut().as_mut() {
+            self.clipboard.process(event_loop, context);
+        }
         #[cfg(not(target_arch = "wasm32"))]
         self.runtime.maybe_block_on(async {
             retgui_runtime::task::yield_now().await;

@@ -90,6 +90,14 @@ where
 }
 
 impl HeadlessApp {
+
+    pub fn clipboard_text(&self) -> &str { self.driver.app.clipboard.headless_text() }
+
+    pub fn set_clipboard_text(&mut self, text: &str) {
+        crate::clipboard::copy(text.to_owned());
+        self.drive();
+    }
+
     pub(crate) fn new(app: App) -> Self {
         let mut driver = HeadlessDriver::new(app);
         driver.app.on_resume(None);

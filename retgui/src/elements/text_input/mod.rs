@@ -299,7 +299,7 @@ impl ElementInternals for TextInputInner {
                     if self.disabled {
                         return;
                     }
-                    self.state.paste(text_context);
+                    self.request_paste();
                     self.mark_dirty();
                     //generate_text_changed_event(&mut self.state.editor);
                 }
@@ -336,8 +336,16 @@ impl ElementInternals for TextInputInner {
                 if self.disabled || !keyboard_event.state.is_pressed() || !focused {
                     return;
                 }
-                self.state
-                    .key_press(text_context, keyboard_event, &mut self.element_data);
+                let action = if cfg!(target_os = "macos") {
+                    keyboard_event.modifiers.meta_key()
+                } else {
+                    keyboard_event.modifiers.control_key()
+                };
+                if action && matches!(&keyboard_event.key, Key::Character(c) if c.eq_ignore_ascii_case("v")) {
+                    self.request_paste();
+                } else {
+                    self.state.key_press(text_context, keyboard_event, &mut self.element_data);
+                }
                 keyboard_event.stop_propagation();
             }
             EventKind::PointerDown(pointer_button) if pointer_button.button == Some(PointerButton::Left) => {
@@ -374,7 +382,6 @@ impl ElementInternals for TextInputInner {
                     }
                 }
                 Ime::Enabled => self.state.ime_state.is_ime_active = true,
-                _ => {}
             },
             _ => {}
         }
@@ -447,6 +454,23 @@ impl ElementInternals for TextInputInner {
 }
 
 impl TextInputInner {
+    fn request_paste(&self) {
+        let target = self.me.clone();
+        let generation = self.state.editor().generation();
+        crate::clipboard::paste(Box::new(move |text, context| {
+            let Some(target) = target.upgrade() else { return };
+            let mut inner = target.borrow_mut();
+            if inner.disabled || inner.state.editor().is_composing()
+                || inner.state.editor().generation() != generation { return; }
+            inner.state.insert_or_replace_selection(context, &text);
+            inner.state.generate_text_changed_event(&inner.element_data);
+            inner.mark_dirty();
+            inner.request_window_redraw();
+            let value = inner.state.editor().raw_text().to_owned();
+            inner.element_data.set_accessibility_value(value);
+        }));
+    }
+
     fn set_ime_enabled(&mut self, enabled: bool) {
         self.state.ime_state.is_ime_active = enabled;
 
