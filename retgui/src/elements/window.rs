@@ -34,13 +34,18 @@ use crate::events::pointer_capture::PointerCapture;
 use crate::events::{EventKind, KeyboardEvent, PointerScrollEvent, PointerType};
 use crate::layout::GummyTree;
 use crate::perf_stats::{FrameStats, LayoutStats, PerfStats, RenderStats};
+#[cfg(not(target_arch = "wasm32"))]
 use crate::render_message::RenderMessage;
 use crate::text::text_context::TextContext;
 
 #[cfg(not(target_arch = "wasm32"))]
 use retgui_runtime::runtime::LocalRuntime;
-use retgui_runtime::sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel};
-use retgui_runtime::{Receiver, RetGuiRuntime, Sender};
+use retgui_runtime::sync::mpsc::{UnboundedReceiver, unbounded_channel};
+#[cfg(not(target_arch = "wasm32"))]
+use retgui_runtime::sync::mpsc::UnboundedSender;
+use retgui_runtime::RetGuiRuntime;
+#[cfg(not(target_arch = "wasm32"))]
+use retgui_runtime::{Receiver, Sender};
 
 use winit::event::MouseScrollDelta;
 use winit::event_loop::ActiveEventLoop;
@@ -57,6 +62,8 @@ pub struct Window {
 /// Stores one or more elements.
 ///
 /// If overflow is set to scroll, it will become scrollable.
+type TargetScratch = Rc<RefCell<Vec<Rc<RefCell<dyn ElementInternals>>>>>;
+
 pub(crate) struct WindowInternal {
     /// The physical window size from winit.
     pub(crate) window_size: Size<f32>,
@@ -94,13 +101,14 @@ pub(crate) struct WindowInternal {
     /// The last time a frame was drawn.
     last_frame_time: Instant,
 
+    #[cfg(not(target_arch = "wasm32"))]
     sender: Sender<RenderMessage>,
     #[cfg(not(target_arch = "wasm32"))]
     render_runtime: Option<retgui_runtime::RetGuiRuntimeHandle>,
     completed_frames: Option<UnboundedReceiver<FrameStats>>,
 
     pub(crate) hit_test_targets: Rc<RefCell<Vec<TargetItem>>>,
-    pub(crate) target_scratch: Rc<RefCell<Vec<Rc<RefCell<dyn ElementInternals>>>>>,
+    pub(crate) target_scratch: TargetScratch,
 }
 
 impl Clone for WindowInternal {
@@ -354,6 +362,7 @@ impl WindowInternal {
     where
         F: FnMut(&dyn ActiveEventLoop) -> Box<dyn WinitWindow> + 'static,
     {
+        #[cfg(not(target_arch = "wasm32"))]
         let (sender, receiver) = retgui_runtime::sync::mpsc::channel::<RenderMessage>(1);
         let (completed_sender, completed_frames) = unbounded_channel();
 
@@ -382,6 +391,7 @@ impl WindowInternal {
                 modifiers: Default::default(),
                 ime_composing: false,
                 last_frame_time: Instant::now(),
+                #[cfg(not(target_arch = "wasm32"))]
                 sender,
                 #[cfg(not(target_arch = "wasm32"))]
                 render_runtime: None,
@@ -413,7 +423,7 @@ impl WindowInternal {
         #[cfg(not(target_arch = "wasm32"))]
         inner.borrow_mut().start_render_thread(receiver, completed_sender);
         #[cfg(target_arch = "wasm32")]
-        let _ = (receiver, completed_sender);
+        let _ = completed_sender;
 
         inner
     }
@@ -578,10 +588,17 @@ impl WindowInternal {
 
         self.perf_stats.toggle();
         let enabled = !self.perf_stats.is_enabled();
-        let sender = self.sender.clone();
-        RetGuiRuntime::spawn_local(async move {
-            sender.send(RenderMessage::SetVsync(enabled)).await.ok();
-        });
+        #[cfg(target_arch = "wasm32")]
+        if let Some(renderer) = &mut self.renderer {
+            renderer.set_vsync(enabled);
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let sender = self.sender.clone();
+            RetGuiRuntime::spawn_local(async move {
+                sender.send(RenderMessage::SetVsync(enabled)).await.ok();
+            });
+        }
         self.request_redraw();
         true
     }
@@ -634,10 +651,6 @@ impl WindowInternal {
         if let Some(renderer) = &mut self.renderer {
             renderer.resize_surface(self.window_size.width.max(1.0), self.window_size.height.max(1.0));
         }
-        let size = self.window_size;
-        //let mut renderer = self.renderer.borrow_mut();
-        //renderer.resize_surface(size.width.max(1.0), size.height.max(1.0));
-        //renderer.set_cull(Some(Rectangle::new(0.0, 0.0, size.width, size.height)));
     }
 
     pub(crate) fn set_mouse_position(&mut self, point: Option<Point>) {
@@ -685,7 +698,7 @@ impl WindowInternal {
         &mut self,
         retgui_app: &mut App,
         event_loop: Option<&dyn ActiveEventLoop>,
-        window: Weak<RefCell<Self>>,
+        _window: Weak<RefCell<Self>>,
     ) {
         #[cfg(not(target_arch = "wasm32"))]
         {
@@ -772,7 +785,7 @@ impl WindowInternal {
                 let window_copy_2 = winit_window.clone();
                 retgui_app.runtime.runtime_spawn(async move {
                     let renderer = renderer_type.create(window_copy_2.clone()).await;
-                    if let Some(window) = window.upgrade() {
+                    if let Some(window) = _window.upgrade() {
                         let size = Size::new(
                             window_copy_2.surface_size().width as f32,
                             window_copy_2.surface_size().height as f32,
@@ -856,7 +869,7 @@ impl WindowInternal {
         resource_manager: Arc<ResourceManager>,
         frame_start: Instant,
         layout_stats: LayoutStats,
-        (buffer_index, mut render_list): (usize, RenderList),
+        (_buffer_index, mut render_list): (usize, RenderList),
     ) {
         let total_start = Instant::now();
 
@@ -883,7 +896,7 @@ impl WindowInternal {
             std::mem::swap(&mut *targets, &mut render_list.targets);
             render_list.targets.clear();
 
-            TargetItem::sort_items_by_overlay_depth(&mut *targets);
+            TargetItem::sort_items_by_overlay_depth(&mut targets);
         }
         let frame = FrameStats {
             start: frame_start,
@@ -920,11 +933,12 @@ impl WindowInternal {
         {
             let sender = self.sender.clone();
             let buffers = Arc::clone(&self.render_buffers);
+            let size = self.window_size;
             RetGuiRuntime::spawn_local(async move {
-                buffers.queue(buffer_index, render_list).await;
-                if sender.send(RenderMessage::DoRender(buffer_index, frame)).await.is_err() {
-                    let list = buffers.take_queued(buffer_index).await;
-                    buffers.recycle(buffer_index, list).await;
+                buffers.queue(_buffer_index, render_list).await;
+                if sender.send(RenderMessage::DoRender(_buffer_index, frame, size)).await.is_err() {
+                    let list = buffers.take_queued(_buffer_index).await;
+                    buffers.recycle(_buffer_index, list).await;
                 }
             });
         }
@@ -939,11 +953,11 @@ impl WindowInternal {
         self.renderer.as_ref().expect("window must be created before taking a screenshot").screenshot()
     }
 
-    pub(crate) fn close_internal(&mut self, runtime: &RetGuiRuntime) {
+    pub(crate) fn close_internal(&mut self, _runtime: &RetGuiRuntime) {
         cfg_select! {
             not(target_arch = "wasm32") => {
                 let sender = self.sender.clone();
-                runtime.maybe_block_on(async move {
+                _runtime.maybe_block_on(async move {
                     info!("Sent");
                     sender.send(RenderMessage::Close).await.ok();
                 })
@@ -971,7 +985,7 @@ impl WindowInternal {
                             new_renderer.surface_set_clear_color(Color::WHITE);
                             renderer = Some(new_renderer);
                         }
-                        RenderMessage::SetResourceManager(mut new_resource_manager) => {
+                        RenderMessage::SetResourceManager(new_resource_manager) => {
                             resource_manager = Some(new_resource_manager);
                         }
                         RenderMessage::SetVsync(enabled) => {
@@ -982,11 +996,16 @@ impl WindowInternal {
                         RenderMessage::Screenshot(reply) => {
                             reply.send(renderer.as_ref().expect("renderer is not initialized").screenshot()).ok();
                         }
-                        RenderMessage::DoRender(buffer_index, mut frame) => {
+                        RenderMessage::DoRender(buffer_index, mut frame, size) => {
                             let mut render_list = buffers.take_queued(buffer_index).await;
                             if let Some(renderer) = &mut renderer
                                 && let Some(resource_manager) = &mut resource_manager
                             {
+                                let width = size.width.max(1.0);
+                                let height = size.height.max(1.0);
+                                if renderer.surface_width() != width || renderer.surface_height() != height {
+                                    renderer.resize_surface(width, height);
+                                }
                                 let window =
                                     Rectangle::new(0.0, 0.0, renderer.surface_width(), renderer.surface_height());
                                 let start = Instant::now();

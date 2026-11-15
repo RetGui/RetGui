@@ -4,7 +4,6 @@ use std::cell::RefCell;
 use std::rc::{Rc, Weak};
 use std::sync::Arc;
 
-use retgui_renderer::renderer::Renderer;
 use retgui_renderer::RenderList;
 use retgui_resource_manager::ResourceManager;
 

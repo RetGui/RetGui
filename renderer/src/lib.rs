@@ -1,3 +1,5 @@
+#![recursion_limit = "256"]
+
 #[allow(clippy::module_inception)]
 pub mod renderer;
 

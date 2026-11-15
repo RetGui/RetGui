@@ -11,7 +11,6 @@ use peniko::kurbo;
 use retgui_primitives::geometry::{Affine, Rectangle, TrblRectangle};
 
 use retgui_renderer::{Brush, RenderList};
-use retgui_renderer::renderer::Renderer;
 
 use retgui_resource_manager::ResourceManager;
 

@@ -8,7 +8,6 @@ use std::sync::Arc;
 
 use issho::{SelectionData, SelectionGroup};
 
-use retgui_renderer::renderer::Renderer;
 
 use retgui_resource_manager::ResourceManager;
 

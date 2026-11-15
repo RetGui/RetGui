@@ -1,5 +1,3 @@
-use std::cell::RefCell;
-use std::rc::Weak;
 use std::sync::Arc;
 use retgui_primitives::Color;
 use retgui_primitives::brush::Brush;

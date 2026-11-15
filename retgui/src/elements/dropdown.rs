@@ -24,7 +24,6 @@ use crate::layout::layout::Layout;
 use crate::style::{AlignItems, BoxShadow, Display, FlexDirection, Overflow, Position, Style, Unit};
 use crate::text::text_context::TextContext;
 use crate::{auto, px, rgba};
-use retgui_renderer::renderer::Renderer;
 use retgui_resource_manager::ResourceManager;
 
 /// An element to select a single item from a collapsable vertical list of options.

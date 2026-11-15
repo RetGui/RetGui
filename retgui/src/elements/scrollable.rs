@@ -17,7 +17,6 @@ use crate::layout::layout::{CssComputedBorder, Layout, draw_borders_generic};
 use crate::style::{Overflow, Style};
 use retgui_primitives::geometry::borders::CssRoundedRect;
 use retgui_primitives::geometry::{Rectangle, Size};
-use retgui_renderer::renderer::Renderer;
 use retgui_renderer::RenderList;
 
 /**

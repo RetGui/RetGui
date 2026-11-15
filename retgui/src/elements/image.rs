@@ -6,7 +6,6 @@ use std::sync::Arc;
 
 use retgui_resource_manager::{ResourceId, ResourceManager};
 
-use retgui_renderer::renderer::Renderer;
 use retgui_renderer::RenderList;
 use retgui_resource_manager::resource_type::ResourceType;
 

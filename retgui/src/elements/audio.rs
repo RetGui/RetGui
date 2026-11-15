@@ -8,7 +8,6 @@ use std::sync::Arc;
 
 use retgui_primitives::brush::Brush;
 
-use retgui_renderer::renderer::Renderer;
 
 use retgui_resource_manager::{ResourceId, ResourceManager};
 

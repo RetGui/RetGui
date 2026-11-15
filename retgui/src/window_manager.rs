@@ -2,7 +2,6 @@ use std::cell::RefCell;
 use std::rc::{Rc, Weak};
 use std::time::Duration;
 
-use retgui_renderer::blank_renderer::BlankRenderer;
 
 use winit::event_loop::ActiveEventLoop;
 use winit::window::WindowId;

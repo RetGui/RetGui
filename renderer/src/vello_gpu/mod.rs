@@ -74,7 +74,6 @@ pub struct VelloGpuRenderer {
 
     texture_bindings: TextureBindings,
 
-    render_list: RenderList,
 }
 
 impl Renderer for VelloGpuRenderer {
@@ -292,7 +291,6 @@ impl VelloGpuRenderer {
             resources_seen: HashSet::with_capacity(20),
             window: window.clone(),
             texture_bindings: Default::default(),
-            render_list: Default::default(),
         };
 
         let surface = vello_renderer

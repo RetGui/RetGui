@@ -1,13 +1,12 @@
 use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
-use std::ops::{Deref, DerefMut};
+use std::ops::DerefMut;
 use std::rc::{Rc, Weak};
 
 use crate::events::{PointerButton, PointerId};
 
 use retgui_primitives::geometry::Point;
 
-use retgui_renderer::TargetItem;
 
 use crate::app::{FOCUS, dequeue_event};
 use crate::elements::{DynElement, ElementInternals, WindowInternal};

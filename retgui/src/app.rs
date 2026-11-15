@@ -1,9 +1,7 @@
-use retgui_renderer::TargetItem;
 use std::cell::RefCell;
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
 use std::rc::{Rc, Weak};
 use std::sync::Arc;
-use std::thread;
 use std::time::Instant as JobInstant;
 #[cfg(all(feature = "audio", not(target_arch = "wasm32")))]
 use std::time::{Duration, Instant};
@@ -19,7 +17,7 @@ use retgui_primitives::geometry::{Point, Size};
 use retgui_resource_manager::resource_type::ResourceType;
 use retgui_resource_manager::{ResourceId, ResourceManager};
 
-use retgui_runtime::{pop_gui_thread_work, push_gui_thread_work, Job, RetGuiRuntime, Sender};
+use retgui_runtime::{pop_gui_thread_work, push_gui_thread_work, Job, RetGuiRuntime};
 
 #[cfg(all(feature = "audio", target_arch = "wasm32"))]
 use web_time::{Duration, Instant};
@@ -31,10 +29,9 @@ use crate::RetGuiOptions;
 use crate::accessibility::ACCESS_TREE;
 #[cfg(feature = "audio")]
 use crate::elements::{AUDIO_CONTEXT, AudioInner};
-use crate::elements::{DynElement, ElementData as _, ElementIdMap, ElementInternals, Window, scrollable, set_focus_outline_visible};
+use crate::elements::{DynElement, ElementIdMap, ElementInternals, Window, scrollable, set_focus_outline_visible};
 use crate::events::{EventDispatcher, EventKind, ImeEvent, KeyboardEvent, PointerButtonEvent, PointerInfo, PointerMovedEvent, PointerScrollEvent, PointerState};
 use crate::layout::GummyTree;
-use crate::render_message::RenderMessage;
 use crate::text::text_context::TextContext;
 use crate::window_manager::WindowManager;
 
@@ -328,6 +325,12 @@ impl App {
     /// Handles the window resize event.
     pub fn on_resize(&mut self, window: Window, new_size: Size<f32>) {
         window.on_resize(new_size);
+        if new_size.width <= 0.0 || new_size.height <= 0.0 || !self.active {
+            return;
+        }
+        window.wait_for_render();
+        self.on_redraw_requested(window.clone());
+        window.wait_for_render();
     }
 
     /// Updates the tree, layouts the elements, and draws the view.

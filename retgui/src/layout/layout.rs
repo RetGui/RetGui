@@ -6,7 +6,6 @@ use retgui_primitives::geometry::{Affine, BezPath, Border, ElementBox, Margin, P
 use retgui_renderer::{Brush, RenderList};
 use retgui_renderer::render_command::DrawBoxShadow;
 
-use retgui_renderer::renderer::Renderer;
 
 use crate::Color;
 use crate::elements::scrollable::ScrollState;

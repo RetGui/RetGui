@@ -8,7 +8,6 @@ use crate::render_list::RenderList;
 use crate::renderer::Renderer;
 
 pub struct BlankRenderer {
-    render_list: RenderList,
     width: f32,
     height: f32,
 }
@@ -16,7 +15,7 @@ pub struct BlankRenderer {
 impl Default for BlankRenderer {
     fn default() -> Self {
         Self {
-            render_list: RenderList::default(),
+
             width: 0.0,
             height: 0.0,
         }

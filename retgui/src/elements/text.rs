@@ -23,7 +23,6 @@ use winit::dpi;
 use retgui_primitives::brush::Brush;
 use retgui_primitives::geometry::{Point, Rectangle, Vec2};
 
-use retgui_renderer::renderer::Renderer;
 use retgui_renderer::RenderList;
 use retgui_resource_manager::ResourceManager;
 

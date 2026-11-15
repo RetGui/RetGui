@@ -15,7 +15,6 @@ use crate::elements::{AsElement, DynElement, Element, ElementInternals};
 use crate::events::{ClickEvent, ClickTrigger, EventKind};
 use crate::layout::GummyTree;
 use crate::text::text_context::TextContext;
-use retgui_renderer::renderer::Renderer;
 use retgui_renderer::RenderList;
 use retgui_resource_manager::ResourceManager;
 

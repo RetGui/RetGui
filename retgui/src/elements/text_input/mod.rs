@@ -13,7 +13,6 @@ use parley::BoundingBox;
 
 use winit::keyboard::{Key, NamedKey};
 
-use retgui_renderer::renderer::Renderer;
 
 use retgui_resource_manager::ResourceManager;
 
@@ -32,7 +31,6 @@ use crate::layout::layout_context::{GummyTextInputContext, LayoutContext, TextHa
 use crate::style::{Animation, Display, Repeat, Style, TimingFunction, Unit};
 use crate::text::RangedStyles;
 use crate::text::text_context::TextContext;
-use crate::text::text_render_data::TextRender;
 
 /// Editable text area.
 #[derive(Clone)]

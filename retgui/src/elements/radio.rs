@@ -11,7 +11,6 @@ use issho::{AccessEvent, IsshoError, SelectionData, SelectionGroupItem};
 use retgui_primitives::brush::Brush;
 use retgui_primitives::geometry::{Affine, Circle, TrblRectangle};
 
-use retgui_renderer::renderer::Renderer;
 
 use retgui_resource_manager::ResourceManager;
 

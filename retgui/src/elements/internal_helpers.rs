@@ -4,7 +4,6 @@ use crate::layout::GummyTree;
 use crate::text::text_context::TextContext;
 
 use crate::elements::element_data::ElementData;
-use retgui_renderer::renderer::Renderer;
 use retgui_resource_manager::ResourceManager;
 use std::cell::RefCell;
 use std::rc::Rc;

@@ -16,7 +16,6 @@ use crate::layout::GummyTree;
 use crate::style::{AlignItems, Display, FlexDirection, JustifyContent, Unit};
 use crate::text::text_context::TextContext;
 use crate::{px, rgb};
-use retgui_renderer::renderer::Renderer;
 use retgui_renderer::RenderList;
 use retgui_resource_manager::ResourceManager;
 
