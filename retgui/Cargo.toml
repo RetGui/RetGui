@@ -168,3 +168,6 @@ required-features = ["integration_tests"]
 name = "text_copy"
 path = "tests/text_copy.rs"
 required-features = ["integration_tests", "clipboard"]
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2-app-kit = { version = "0.3.2", default-features = false, features = ["std", "NSView"] }

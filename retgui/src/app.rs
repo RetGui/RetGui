@@ -221,6 +221,17 @@ impl App {
         });
     }
 
+    pub(crate) fn on_render_ready(&mut self) {
+        // Drain every window because native proxy wake-ups may be coalesced.
+        // This also runs while suspended, so a worker cannot be left waiting
+        // for presentation after the application's active state changes.
+        WINDOW_MANAGER.with_borrow(|manager| {
+            for window in manager.windows() {
+                window.inner.borrow_mut().poll_completed_frames();
+            }
+        });
+    }
+
     pub fn on_about_to_wait(&mut self, event_loop: Option<&dyn ActiveEventLoop>) {
         if let Some(context) = self.text_context.borrow_mut().as_mut() {
             self.clipboard.process(event_loop, context);

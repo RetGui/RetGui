@@ -9,6 +9,9 @@ pub use crate::screenshot::Screenshot;
 
 use retgui_resource_manager::ResourceManager;
 
+/// Work that must finish on the GUI thread before a rendered frame is complete.
+pub type Presentation = Box<dyn FnOnce() + Send>;
+
 pub trait Renderer: Any {
     #[allow(dead_code)]
     fn surface_width(&self) -> f32;
@@ -25,6 +28,11 @@ pub trait Renderer: Any {
     fn prepare(&mut self, render_list: &mut RenderList, resource_manager: Arc<ResourceManager>, window: Rectangle);
 
     fn submit(&mut self);
+
+    fn submit_frame(&mut self, _synchronize_with_window: bool) -> Option<Presentation> {
+        self.submit();
+        None
+    }
 
     fn screenshot(&self) -> Screenshot {
         Screenshot {

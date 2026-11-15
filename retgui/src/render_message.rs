@@ -9,7 +9,6 @@ use retgui_resource_manager::ResourceManager;
 
 use retgui_runtime::sync::Mutex;
 
-#[cfg(not(target_arch = "wasm32"))]
 use crate::perf_stats::FrameStats;
 
 pub(crate) struct RenderBuffers {
@@ -63,12 +62,14 @@ impl RenderBuffers {
 
 #[cfg(not(target_arch = "wasm32"))]
 pub enum RenderMessage {
+    /// Wake the event loop when presentation work is ready.
+    SetEventLoopProxy(winit::event_loop::EventLoopProxy),
     /// Set the render thread's renderer.
     SetRenderer(Box<dyn Renderer + Send>),
     /// Set the render thread's resource manager.
     SetResourceManager(Arc<ResourceManager>),
     /// Render a frame.
-    DoRender(usize, FrameStats, retgui_primitives::geometry::Size<f32>),
+    DoRender(usize, FrameRequest, retgui_primitives::geometry::Size<f32>),
     /// Control Vsync.
     SetVsync(bool),
     /// Take a screenshot.
@@ -77,3 +78,16 @@ pub enum RenderMessage {
     Close,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+pub struct FrameRequest {
+    pub(crate) stats: FrameStats,
+    pub(crate) synchronize_with_window: bool,
+}
+
+pub(crate) enum RenderCompletion {
+    Frame(FrameStats),
+    Present {
+        present: retgui_renderer::renderer::Presentation,
+        finished: retgui_runtime::sync::oneshot::Sender<()>,
+    },
+}

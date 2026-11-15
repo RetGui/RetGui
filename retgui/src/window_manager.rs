@@ -99,6 +99,8 @@ impl WindowManager {
                 window_element.create(retgui_app, event_loop);
             }
 
+            window_element.inner.borrow_mut().poll_completed_frames();
+
             let should_redraw = {
                 let inner = window_element.inner.borrow();
                 inner.redraw_requested()

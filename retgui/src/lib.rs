@@ -41,6 +41,7 @@ mod app;
 mod clipboard;
 mod options;
 mod perf_stats;
+mod platform;
 mod utils;
 mod window_manager;
 mod render_message;

@@ -1,5 +1,6 @@
 pub mod image;
 mod render_context;
+mod presentation;
 pub mod text;
 
 use std::collections::HashSet;
@@ -73,6 +74,7 @@ pub struct VelloGpuRenderer {
     window: Arc<dyn Window>,
 
     texture_bindings: TextureBindings,
+    presentation: presentation::WindowPresentation,
 
 }
 
@@ -204,6 +206,12 @@ impl Renderer for VelloGpuRenderer {
         }
     }
 
+    fn submit_frame(&mut self, synchronize_with_window: bool) -> Option<crate::renderer::Presentation> {
+        self.presentation.begin_frame(synchronize_with_window);
+        self.submit();
+        self.presentation.finish_frame()
+    }
+
     fn submit(&mut self) {
         let render_state = match &mut self.state {
             RenderState::Active(state) => state,
@@ -219,6 +227,8 @@ impl Renderer for VelloGpuRenderer {
 
         // Get a handle to the device
         let device_handle = &self.context.devices[surface.dev_id];
+
+        self.presentation.configure(surface);
 
         // Get the surface's texture
         let surface_texture = match surface.surface.get_current_texture() {
@@ -267,7 +277,7 @@ impl Renderer for VelloGpuRenderer {
         device_handle.queue.submit([encoder.finish()]);
 
         // Queue the texture to be presented on the surface
-        device_handle.queue.present(surface_texture);
+        self.presentation.present(&device_handle.queue, surface_texture);
 
         self.scene.reset();
     }
@@ -291,6 +301,7 @@ impl VelloGpuRenderer {
             resources_seen: HashSet::with_capacity(20),
             window: window.clone(),
             texture_bindings: Default::default(),
+            presentation: Default::default(),
         };
 
         let surface = vello_renderer

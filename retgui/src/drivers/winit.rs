@@ -23,6 +23,10 @@ pub struct WinitDriver {
 }
 
 impl ApplicationHandler for WinitDriver {
+    fn proxy_wake_up(&mut self, _event_loop: &dyn ActiveEventLoop) {
+        self.app.on_render_ready();
+    }
+
     fn new_events(&mut self, _event_loop: &dyn ActiveEventLoop, cause: StartCause) {
         self.app.wait_cancelled = matches!(cause, StartCause::WaitCancelled { .. })
     }

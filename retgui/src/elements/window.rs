@@ -36,6 +36,7 @@ use crate::layout::GummyTree;
 use crate::perf_stats::{FrameStats, LayoutStats, PerfStats, RenderStats};
 #[cfg(not(target_arch = "wasm32"))]
 use crate::render_message::RenderMessage;
+use crate::render_message::RenderCompletion;
 use crate::text::text_context::TextContext;
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -105,7 +106,7 @@ pub(crate) struct WindowInternal {
     sender: Sender<RenderMessage>,
     #[cfg(not(target_arch = "wasm32"))]
     render_runtime: Option<retgui_runtime::RetGuiRuntimeHandle>,
-    completed_frames: Option<UnboundedReceiver<FrameStats>>,
+    completed_frames: Option<UnboundedReceiver<RenderCompletion>>,
 
     pub(crate) hit_test_targets: Rc<RefCell<Vec<TargetItem>>>,
     pub(crate) target_scratch: TargetScratch,
@@ -261,7 +262,7 @@ impl Window {
             let frames = runtime.block_on_local(async {
                 while !buffers.is_idle().await {
                     let frame = frames.recv().await.expect("render worker stopped before completing the frame");
-                    self.inner.borrow_mut().perf_stats.update_stats(frame.total, frame.layout, frame.render);
+                    self.inner.borrow_mut().on_render_completed(frame);
                 }
                 frames
             });
@@ -657,16 +658,28 @@ impl WindowInternal {
         self.mouse_positon = point;
     }
 
+    pub(crate) fn poll_completed_frames(&mut self) {
+        while let Some(frame) = self.completed_frames.as_mut().and_then(|frames| frames.try_recv().ok()) {
+            self.on_render_completed(frame);
+        }
+    }
+
+    fn on_render_completed(&mut self, completion: RenderCompletion) {
+        match completion {
+            RenderCompletion::Frame(frame) => self.perf_stats.update_stats(frame.total, frame.layout, frame.render),
+            RenderCompletion::Present { present, finished } => {
+                present();
+                finished.send(()).ok();
+            }
+        }
+    }
+
     pub(crate) fn on_redraw_requested(
         &mut self,
         text_context: &mut TextContext,
         resource_manager: Arc<ResourceManager>,
     ) {
-        if let Some(frames) = &mut self.completed_frames {
-            while let Ok(frame) = frames.try_recv() {
-                self.perf_stats.update_stats(frame.total, frame.layout, frame.render);
-            }
-        }
+        self.poll_completed_frames();
         #[cfg(target_arch = "wasm32")]
         let buffer = {
             if self.renderer.is_none() {
@@ -770,6 +783,10 @@ impl WindowInternal {
             not(target_arch = "wasm32") => {
                 let resource_manager = retgui_app.resource_manager.clone();
                 retgui_app.runtime.borrow_tokio_runtime().block_on(async {
+                    self.sender
+                        .send(RenderMessage::SetEventLoopProxy(event_loop.create_proxy()))
+                        .await
+                        .expect("Failed to send event loop proxy to renderer thread.");
                     let renderer: Box<dyn Renderer + Send> = renderer_type.create(winit_window.clone()).await;
                     self.sender
                         .send(RenderMessage::SetRenderer(renderer))
@@ -934,6 +951,10 @@ impl WindowInternal {
             let sender = self.sender.clone();
             let buffers = Arc::clone(&self.render_buffers);
             let size = self.window_size;
+            let frame = crate::render_message::FrameRequest {
+                stats: frame,
+                synchronize_with_window: crate::platform::synchronize_presentation(self.winit_window.as_deref()),
+            };
             RetGuiRuntime::spawn_local(async move {
                 buffers.queue(_buffer_index, render_list).await;
                 if sender.send(RenderMessage::DoRender(_buffer_index, frame, size)).await.is_err() {
@@ -971,16 +992,20 @@ impl WindowInternal {
     fn start_render_thread(
         &self,
         mut receiver: Receiver<RenderMessage>,
-        completed_sender: UnboundedSender<FrameStats>,
+        completed_sender: UnboundedSender<RenderCompletion>,
     ) {
         let buffers = Arc::clone(&self.render_buffers);
         thread::spawn(|| {
             let rt = LocalRuntime::new().unwrap();
             rt.block_on(async move {
+                let mut event_loop_proxy: Option<winit::event_loop::EventLoopProxy> = None;
                 let mut renderer: Option<Box<dyn Renderer>> = None;
                 let mut resource_manager: Option<Arc<ResourceManager>> = None;
                 while let Some(message) = receiver.recv().await {
                     match message {
+                        RenderMessage::SetEventLoopProxy(proxy) => {
+                            event_loop_proxy = Some(proxy);
+                        }
                         RenderMessage::SetRenderer(mut new_renderer) => {
                             new_renderer.surface_set_clear_color(Color::WHITE);
                             renderer = Some(new_renderer);
@@ -996,7 +1021,8 @@ impl WindowInternal {
                         RenderMessage::Screenshot(reply) => {
                             reply.send(renderer.as_ref().expect("renderer is not initialized").screenshot()).ok();
                         }
-                        RenderMessage::DoRender(buffer_index, mut frame, size) => {
+                        RenderMessage::DoRender(buffer_index, request, size) => {
+                            let mut frame = request.stats;
                             let mut render_list = buffers.take_queued(buffer_index).await;
                             if let Some(renderer) = &mut renderer
                                 && let Some(resource_manager) = &mut resource_manager
@@ -1015,11 +1041,19 @@ impl WindowInternal {
                                 renderer.prepare(&mut render_list, resource_manager.clone(), window);
                                 let prepare = start.elapsed();
                                 let start = Instant::now();
-                                renderer.submit();
+                                if let Some(present) = renderer.submit_frame(request.synchronize_with_window) {
+                                    let (finished, result) = retgui_runtime::sync::oneshot::channel();
+                                    if completed_sender.send(RenderCompletion::Present { present, finished }).is_ok() {
+                                        if let Some(proxy) = &event_loop_proxy {
+                                            proxy.wake_up();
+                                        }
+                                        result.await.ok();
+                                    }
+                                }
                                 let submit = start.elapsed();
                                 buffers.recycle(buffer_index, render_list).await;
                                 frame.finish_render(sort, prepare, submit);
-                                completed_sender.send(frame).ok();
+                                completed_sender.send(RenderCompletion::Frame(frame)).ok();
                             } else {
                                 buffers.recycle(buffer_index, render_list).await;
                             }
