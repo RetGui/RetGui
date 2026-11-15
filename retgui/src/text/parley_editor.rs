@@ -1146,8 +1146,8 @@ impl PlainEditor {
 
     /// Makes a prepared layout the editor's live interactive layout.
     pub(crate) fn adopt_prepared_layout(&mut self, mut prepared: PreparedLayout, width: Option<f32>) -> (f32, f32) {
-        self.reflow_prepared_layout(&mut prepared, width);
-        self.align_layout(&mut prepared.layout);
+        // Parley applies alignment during line breaking, so reflow the measured layout.
+        self.finish_layout(&mut prepared.layout, width);
         let dimensions = (prepared.layout.width(), prepared.layout.height());
         self.commit_layout(prepared.layout, width);
         dimensions
@@ -1296,11 +1296,11 @@ impl PlainEditor {
     }
 
     fn finish_layout(&self, layout: &mut Layout<Brush>, width: Option<f32>) {
-        layout.break_all_lines(width);
         self.align_layout(layout);
+        layout.break_all_lines(width);
     }
 
     fn align_layout(&self, layout: &mut Layout<Brush>) {
-        layout.align(self.alignment, AlignmentOptions::default());
+        layout.set_alignment(self.alignment, AlignmentOptions::default());
     }
 }

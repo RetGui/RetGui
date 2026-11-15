@@ -707,6 +707,10 @@ impl Style {
             word_break: Default::default(),
             overflow_wrap: Default::default(),
             text_wrap_mode: Default::default(),
+            vertical_align: Default::default(),
+            line_break: Default::default(),
+            white_space_collapse: Default::default(),
+            collapsed_space: Default::default(),
         }
     }
 

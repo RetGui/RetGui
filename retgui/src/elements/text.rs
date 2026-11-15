@@ -516,13 +516,14 @@ impl TextState {
         };
 
         let layout = self.layout.as_mut().unwrap();
-        layout.break_all_lines(width_constraint);
-        layout.align(
+        layout.set_alignment(
             alignment,
             AlignmentOptions {
                 align_when_overflowing: true,
+                ..Default::default()
             },
         );
+        layout.break_all_lines(width_constraint);
 
         let width = layout.width();
         let height = layout.height().min(height_constraint.unwrap_or(f32::MAX));

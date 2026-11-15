@@ -6,9 +6,9 @@ edition.workspace = true
 [dependencies]
 sys-locale = "0.3.2"
 
-icu_calendar = { version = "2.4.0", features = ["alloc"] }
-icu_datetime = "2.4.0"
-icu_locale_core = { version = "2.4.0", default-features = false, features = ["alloc"] }
+icu_calendar = { version = "~2.3.0", features = ["alloc"] }
+icu_datetime = "~2.3.0"
+icu_locale_core = { version = "~2.3.0", default-features = false, features = ["alloc"] }
 
 jiff.workspace = true
 

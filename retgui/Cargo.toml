@@ -94,8 +94,7 @@ workspace = true
 features = ["android-native-activity"]
 
 [dependencies.parley]
-git = "https://github.com/linebender/parley.git"
-rev = "a0752c7bdc3ad88dac19fc194d2b8e57e59bea2e"
+version = "0.13.0"
 default-features = false
 features = ["std"]
 
