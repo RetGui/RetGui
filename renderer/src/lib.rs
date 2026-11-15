@@ -19,6 +19,8 @@ mod target_item;
 pub mod text_renderer_data;
 #[cfg(feature = "vello_gpu_renderer")]
 pub mod vello_gpu;
+#[cfg(feature = "vello_gpu_renderer")]
+mod redraw;
 
 pub use render_command::RenderCommand;
 pub use render_list::RenderList;

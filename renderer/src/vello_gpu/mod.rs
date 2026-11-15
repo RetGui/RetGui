@@ -115,7 +115,7 @@ impl Renderer for VelloGpuRenderer {
 
         render_state.surface.config.present_mode = present_mode_for_vsync(enabled);
         self.context.configure_surface(&render_state.surface);
-        self.window.request_redraw();
+        crate::redraw::request_redraw(&self.window);
     }
 
     fn prepare(&mut self, render_list: &mut RenderList, resource_manager: Arc<ResourceManager>, window: Rectangle) {
@@ -225,12 +225,12 @@ impl Renderer for VelloGpuRenderer {
             CurrentSurfaceTexture::Success(surface_texture) => surface_texture,
             CurrentSurfaceTexture::Outdated | CurrentSurfaceTexture::Suboptimal(_) => {
                 self.context.configure_surface(surface);
-                self.window.request_redraw();
+                crate::redraw::request_redraw(&self.window);
                 self.scene.reset();
                 return;
             }
             CurrentSurfaceTexture::Occluded | CurrentSurfaceTexture::Timeout => {
-                self.window.request_redraw();
+                crate::redraw::request_redraw(&self.window);
                 self.scene.reset();
                 return;
             }

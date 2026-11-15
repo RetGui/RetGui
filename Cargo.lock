@@ -3742,6 +3742,7 @@ dependencies = [
 name = "retgui_renderer"
 version = "0.1.1"
 dependencies = [
+ "dispatch2",
  "glifo",
  "peniko",
  "retgui_primitives",
