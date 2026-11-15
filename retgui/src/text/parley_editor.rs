@@ -8,6 +8,7 @@ extern crate alloc;
 use alloc::borrow::ToOwned;
 use alloc::string::String;
 use alloc::vec::Vec;
+
 use core::cmp::PartialEq;
 use core::default::Default;
 use core::fmt::{Debug, Display};
@@ -15,6 +16,7 @@ use core::num::NonZeroUsize;
 use core::ops::Range;
 
 use retgui_primitives::brush::Brush;
+
 use retgui_undo::UndoManager;
 
 use crate::app::{request_apply_layout, request_layout};

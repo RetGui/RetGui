@@ -1,13 +1,13 @@
-use crate::elements::traits::builder::ElementBuilder;
 use std::path::PathBuf;
 use std::str::FromStr;
 
 use pulldown_cmark::{Event, HeadingLevel, Tag, TagEnd};
 
-use retgui_resource_manager::ResourceId;
-
 use retgui_primitives::brush::Brush;
 
+use retgui_resource_manager::ResourceId;
+
+use crate::elements::traits::builder::ElementBuilder;
 use crate::elements::{CodeEditor, Container, DynElement, Element, Image, Text, TextInput};
 use crate::style::{Display, FlexDirection, FontStyle, FontWeight, TextStyleProperty, Unit};
 use crate::text::RangedStyles;

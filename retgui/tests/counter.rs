@@ -1,4 +1,3 @@
-use retgui_builder::{ElementBuilder, TextBuilder};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -8,6 +7,8 @@ use retgui::events::{Event, PointerButton};
 use retgui::geometry::Size;
 use retgui::style::{AlignItems, FlexDirection, JustifyContent};
 use retgui::{Color, RendererType, pct, px, rgb};
+
+use retgui_builder::{ElementBuilder, TextBuilder};
 
 fn create_button(label: &str, base_color: Color, delta: i64, state: Rc<RefCell<i64>>, count_text: Text) -> Container {
     let border_color = rgb(0, 0, 0);

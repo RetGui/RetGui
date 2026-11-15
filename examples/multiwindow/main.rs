@@ -1,4 +1,3 @@
-use retgui_builder::{ElementBuilder, TextBuilder};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -6,6 +5,8 @@ use retgui::elements::{Container, Text, Window};
 use retgui::events::Event;
 use retgui::style::{AlignItems, Display, FlexDirection, JustifyContent, Unit};
 use retgui::{Color, rgb};
+
+use retgui_builder::{ElementBuilder, TextBuilder};
 
 #[derive(Default, Clone, Copy)]
 pub struct Counter {

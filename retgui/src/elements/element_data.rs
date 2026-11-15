@@ -1,9 +1,9 @@
 use std::cell::RefCell;
 use std::rc::Weak;
 
-use smol_str::SmolStr;
-
 use smallvec::SmallVec;
+
+use smol_str::SmolStr;
 
 use crate::Color;
 use crate::accessibility::RetGuiAccessTree;

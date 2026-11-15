@@ -1,9 +1,11 @@
-use retgui_builder::ElementBuilder;
+use std::cell::RefCell;
+use std::rc::{Rc, Weak};
+
 use retgui::elements::{Container, Element, Window};
 use retgui::pct;
 use retgui::style::{Display, FlexDirection};
-use std::cell::RefCell;
-use std::rc::{Rc, Weak};
+
+use retgui_builder::ElementBuilder;
 
 use crate::WebsiteGlobalState;
 use crate::docs::docs;

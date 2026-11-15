@@ -1,8 +1,9 @@
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use crate::app::{ELEMENTS, GUMMY_TREE, request_apply_layout, request_layout};
 use crate::elements::ElementInternals;
 use crate::elements::element_id::create_unique_element_id;
-use std::cell::RefCell;
-use std::rc::Rc;
 
 pub(crate) fn clone_element<T, F>(source: &T, remap: F) -> Rc<RefCell<T>>
 where

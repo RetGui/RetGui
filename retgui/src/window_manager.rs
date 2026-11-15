@@ -2,10 +2,11 @@ use std::cell::RefCell;
 use std::rc::{Rc, Weak};
 use std::time::Duration;
 
+use retgui_runtime::RetGuiRuntime;
 
 use winit::event_loop::ActiveEventLoop;
 use winit::window::WindowId;
-use retgui_runtime::RetGuiRuntime;
+
 use crate::app::{App, GUMMY_TREE};
 use crate::elements::{ElementData, ElementInternals, Window};
 

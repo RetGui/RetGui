@@ -9,6 +9,7 @@ use retgui_primitives::geometry::{Rectangle, Size};
 
 use retgui_renderer::RenderList;
 use retgui_renderer::text_renderer_data::TextRender;
+
 #[cfg(target_arch = "wasm32")]
 use web_time::{Duration, Instant};
 

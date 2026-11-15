@@ -1,13 +1,14 @@
+pub use crate::screenshot::Screenshot;
+
 use std::any::Any;
 use std::sync::Arc;
 
 use retgui_primitives::Color;
 use retgui_primitives::geometry::Rectangle;
 
-use crate::render_list::RenderList;
-pub use crate::screenshot::Screenshot;
-
 use retgui_resource_manager::ResourceManager;
+
+use crate::render_list::RenderList;
 
 /// Work that must finish on the GUI thread before a rendered frame is complete.
 pub type Presentation = Box<dyn FnOnce() + Send>;

@@ -1,17 +1,23 @@
 //! A calendar.
 
-use crate::elements::traits::builder::ElementBuilder;
-use retgui_calendar::sys_locale::get_locale_or_default;
-use retgui_calendar::{DateAddOptions, DateDuration, Locale, Month, Weekday, current_calendar_start, current_month, day_abbreviation, first_day_of_week, format_date_day_number, month_name, year_name};
-
 use std::cell::RefCell;
 use std::rc::{Rc, Weak};
 use std::sync::Arc;
+
+use jiff::civil::Date;
+
+use retgui_calendar::sys_locale::get_locale_or_default;
+use retgui_calendar::{DateAddOptions, DateDuration, Locale, Month, Weekday, current_calendar_start, current_month, day_abbreviation, first_day_of_week, format_date_day_number, month_name, year_name};
+
+use retgui_renderer::RenderList;
+
+use retgui_resource_manager::ResourceManager;
 
 use crate::app::queue_event;
 use crate::elements::dropdown::DropdownInner;
 use crate::elements::element_data::ElementData;
 use crate::elements::internal_helpers::{apply_generic_container_layout, draw_generic_container, push_child_to_element};
+use crate::elements::traits::builder::ElementBuilder;
 use crate::elements::traits::clone_element;
 use crate::elements::{AsElement, Button, Container, Dropdown, DynElement, Element, ElementInternals, Text, TextInner};
 use crate::events::{CalendarDateSelectedEvent, Event, EventCallbackKind, EventKind, EventListenerOptions};
@@ -19,9 +25,6 @@ use crate::layout::GummyTree;
 use crate::style::{AlignItems, Display, FlexDirection, JustifyContent, Unit};
 use crate::text::text_context::TextContext;
 use crate::{px, rgb};
-use jiff::civil::Date;
-use retgui_renderer::RenderList;
-use retgui_resource_manager::ResourceManager;
 
 #[derive(Clone)]
 pub struct Calendar {
@@ -543,8 +546,9 @@ impl Calendar {
 
 #[cfg(test)]
 mod retained_tests {
-    use super::*;
     use crate::events::{ClickEvent, ClickTrigger};
+
+    use super::*;
 
     #[test]
     fn selecting_day_does_not_rewrite_other_cells() {

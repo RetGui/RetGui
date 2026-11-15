@@ -5,6 +5,11 @@ use std::rc::{Rc, Weak};
 use std::sync::Arc;
 
 use issho::{AccessEvent, IsshoError, Role};
+
+use retgui_renderer::RenderList;
+
+use retgui_resource_manager::ResourceManager;
+
 use winit::keyboard::KeyCode;
 
 use crate::app::queue_event;
@@ -15,8 +20,6 @@ use crate::elements::{AsElement, DynElement, Element, ElementInternals};
 use crate::events::{ClickEvent, ClickTrigger, EventKind};
 use crate::layout::GummyTree;
 use crate::text::text_context::TextContext;
-use retgui_renderer::RenderList;
-use retgui_resource_manager::ResourceManager;
 
 #[derive(Clone)]
 pub struct Button {

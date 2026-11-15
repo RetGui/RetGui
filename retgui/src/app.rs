@@ -17,7 +17,7 @@ use retgui_primitives::geometry::{Point, Size};
 use retgui_resource_manager::resource_type::ResourceType;
 use retgui_resource_manager::{ResourceId, ResourceManager};
 
-use retgui_runtime::{pop_gui_thread_work, push_gui_thread_work, Job, RetGuiRuntime};
+use retgui_runtime::{Job, RetGuiRuntime, pop_gui_thread_work, push_gui_thread_work};
 
 #[cfg(all(feature = "audio", target_arch = "wasm32"))]
 use web_time::{Duration, Instant};
@@ -25,6 +25,7 @@ use web_time::{Duration, Instant};
 use winit::dpi::PhysicalPosition;
 use winit::event::{ElementState, Ime, KeyEvent, PointerKind, WindowEvent};
 use winit::event_loop::ActiveEventLoop;
+
 use crate::RetGuiOptions;
 use crate::accessibility::ACCESS_TREE;
 #[cfg(feature = "audio")]

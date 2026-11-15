@@ -1,8 +1,8 @@
 //! Platform-specific presentation.
 
-use super::render_context::RenderSurface;
-
 use crate::renderer::Presentation;
+
+use super::render_context::RenderSurface;
 
 #[derive(Default)]
 pub(super) struct WindowPresentation {

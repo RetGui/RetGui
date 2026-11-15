@@ -5,7 +5,9 @@ use std::rc::{Rc, Weak};
 use std::sync::Arc;
 
 use retgui_primitives::brush::Brush;
+
 use retgui_renderer::RenderList;
+
 use retgui_resource_manager::ResourceManager;
 
 use crate::elements::codeeditor::highlighter::compute_code_editor_style;

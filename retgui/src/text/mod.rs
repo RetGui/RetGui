@@ -3,10 +3,11 @@ pub mod text_commands;
 pub mod text_context;
 pub(crate) mod text_render_data;
 
-use std::ops::Range;
-
 pub use parley;
+
 pub use text_render_data::from_editor;
+
+use std::ops::Range;
 
 use crate::style::TextStyleProperty;
 

@@ -1,7 +1,8 @@
-use retgui_builder::ElementBuilder;
 use retgui::elements::Container;
 use retgui::style::Unit;
 use retgui::{Color, pct};
+
+use retgui_builder::ElementBuilder;
 
 pub(crate) const BODY_BACKGROUND_COLOR: Color = Color::from_rgb8(255, 255, 255);
 

@@ -2,9 +2,8 @@ use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 use std::rc::{Rc, Weak};
 
-use crate::events::PointerId;
-
 use crate::elements::{DynElement, ElementInternals};
+use crate::events::PointerId;
 use crate::events::event_dispatch::dispatch_event;
 use crate::events::{EventKind, PointerCaptureEvent};
 use crate::text::text_context::TextContext;

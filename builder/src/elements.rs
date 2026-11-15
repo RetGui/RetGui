@@ -1,10 +1,11 @@
-use crate::ElementBuilder;
 #[cfg(feature = "audio")]
 use retgui::elements::Audio;
 use retgui::elements::{Calendar, Dropdown, Image, Radio, Slider, SliderDirection, Text, TextInput, TinyVg};
 use retgui::events::CalendarDateSelectedEvent;
 use retgui::text::RangedStyles;
 use retgui::{Brush, Color, Gradient, ResourceId};
+
+use crate::ElementBuilder;
 
 pub trait TextBuilder: ElementBuilder<Element = Text> {
     fn selectable(self, selectable: bool) -> Self {

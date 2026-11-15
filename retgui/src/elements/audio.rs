@@ -1,23 +1,24 @@
 //! Stores one or more elements.
 
-use crate::elements::traits::builder::ElementBuilder;
 use std::cell::{OnceCell, RefCell};
 use std::collections::HashSet;
 use std::path::Path;
 use std::rc::{Rc, Weak};
 use std::sync::Arc;
 
-use retgui_primitives::brush::Brush;
-
-
-use retgui_resource_manager::{ResourceId, ResourceManager};
-
 use maudio::engine::Engine;
 use maudio::sound::Sound;
 use maudio::sound::notifier::EndNotifier;
+
+use retgui_primitives::brush::Brush;
+
 use retgui_renderer::RenderList;
+
+use retgui_resource_manager::{ResourceId, ResourceManager};
+
 use crate::elements::element_data::ElementData;
 use crate::elements::internal_helpers::{apply_generic_container_layout, draw_generic_container, push_child_to_element};
+use crate::elements::traits::builder::ElementBuilder;
 use crate::elements::traits::clone_element;
 use crate::elements::{AsElement, Button, DynElement, Element, ElementInternals, Slider, Text, TinyVg, scrollable};
 use crate::events::EventKind;

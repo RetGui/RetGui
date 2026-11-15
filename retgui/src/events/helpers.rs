@@ -1,13 +1,14 @@
-use crate::events::PointerId;
-use retgui_primitives::geometry::Point;
 use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::rc::Rc;
+
+use retgui_primitives::geometry::Point;
 
 use retgui_renderer::TargetItem;
 
 use crate::app::ELEMENTS;
 use crate::elements::ElementInternals;
+use crate::events::PointerId;
 use crate::events::pointer_capture::PointerCapture;
 use crate::events::{Event, EventCallback, EventCallbackKind, EventKind};
 

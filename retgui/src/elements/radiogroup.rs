@@ -8,11 +8,12 @@ use std::sync::Arc;
 
 use issho::{SelectionData, SelectionGroup};
 
+use retgui_renderer::RenderList;
 
 use retgui_resource_manager::ResourceManager;
 
 use winit::keyboard::{KeyCode, ModifiersState};
-use retgui_renderer::RenderList;
+
 use crate::elements::element_data::ElementData;
 use crate::elements::internal_helpers::{apply_generic_container_layout, draw_generic_container, push_child_to_element};
 use crate::elements::traits::clone_element;

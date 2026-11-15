@@ -1,18 +1,20 @@
-use peniko::Color;
-use retgui_primitives::geometry::{Point, Rectangle};
 use std::cell::RefCell;
 use std::rc::{Rc, Weak};
 use std::sync::Arc;
 
+use peniko::Color;
+
 use retgui_primitives::brush::Brush;
+use retgui_primitives::geometry::{Point, Rectangle};
 use retgui_primitives::gradient::Gradient;
 
+use retgui_renderer::RenderList;
 
 use retgui_resource_manager::ResourceManager;
 
 use winit::event::ElementState;
 use winit::keyboard::KeyCode;
-use retgui_renderer::RenderList;
+
 use crate::app::queue_event;
 use crate::elements::element_data::ElementData;
 use crate::elements::traits::clone_element;

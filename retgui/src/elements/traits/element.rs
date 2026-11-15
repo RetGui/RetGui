@@ -2,18 +2,17 @@ use std::any::Any;
 use std::rc::Rc;
 
 use retgui_primitives::Color;
-use retgui_primitives::geometry::ElementBox;
-use smol_str::SmolStr;
-
 use retgui_primitives::brush::Brush;
+use retgui_primitives::geometry::ElementBox;
 use retgui_primitives::gradient::Gradient;
 
-use crate::events::PointerId;
+use smol_str::SmolStr;
 
 use crate::RetGuiError;
 use crate::app::queue_event;
 use crate::elements::scrollable::{ScrollOptions, ScrollState};
 use crate::elements::{AsElement, DynElement};
+use crate::events::PointerId;
 use crate::events::{CheckboxToggledEvent, ClickEvent, CustomEvent, EventCallbackKind, EventKind, EventListenerOptions, FocusEvent, KeyboardEvent, PointerButtonEvent, PointerCaptureEvent, PointerEnterEvent, PointerLeaveEvent, PointerMovedEvent, RadioValueChangedEvent, ScrollEvent, SliderValueChangedEvent, TextInputChangedEvent, UnfocusEvent};
 use crate::style::{AlignContent, AlignItems, AlignSelf, Animation, BoxShadow, BoxSizing, Display, FlexDirection, FlexWrap, FontFamily, FontStyle, FontWeight, JustifyContent, Overflow, Position, ScrollbarColor, TextAlign, Underline, Unit};
 

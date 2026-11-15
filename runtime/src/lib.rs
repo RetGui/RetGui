@@ -1,10 +1,11 @@
 mod run_later;
 
-use std::future::Future;
-
 pub use run_later::{Job, pop_gui_thread_work, push_gui_thread_work, run_later};
-pub use tokio::sync::mpsc::{Receiver, Sender, channel};
+
 pub use tokio::*;
+pub use tokio::sync::mpsc::{Receiver, Sender, channel};
+
+use std::future::Future;
 
 thread_local! {
     #[cfg(not(target_arch = "wasm32"))]

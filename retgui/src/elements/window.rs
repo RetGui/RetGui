@@ -1,6 +1,5 @@
 //! Stores one or more elements.
 
-use retgui_logging::info;
 use std::cell::{Cell, RefCell};
 use std::rc::{Rc, Weak};
 use std::sync::Arc;
@@ -11,6 +10,8 @@ use std::time::{Duration, Instant};
 
 use gummy::AvailableSpace;
 
+use retgui_logging::info;
+
 use retgui_primitives::geometry::{Point, Rectangle, Size};
 
 use retgui_renderer::renderer::{Renderer, Screenshot};
@@ -18,11 +19,25 @@ use retgui_renderer::{RenderList, RendererType, TargetItem};
 
 use retgui_resource_manager::ResourceManager;
 
-#[cfg(target_arch = "wasm32")]
-use {wasm_bindgen::JsCast, winit::platform::web::WindowAttributesWeb};
+use retgui_runtime::RetGuiRuntime;
+#[cfg(not(target_arch = "wasm32"))]
+use retgui_runtime::runtime::LocalRuntime;
+#[cfg(not(target_arch = "wasm32"))]
+use retgui_runtime::sync::mpsc::UnboundedSender;
+use retgui_runtime::sync::mpsc::{UnboundedReceiver, unbounded_channel};
+#[cfg(not(target_arch = "wasm32"))]
+use retgui_runtime::{Receiver, Sender};
 
 #[cfg(target_arch = "wasm32")]
 use web_time::{Duration, Instant};
+
+use winit::event::MouseScrollDelta;
+use winit::event_loop::ActiveEventLoop;
+use winit::keyboard::{Key, ModifiersState, NamedKey};
+use winit::window::{Window as WinitWindow, WindowAttributes};
+
+#[cfg(target_arch = "wasm32")]
+use {wasm_bindgen::JsCast, winit::platform::web::WindowAttributesWeb};
 
 use crate::Color;
 use crate::accessibility::RetGuiAccessTree;
@@ -34,24 +49,10 @@ use crate::events::pointer_capture::PointerCapture;
 use crate::events::{EventKind, KeyboardEvent, PointerScrollEvent, PointerType};
 use crate::layout::GummyTree;
 use crate::perf_stats::{FrameStats, LayoutStats, PerfStats, RenderStats};
+use crate::render_message::RenderCompletion;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::render_message::RenderMessage;
-use crate::render_message::RenderCompletion;
 use crate::text::text_context::TextContext;
-
-#[cfg(not(target_arch = "wasm32"))]
-use retgui_runtime::runtime::LocalRuntime;
-use retgui_runtime::sync::mpsc::{UnboundedReceiver, unbounded_channel};
-#[cfg(not(target_arch = "wasm32"))]
-use retgui_runtime::sync::mpsc::UnboundedSender;
-use retgui_runtime::RetGuiRuntime;
-#[cfg(not(target_arch = "wasm32"))]
-use retgui_runtime::{Receiver, Sender};
-
-use winit::event::MouseScrollDelta;
-use winit::event_loop::ActiveEventLoop;
-use winit::keyboard::{Key, ModifiersState, NamedKey};
-use winit::window::{Window as WinitWindow, WindowAttributes};
 
 pub type WindowConstructor = Box<dyn FnMut(&dyn ActiveEventLoop) -> Box<dyn WinitWindow>>;
 

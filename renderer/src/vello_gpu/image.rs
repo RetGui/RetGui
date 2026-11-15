@@ -2,20 +2,23 @@ use std::sync::Arc;
 
 use kurbo::Affine;
 
+use retgui_resource_manager::ResourceManager;
+use retgui_resource_manager::image::ImageResource;
+use retgui_resource_manager::resource::Resource;
+use retgui_resource_manager::resource_type::ResourceType;
+
 use vello_common::paint::{ImageSource, PaintType, TextureRegion};
 use vello_common::peniko::ImageAlphaType;
 use vello_common::pixmap::{PixelMetadata, Pixmap};
 use vello_common::{TextureId, kurbo};
+
 use vello_gpu::{Scene, TextureBindings};
+
 use wgpu::util::DeviceExt;
 
 use crate::render_command::DrawImageCmd;
 use crate::resource_mapper::{RendererResourceId, ResourceMapper};
 use crate::vello_gpu::render_context::DeviceHandle;
-use retgui_resource_manager::ResourceManager;
-use retgui_resource_manager::image::ImageResource;
-use retgui_resource_manager::resource::Resource;
-use retgui_resource_manager::resource_type::ResourceType;
 
 pub(crate) fn upload_image(
     cmd: &DrawImageCmd,

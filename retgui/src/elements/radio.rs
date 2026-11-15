@@ -9,10 +9,12 @@ use issho::{AccessEvent, IsshoError, SelectionData, SelectionGroupItem};
 use retgui_primitives::brush::Brush;
 use retgui_primitives::geometry::{Affine, Circle, TrblRectangle};
 
+use retgui_renderer::RenderList;
+
 use retgui_resource_manager::ResourceManager;
 
 use winit::keyboard::KeyCode;
-use retgui_renderer::RenderList;
+
 use crate::app::{GUMMY_TREE, queue_event};
 use crate::elements::element_data::ElementData;
 use crate::elements::element_id::create_unique_element_id;
@@ -315,9 +317,10 @@ impl Radio {
 
 #[cfg(test)]
 mod retained_tests {
-    use crate::elements::ElementBuilder;
-    use super::*;
     use crate::elements::Container;
+    use crate::elements::ElementBuilder;
+
+    use super::*;
 
     #[test]
     fn selection_changes_only_previous_and_next_radio() {

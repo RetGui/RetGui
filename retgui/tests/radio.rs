@@ -1,4 +1,3 @@
-use retgui_builder::ElementBuilder;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -7,6 +6,8 @@ use retgui::elements::{Radio, RadioGroup, Text, Window};
 use retgui::geometry::Size;
 use retgui::style::FlexDirection;
 use retgui::{RendererType, px};
+
+use retgui_builder::ElementBuilder;
 
 #[cfg(test)]
 mod test_utils;

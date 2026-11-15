@@ -1,4 +1,3 @@
-use retgui_builder::{ElementBuilder, TextBuilder};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -11,6 +10,8 @@ use retgui::events::ClickEvent;
 use retgui::palette::css::WHITE;
 use retgui::style::{AlignItems, Display, FlexDirection, FlexWrap, JustifyContent, Overflow, Unit};
 use retgui::{Color, rgb};
+
+use retgui_builder::{ElementBuilder, TextBuilder};
 
 const ADJECTIVES: &[&str] = &[
     "pretty",

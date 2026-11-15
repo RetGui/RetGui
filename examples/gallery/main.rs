@@ -1,4 +1,3 @@
-use retgui_builder::{ElementBuilder, TextBuilder, SliderBuilder, DropdownBuilder, CalendarBuilder, RadioBuilder};
 use std::cell::RefCell;
 #[cfg(feature = "audio")]
 use std::path::{Path, PathBuf};
@@ -12,6 +11,8 @@ use retgui::events::Event;
 use retgui::geometry::Point;
 use retgui::style::{AlignItems, Animation, BoxShadow, Display, FlexDirection, FontStyle, FontWeight, JustifyContent, KeyFrame, Overflow, Position, Repeat, StyleVariant, TextAlign, TimingFunction};
 use retgui::{Brush, Color, ColorStop, Gradient, ResourceId, RetGuiOptions, RetGuiRuntime, auto, pct, px, retgui_main, rgb, rgba};
+
+use retgui_builder::{CalendarBuilder, DropdownBuilder, ElementBuilder, RadioBuilder, SliderBuilder, TextBuilder};
 
 use serde::Deserialize;
 

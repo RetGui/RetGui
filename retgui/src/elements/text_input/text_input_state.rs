@@ -14,13 +14,12 @@ use retgui_primitives::geometry::{Point, Rectangle};
 
 use retgui_renderer::text_renderer_data::TextRender;
 
-use winit::keyboard::{Key, ModifiersState, NamedKey};
-use winit::window::ImeSurroundingText;
-
 #[cfg(target_arch = "wasm32")]
 use web_time::{Duration, Instant};
 
 use winit::dpi;
+use winit::keyboard::{Key, ModifiersState, NamedKey};
+use winit::window::ImeSurroundingText;
 
 use crate::app::{GUMMY_TREE, queue_event, request_apply_layout};
 use crate::elements::element_data::ElementData;

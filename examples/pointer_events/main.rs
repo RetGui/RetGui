@@ -1,10 +1,11 @@
-use retgui_builder::ElementBuilder;
 use std::rc::Rc;
 
 use retgui::elements::{AsElement, Container, Element, Text, Window};
 use retgui::events::{Event, PointerEnterEvent, PointerLeaveEvent};
 use retgui::style::{AlignItems, Display, FlexDirection, JustifyContent, Overflow, Position, Unit};
 use retgui::{Color, pct};
+
+use retgui_builder::ElementBuilder;
 
 fn title(txt: &str) -> Text {
     Text::new(txt)

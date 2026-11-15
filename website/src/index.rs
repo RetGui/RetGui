@@ -1,7 +1,8 @@
-use retgui_builder::{ElementBuilder, TextBuilder};
 use retgui::elements::{Container, Text, TinyVg};
 use retgui::style::{AlignItems, Display, FlexDirection, FlexWrap, FontWeight, JustifyContent, Overflow, Unit};
 use retgui::{Color, ResourceId, palette, pct, px, rgb};
+
+use retgui_builder::{ElementBuilder, TextBuilder};
 
 use crate::link::Link;
 use crate::router::NavigateFn;

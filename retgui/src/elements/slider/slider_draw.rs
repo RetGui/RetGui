@@ -2,6 +2,7 @@ use retgui_primitives::geometry::borders::CssRoundedRect;
 use retgui_primitives::geometry::{Rectangle, TrblRectangle, Vec2};
 
 use retgui_renderer::RenderList;
+
 use crate::Color;
 use crate::elements::slider::slider_element::SliderDirection;
 use crate::elements::{ElementData, ElementInternals, SliderInner};

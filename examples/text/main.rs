@@ -1,7 +1,8 @@
-use retgui_builder::ElementBuilder;
 use retgui::elements::{Container, TextInput, Window};
 use retgui::rgb;
 use retgui::style::{AlignItems, Display, FlexDirection, JustifyContent, Overflow, Unit};
+
+use retgui_builder::ElementBuilder;
 
 const LOREM_IPSUM: &str = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In dolor tortor, congue eu lacus eget, faucibus aliquet nunc. Suspendisse aliquet ullamcorper fermentum. Pellentesque eu nibh sit amet nisi maximus pulvinar quis eget lectus. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Curabitur efficitur metus maximus libero maximus pharetra. Sed fringilla ac velit nec hendrerit. Mauris vulputate ante non tempor iaculis. In a diam eros. Mauris vehicula, lacus rhoncus consequat laoreet, lectus ligula venenatis leo, a aliquam odio ex ut lorem. Phasellus quis fermentum erat, ut pellentesque diam. Suspendisse pulvinar eros magna, vel ultricies metus luctus at. Pellentesque consequat a magna ut cursus. Nunc nisl velit, maximus blandit mauris quis, convallis cursus leo. Donec ut ultrices dui, a efficitur sem. Cras ac diam non orci sagittis tincidunt. Etiam auctor ultrices leo vitae vestibulum.
 

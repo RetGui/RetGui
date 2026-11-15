@@ -3,15 +3,13 @@ use std::collections::{HashMap, VecDeque};
 use std::ops::DerefMut;
 use std::rc::{Rc, Weak};
 
-use crate::events::{PointerButton, PointerId};
-
 use retgui_primitives::geometry::Point;
-
 
 use crate::app::{FOCUS, dequeue_event};
 use crate::elements::{DynElement, ElementInternals, WindowInternal};
 use crate::events::helpers::{call_user_event_handlers, find_target, freeze_target_list, nearest_common_ancestor};
 use crate::events::{ClickEvent, ClickTrigger, Event, EventKind, PointerEnterEvent, PointerLeaveEvent};
+use crate::events::{PointerButton, PointerId};
 use crate::text::text_context::TextContext;
 
 pub(super) fn dispatch_event(

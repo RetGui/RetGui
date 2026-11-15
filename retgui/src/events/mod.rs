@@ -3,10 +3,12 @@
 //! Import [`Event`] to use the behavior shared by every concrete event type,
 //! such as [`Event::stop_propagation`] and [`Event::prevent_default`].
 
-pub use crate::events::mouse_wheel::MouseWheel;
-pub(crate) use event_dispatch::EventDispatcher;
 pub use winit::event::{ElementState, Ime, Modifiers, MouseButton, MouseButton as PointerButton, MouseScrollDelta as ScrollDelta, PointerKind as PointerId};
 pub use winit::keyboard::{Key, KeyCode as Code, KeyLocation as Location, ModifiersState as KeyboardModifiers, NamedKey};
+
+pub use crate::events::mouse_wheel::MouseWheel;
+
+pub(crate) use event_dispatch::EventDispatcher;
 
 use std::any::Any;
 use std::cell::RefCell;
@@ -14,6 +16,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use retgui_primitives::geometry::Point;
+
 use winit::dpi::{LogicalPosition, PhysicalPosition};
 use winit::event::{ButtonSource, KeyEvent, PointerKind, PointerSource};
 

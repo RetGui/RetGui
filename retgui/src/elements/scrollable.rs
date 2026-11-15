@@ -4,7 +4,11 @@ use std::rc::Rc;
 
 use issho::{AccessEvent, ScrollAmount, ScrollEvent};
 
+use retgui_primitives::geometry::borders::CssRoundedRect;
 use retgui_primitives::geometry::{Point, Vec2};
+use retgui_primitives::geometry::{Rectangle, Size};
+
+use retgui_renderer::RenderList;
 
 use winit::event::ElementState;
 use winit::keyboard::KeyCode;
@@ -15,9 +19,6 @@ use crate::elements::{DynElement, ElementInternals};
 use crate::events::{Event, EventKind, PointerButton, PointerId, PointerType, ScrollDelta, ScrollEvent as RetGuiScrollEvent};
 use crate::layout::layout::{CssComputedBorder, Layout, draw_borders_generic};
 use crate::style::{Overflow, Style};
-use retgui_primitives::geometry::borders::CssRoundedRect;
-use retgui_primitives::geometry::{Rectangle, Size};
-use retgui_renderer::RenderList;
 
 /**
 

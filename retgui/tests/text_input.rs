@@ -1,9 +1,10 @@
-use retgui_builder::ElementBuilder;
 use retgui::drivers::headless::run;
 use retgui::elements::{Element, TextInput, Window};
 use retgui::geometry::{Point, Size};
 use retgui::style::{AlignItems, JustifyContent};
 use retgui::{RendererType, pct, px};
+
+use retgui_builder::ElementBuilder;
 
 #[cfg(test)]
 mod test_utils;

@@ -1,12 +1,9 @@
 use retgui::Color;
-
 use retgui::Gradient;
-
+use retgui::elements::Element;
 use retgui::elements::{AsElement, ScrollOptions};
 use retgui::events::{CheckboxToggledEvent, ClickEvent, CustomEvent, EventCallbackKind, EventListenerOptions, FocusEvent, KeyboardEvent, PointerButtonEvent, PointerCaptureEvent, PointerEnterEvent, PointerLeaveEvent, PointerMovedEvent, RadioValueChangedEvent, ScrollEvent, SliderValueChangedEvent, TextInputChangedEvent, UnfocusEvent};
 use retgui::style::{AlignContent, AlignItems, AlignSelf, Animation, BoxShadow, BoxSizing, Display, FlexDirection, FlexWrap, FontFamily, FontStyle, FontWeight, JustifyContent, Overflow, Position, ScrollbarColor, TextAlign, Unit};
-
-use retgui::elements::Element;
 
 pub trait ElementBuilder: Sized {
     type Element: Element;

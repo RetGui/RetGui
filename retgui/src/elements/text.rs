@@ -4,31 +4,32 @@ use std::sync::Arc;
 #[cfg(not(target_arch = "wasm32"))]
 use std::time;
 
-use parley::{Alignment, AlignmentOptions, ContentWidths, Selection};
-
-use rustc_hash::FxHashMap;
-
-use smol_str::{SmolStr, ToSmolStr};
-
 use gummy::{AvailableSpace, Size};
 
-use time::{Duration, Instant};
-#[cfg(target_arch = "wasm32")]
-use web_time as time;
-
-use crate::events::PointerButton;
-
-use winit::dpi;
+use parley::{Alignment, AlignmentOptions, ContentWidths, Selection};
 
 use retgui_primitives::brush::Brush;
 use retgui_primitives::geometry::{Point, Rectangle, Vec2};
 
 use retgui_renderer::RenderList;
+
 use retgui_resource_manager::ResourceManager;
+
+use rustc_hash::FxHashMap;
+
+use smol_str::{SmolStr, ToSmolStr};
+
+use time::{Duration, Instant};
+
+#[cfg(target_arch = "wasm32")]
+use web_time as time;
+
+use winit::dpi;
 
 use crate::elements::element_data::ElementData;
 use crate::elements::traits::clone_element;
 use crate::elements::{AsElement, DynElement, Element, ElementInternals};
+use crate::events::PointerButton;
 use crate::events::{Event, EventKind};
 use crate::layout::GummyTree;
 use crate::layout::layout_context::{GummyTextContext, LayoutContext, TextHashKey};

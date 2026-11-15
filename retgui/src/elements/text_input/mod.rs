@@ -1,8 +1,5 @@
 mod text_input_state;
 
-use retgui_primitives::Color;
-use retgui_primitives::geometry::{Rectangle, TrblRectangle};
-use retgui_renderer::text_renderer_data::TextScroll;
 use std::cell::RefCell;
 use std::ops::Deref;
 use std::rc::{Rc, Weak};
@@ -11,15 +8,19 @@ use std::time::Duration;
 
 use parley::BoundingBox;
 
-use winit::keyboard::{Key, NamedKey};
+use retgui_primitives::Color;
+use retgui_primitives::geometry::{Rectangle, TrblRectangle};
 
+use retgui_renderer::RenderList;
+use retgui_renderer::text_renderer_data::TextScroll;
 
 use retgui_resource_manager::ResourceManager;
 
 use winit::dpi::{LogicalPosition, LogicalSize};
 use winit::event::{Ime, MouseButton as PointerButton};
+use winit::keyboard::{Key, NamedKey};
 use winit::window::{ImeCapabilities, ImeEnableRequest, ImeHint, ImePurpose, ImeRequest, ImeRequestData};
-use retgui_renderer::RenderList;
+
 use crate::app::{ELEMENTS, WINDOW_MANAGER, request_apply_layout};
 use crate::elements::element_data::ElementData;
 use crate::elements::text_input::text_input_state::TextInputState;

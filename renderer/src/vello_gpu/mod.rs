@@ -22,9 +22,9 @@ use vello_common::{TextureId, kurbo, peniko};
 
 use vello_gpu::{RenderTarget, Renderer as VelloRenderer, Resources, Scene, TextureBindings};
 
-use winit::window::Window;
-
 use wgpu::{CurrentSurfaceTexture, TextureFormat};
+
+use winit::window::Window;
 
 use crate::RenderCommand;
 use crate::helpers::brush_to_paint;

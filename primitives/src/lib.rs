@@ -1,5 +1,7 @@
 pub use color::{Color, palette};
+
 pub use gradient::*;
+
 pub use hit_testable::HitTestable;
 
 pub mod geometry;

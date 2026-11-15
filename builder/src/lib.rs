@@ -1,14 +1,18 @@
-use retgui::elements::Element;
-
-mod constructors;
-mod element;
-
 #[cfg(feature = "audio")]
 pub use constructors::audio;
 #[cfg(feature = "code_highlighting")]
 pub use constructors::code_editor;
 pub use constructors::{button, calendar, checkbox, checkbox_group, container, dropdown, image, radio, radio_group, slider, text, text_input, tiny_vg, window};
 pub use element::ElementBuilder;
+#[cfg(feature = "audio")]
+pub use elements::AudioBuilder;
+pub use elements::{CalendarBuilder, DropdownBuilder, ImageBuilder, RadioBuilder, SliderBuilder, TextBuilder, TextInputBuilder, TinyVgBuilder};
+
+use retgui::elements::Element;
+
+mod constructors;
+mod element;
+mod elements;
 
 pub struct Builder<E: Element> {
     element: E,
@@ -53,11 +57,6 @@ impl<E: Element> ElementBuilder for E {
         self.clone()
     }
 }
-
-mod elements;
-#[cfg(feature = "audio")]
-pub use elements::AudioBuilder;
-pub use elements::{CalendarBuilder, DropdownBuilder, ImageBuilder, RadioBuilder, SliderBuilder, TextBuilder, TextInputBuilder, TinyVgBuilder};
 
 impl<E: Element> retgui::elements::AsElement for Builder<E> {
     fn with<R>(&self, callback: impl FnOnce(&dyn retgui::elements::ElementInternals) -> R) -> R {

@@ -11,21 +11,22 @@ use image::{draw_image, upload_image};
 use peniko::kurbo::{Affine, Shape};
 use peniko::{BlendMode, Color, Compose, Fill, Mix, kurbo};
 
-use softbuffer::Buffer;
-
-use vello_common::filter_effects::{Filter, FilterFunction};
-use vello_common::kurbo::Stroke;
-use vello_common::paint::PaintType;
-use vello_cpu::{Pixmap, RenderContext, Resources};
-
-use winit::window::Window;
-
 use retgui_primitives::brush::Brush;
 use retgui_primitives::geometry::{Rectangle, TOLERANCE};
 
 use retgui_resource_manager::ResourceManager as RetGuiResourceManager;
 
+use softbuffer::Buffer;
+
 use text::draw_text;
+
+use vello_common::filter_effects::{Filter, FilterFunction};
+use vello_common::kurbo::Stroke;
+use vello_common::paint::PaintType;
+
+use vello_cpu::{Pixmap, RenderContext, Resources};
+
+use winit::window::Window;
 
 use crate::RenderCommand;
 use crate::helpers::{brush_to_paint, rgba_to_encoded_u32};

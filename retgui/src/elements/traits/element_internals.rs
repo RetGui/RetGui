@@ -1,4 +1,3 @@
-use issho::{AccessEvent, IsshoError};
 use std::any::Any;
 use std::cell::RefCell;
 use std::ops::Deref;
@@ -6,17 +5,19 @@ use std::rc::{Rc, Weak};
 use std::sync::Arc;
 use std::time::Duration;
 
+use issho::{AccessEvent, IsshoError};
+
 use retgui_primitives::brush::Brush;
 use retgui_primitives::geometry::{Affine, ElementBox, Point, TrblRectangle};
 
 use retgui_renderer::RenderList;
-use retgui_resource_manager::ResourceManager;
 
-use crate::events::PointerId;
+use retgui_resource_manager::ResourceManager;
 
 use crate::app::{ELEMENTS, FOCUS, GUMMY_TREE, WINDOW_MANAGER, queue_event};
 use crate::elements::scrollable::{ScrollState, draw_scrollbar};
 use crate::elements::{DynElement, ElementData, ScrollOptions, WindowInternal};
+use crate::events::PointerId;
 use crate::events::pointer_capture::PointerCapture;
 use crate::events::{CheckboxToggledHandler, ClickHandler, CustomHandler, DropdownItemSelectedHandler, EventCallback, EventCallbackKind, EventKind, EventListenerOptions, FocusEvent, FocusHandler, KeyboardInputHandler, PointerCaptureHandler, PointerEnterHandler, PointerEventHandler, PointerLeaveHandler, PointerUpdateHandler, RadioValueChangedHandler, ScrollHandler, SliderValueChangedHandler, TextInputChangedHandler, UnfocusEvent, UnfocusHandler};
 use crate::layout::GummyTree;
@@ -1466,8 +1467,9 @@ fn restore_unfocused_outline(data: &mut crate::elements::element_data::ElementDa
 #[cfg(test)]
 mod tests {
     use crate::elements::ElementBuilder;
-    use super::*;
     use crate::elements::{AsElement, Button};
+
+    use super::*;
 
     #[test]
     fn outline_changes_while_focused_are_restored_on_unfocus() {

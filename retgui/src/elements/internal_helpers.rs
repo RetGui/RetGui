@@ -1,14 +1,16 @@
-use crate::app::GUMMY_TREE;
-use crate::elements::{DynElement, ElementInternals};
-use crate::layout::GummyTree;
-use crate::text::text_context::TextContext;
-
-use crate::elements::element_data::ElementData;
-use retgui_resource_manager::ResourceManager;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::Arc;
+
 use retgui_renderer::RenderList;
+
+use retgui_resource_manager::ResourceManager;
+
+use crate::app::GUMMY_TREE;
+use crate::elements::element_data::ElementData;
+use crate::elements::{DynElement, ElementInternals};
+use crate::layout::GummyTree;
+use crate::text::text_context::TextContext;
 
 /// A helper to push children.
 pub fn push_child_to_element(parent: &mut dyn ElementInternals, child: Rc<RefCell<dyn ElementInternals>>) {

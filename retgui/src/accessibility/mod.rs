@@ -117,14 +117,15 @@ pub(crate) fn detach_subtree(element: &mut dyn ElementInternals) {
 
 #[cfg(test)]
 mod tests {
-    use crate::elements::ElementBuilder;
     use std::cell::{Cell, RefCell};
     use std::rc::Rc;
 
     use issho::AccessEvent;
+
     use retgui_primitives::geometry::{Affine, Size};
 
     use crate::app::{dequeue_event, queue_event};
+    use crate::elements::ElementBuilder;
     use crate::elements::{Button, Container, DynElement, ElementData as _, ElementInternals, Text, Window};
     use crate::events::{ClickEvent, ClickTrigger, EventKind};
     use crate::text::text_context::TextContext;
