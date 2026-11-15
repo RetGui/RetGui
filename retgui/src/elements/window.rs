@@ -4,7 +4,6 @@ use retgui_logging::info;
 use std::cell::{Cell, RefCell};
 use std::rc::{Rc, Weak};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
 #[cfg(not(target_arch = "wasm32"))]
 use std::thread;
 #[cfg(not(target_arch = "wasm32"))]
@@ -77,7 +76,6 @@ pub(crate) struct WindowInternal {
     pub(crate) winit_window: Option<Arc<dyn WinitWindow>>,
     pub(crate) headless: bool,
     redraw_requested: Cell<bool>,
-    renderer_redraw_requested: Arc<AtomicBool>,
     pub(crate) render_buffers: Arc<crate::render_message::RenderBuffers>,
 
     pub(crate) access_tree: RetGuiAccessTree,
@@ -384,7 +382,6 @@ impl WindowInternal {
                 winit_window: None,
                 headless: false,
                 redraw_requested: Cell::new(false),
-                renderer_redraw_requested: Arc::new(AtomicBool::new(false)),
                 render_buffers: Arc::new(crate::render_message::RenderBuffers::new()),
                 access_tree: access_tree.clone(),
                 advanced_window_fn: f.map(|f| Box::new(f) as WindowConstructor),
@@ -439,7 +436,7 @@ impl WindowInternal {
     }
 
     pub(crate) fn redraw_requested(&self) -> bool {
-        self.redraw_requested.get() || self.renderer_redraw_requested.load(Ordering::Relaxed)
+        self.redraw_requested.get()
     }
 
     pub(crate) fn on_focused(&self, focused: bool) {
@@ -591,7 +588,6 @@ impl WindowInternal {
 
         self.perf_stats.toggle();
         let enabled = !self.perf_stats.is_enabled();
-        self.request_redraw();
         #[cfg(target_arch = "wasm32")]
         if let Some(renderer) = &mut self.renderer {
             renderer.set_vsync(enabled);
@@ -603,6 +599,7 @@ impl WindowInternal {
                 sender.send(RenderMessage::SetVsync(enabled)).await.ok();
             });
         }
+        self.request_redraw();
         true
     }
 
@@ -683,7 +680,6 @@ impl WindowInternal {
             self.redraw_requested.set(true);
             return;
         };
-        self.renderer_redraw_requested.store(false, Ordering::Relaxed);
         self.redraw_requested.set(false);
         let frame_start = Instant::now();
         let layout_stats = self.layout_window(text_context, resource_manager.clone());
@@ -727,7 +723,7 @@ impl WindowInternal {
                 let sender = self.sender.clone();
                 let resources = retgui_app.resource_manager.clone();
                 retgui_app.runtime.maybe_block_on(async move {
-                    sender.send(RenderMessage::SetRenderer(renderer, None)).await.expect("render worker stopped");
+                    sender.send(RenderMessage::SetRenderer(renderer)).await.expect("render worker stopped");
                     sender.send(RenderMessage::SetResourceManager(resources)).await.expect("render worker stopped");
                 });
             }
@@ -774,14 +770,9 @@ impl WindowInternal {
             not(target_arch = "wasm32") => {
                 let resource_manager = retgui_app.resource_manager.clone();
                 retgui_app.runtime.borrow_tokio_runtime().block_on(async {
-                    let mut renderer: Box<dyn Renderer + Send> = renderer_type.create(winit_window.clone()).await;
-                    let pending = self.renderer_redraw_requested.clone();
-                    let proxy = event_loop.create_proxy();
-                    renderer.set_redraw_callback(Box::new(move || {
-                        pending.store(true, Ordering::Relaxed);
-                    }));
+                    let renderer: Box<dyn Renderer + Send> = renderer_type.create(winit_window.clone()).await;
                     self.sender
-                        .send(RenderMessage::SetRenderer(renderer, Some(proxy)))
+                        .send(RenderMessage::SetRenderer(renderer))
                         .await
                         .expect("Failed to send renderer to renderer thread.");
                     self.sender
@@ -987,14 +978,12 @@ impl WindowInternal {
             let rt = LocalRuntime::new().unwrap();
             rt.block_on(async move {
                 let mut renderer: Option<Box<dyn Renderer>> = None;
-                let mut redraw_proxy = None;
                 let mut resource_manager: Option<Arc<ResourceManager>> = None;
                 while let Some(message) = receiver.recv().await {
                     match message {
-                        RenderMessage::SetRenderer(mut new_renderer, proxy) => {
+                        RenderMessage::SetRenderer(mut new_renderer) => {
                             new_renderer.surface_set_clear_color(Color::WHITE);
                             renderer = Some(new_renderer);
-                            redraw_proxy = proxy;
                         }
                         RenderMessage::SetResourceManager(new_resource_manager) => {
                             resource_manager = Some(new_resource_manager);
@@ -1033,9 +1022,6 @@ impl WindowInternal {
                                 completed_sender.send(frame).ok();
                             } else {
                                 buffers.recycle(buffer_index, render_list).await;
-                            }
-                            if let Some(proxy) = &redraw_proxy {
-                                proxy.wake_up();
                             }
                         }
                         RenderMessage::Close => {

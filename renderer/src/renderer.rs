@@ -20,8 +20,6 @@ pub trait Renderer: Any {
 
     fn surface_set_clear_color(&mut self, color: Color);
 
-    fn set_redraw_callback(&mut self, _callback: Box<dyn Fn() + Send + Sync>) {}
-
     fn set_vsync(&mut self, _enabled: bool) {}
     
     fn prepare(&mut self, render_list: &mut RenderList, resource_manager: Arc<ResourceManager>, window: Rectangle);

@@ -37,7 +37,7 @@ optional = true
 [dependencies.wgpu]
 version = "30.0.1"
 default-features = false
-features = ["wgsl", "vulkan", "dx12", "metal"]
+features = ["wgsl", "vulkan", "dx12"]
 optional = true
 
 [dependencies.peniko]
