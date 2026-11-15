@@ -32,8 +32,9 @@ use crate::{auto, px, rgba};
 /// # Example
 ///
 /// ```no_run
-/// use retgui::elements::{Dropdown, Element, Text, Window};
+/// use retgui::elements::{Dropdown, Text, Window};
 /// use retgui::{RetGuiOptions, retgui_main, px};
+/// use retgui_builder::{DropdownBuilder, ElementBuilder, TextBuilder};
 ///
 /// fn main() {
 ///     Window::new("Dropdown").push(
