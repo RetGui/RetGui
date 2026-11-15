@@ -89,7 +89,7 @@ impl<B: ElementBuilder<Element = Slider>> SliderBuilder for B {}
 
 pub trait ImageBuilder: ElementBuilder<Element = Image> {
     fn resource_id(self, resource_id: ResourceId) -> Self {
-        self.element().set_resource_id(resource_id);
+        self.element().set_resource(resource_id);
         self
     }
 }

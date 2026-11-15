@@ -84,23 +84,19 @@ impl ElementInternals for ImageInner {
         if !self.is_visible() {
             return;
         }
-
         self.maybe_start_overlay(render_list);
-
         self.add_hit_testable(render_list, true, _scale_factor);
-
-        // We draw the borders before we start any layers, so that we don't clip the borders.
         self.draw_borders(render_list, _scale_factor);
-
         let content_rectangle = self.element_data.layout.local_box().content_rectangle();
-
         render_list.draw_image(content_rectangle.scale(_scale_factor), self.resource_id.clone());
-
         self.maybe_end_overlay(render_list);
     }
 }
 
 impl Image {
+    /// Creates a new image element with the given resource id.
+    ///
+    /// If the resource is not yet loaded, it will be loaded asynchronously.
     pub fn new(resource_id: ResourceId) -> Self {
         let inner = Rc::new_cyclic(|me: &Weak<RefCell<ImageInner>>| {
             RefCell::new(ImageInner {
@@ -119,6 +115,9 @@ impl Image {
         Self { inner }
     }
 
+    /// Create an image element with a dummy resource id.
+    ///
+    /// This is useful for creating a placeholder image element before the actual resource is loaded.
     pub fn dummy() -> Self {
         let inner = Rc::new_cyclic(|me: &Weak<RefCell<ImageInner>>| {
             RefCell::new(ImageInner {
@@ -133,18 +132,21 @@ impl Image {
         Self { inner }
     }
 
-    pub(crate) fn resource_id(self, resource_id: ResourceId) -> Self {
-        self.inner.borrow_mut().set_image(resource_id);
+    /// Sets the resource id.
+    pub fn set_resource(self, resource_id: ResourceId) -> Self {
+        self.inner.borrow_mut().set_resource(resource_id);
         self
     }
 
-    pub fn get_resource_id(&self) -> ResourceId {
+    /// Sets the resource. If the resource is not yet loaded, it will be loaded asynchronously.
+    pub fn resource(&self) -> ResourceId {
         self.inner.borrow().get_resource_id().clone()
     }
 }
 
 impl ImageInner {
-    pub fn set_image(&mut self, resource_id: ResourceId) {
+    /// Sets the resource. If the resource is not yet loaded, it will be loaded asynchronously.
+    pub fn set_resource(&mut self, resource_id: ResourceId) {
         self.is_image_dirty = true;
         self.resource_id = resource_id.clone();
 
@@ -164,13 +166,8 @@ impl ImageInner {
         self.request_window_redraw();
     }
 
+    /// Returns the resource id.
     pub fn get_resource_id(&self) -> &ResourceId {
         &self.resource_id
-    }
-}
-
-impl Image {
-    pub fn set_resource_id(&self, resource_id: ResourceId) {
-        self.clone().resource_id(resource_id);
     }
 }
