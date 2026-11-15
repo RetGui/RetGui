@@ -362,8 +362,7 @@ impl FontFamily {
             font_family_name: [0; 64],
         };
 
-        let chars = font_family.chars().collect::<Vec<char>>();
-        font_family_res.font_family_length = chars.len() as u8;
+        font_family_res.font_family_length = font_family.len() as u8;
         font_family_res.font_family_name[..font_family.len()].copy_from_slice(font_family.as_bytes());
 
         font_family_res
@@ -388,5 +387,20 @@ impl Default for FontFamily {
             font_family_length: 0,
             font_family_name: [0; 64],
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::FontFamily;
+
+    #[test]
+    fn font_family_names_round_trip_utf8() {
+        for name in ["Roboto", "游ゴシック", "Café", "字"] {
+            assert_eq!(FontFamily::new(name).name(), Some(name));
+        }
+        let name = "é".repeat(32);
+        assert_eq!(FontFamily::new(&name).name(), Some(name.as_str()));
+        assert_eq!(FontFamily::new("").name(), None);
     }
 }
