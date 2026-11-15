@@ -12,6 +12,7 @@ audio = ["retgui/audio"]
 default = ["audio"]
 
 [dependencies]
+retgui_builder = { path = "../../builder" }
 serde = { version = "1", features = ["derive"] }
 util = { path = "../util" }
 

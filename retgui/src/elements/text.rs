@@ -381,7 +381,7 @@ impl Text {
         self.inner.borrow().selectable
     }
 
-    pub fn selectable(self, selectable: bool) -> Self {
+    pub(crate) fn selectable(self, selectable: bool) -> Self {
         self.inner.borrow_mut().set_selectable(selectable);
         self
     }
@@ -390,7 +390,7 @@ impl Text {
         self.inner.borrow().get_text().to_owned()
     }
 
-    pub fn text(self, text: &str) -> Self {
+    pub(crate) fn text(self, text: &str) -> Self {
         self.inner.borrow_mut().set_text(text);
         self
     }
@@ -629,4 +629,12 @@ impl TextState {
             });
         }
     }
+}
+
+impl Text {
+    pub fn set_selectable(&self, selectable: bool) { self.clone().selectable(selectable); }
+}
+
+impl Text {
+    pub fn set_text(&self, text: &str) { self.clone().text(text); }
 }

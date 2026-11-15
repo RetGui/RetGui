@@ -1,3 +1,4 @@
+use retgui_builder::{ElementBuilder, TextBuilder};
 #[allow(dead_code)]
 #[path = "../../examples/counter/main.rs"]
 pub mod counter;

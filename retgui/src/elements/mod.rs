@@ -61,3 +61,6 @@ mod text_input;
 mod tinyvg;
 mod traits;
 mod window;
+
+#[cfg(test)]
+pub(crate) use traits::builder::ElementBuilder;

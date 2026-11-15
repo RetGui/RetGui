@@ -1,3 +1,4 @@
+use retgui_builder::ElementBuilder;
 use retgui::drivers::headless::run;
 use retgui::elements::{Element, TextInput, Window};
 use retgui::geometry::{Point, Size};

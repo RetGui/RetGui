@@ -1,4 +1,5 @@
-use retgui::elements::{Container, Element, TextInput, Window};
+use retgui_builder::ElementBuilder;
+use retgui::elements::{Container, TextInput, Window};
 use retgui::rgb;
 use retgui::style::{AlignItems, Display, FlexDirection, JustifyContent, Overflow, Unit};
 

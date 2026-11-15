@@ -1,7 +1,8 @@
+use retgui_builder::{ElementBuilder, TextBuilder, TextInputBuilder};
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use retgui::elements::{Container, Element, Text, Window};
+use retgui::elements::{Container, Text, Window};
 use retgui::events::Event;
 use retgui::style::{AlignItems, BoxShadow, FlexDirection, JustifyContent};
 use retgui::{Color, RetGuiOptions, pct, px, retgui_main, rgb, rgba};

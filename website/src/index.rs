@@ -1,4 +1,5 @@
-use retgui::elements::{Container, Element, Text, TinyVg};
+use retgui_builder::{ElementBuilder, TextBuilder};
+use retgui::elements::{Container, Text, TinyVg};
 use retgui::style::{AlignItems, Display, FlexDirection, FlexWrap, FontWeight, JustifyContent, Overflow, Unit};
 use retgui::{Color, ResourceId, palette, pct, px, rgb};
 

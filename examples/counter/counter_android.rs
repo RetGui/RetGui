@@ -1,4 +1,5 @@
 #![cfg(target_os = "android")]
+use retgui_builder::{ElementBuilder, TextBuilder, TextInputBuilder, SliderBuilder, ImageBuilder, TinyVgBuilder, DropdownBuilder, CalendarBuilder, RadioBuilder};
 
 use retgui::{retgui_set_android_app};
 use retgui::winit::platform::android::activity::AndroidApp;

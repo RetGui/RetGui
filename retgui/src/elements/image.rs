@@ -133,7 +133,7 @@ impl Image {
         Self { inner }
     }
 
-    pub fn resource_id(self, resource_id: ResourceId) -> Self {
+    pub(crate) fn resource_id(self, resource_id: ResourceId) -> Self {
         self.inner.borrow_mut().set_image(resource_id);
         self
     }
@@ -166,5 +166,11 @@ impl ImageInner {
 
     pub fn get_resource_id(&self) -> &ResourceId {
         &self.resource_id
+    }
+}
+
+impl Image {
+    pub fn set_resource_id(&self, resource_id: ResourceId) {
+        self.clone().resource_id(resource_id);
     }
 }

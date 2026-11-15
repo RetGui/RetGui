@@ -1,8 +1,9 @@
+use retgui_builder::{ElementBuilder, TextBuilder, TextInputBuilder};
 use std::cell::RefCell;
 use std::rc::Rc;
 
 use retgui::drivers::headless::run;
-use retgui::elements::{Container, Element, Text, Window};
+use retgui::elements::{Container, Text, Window};
 use retgui::events::{Event, PointerButton};
 use retgui::geometry::Size;
 use retgui::style::{AlignItems, FlexDirection, JustifyContent};

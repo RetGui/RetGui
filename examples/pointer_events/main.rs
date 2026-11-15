@@ -1,3 +1,4 @@
+use retgui_builder::ElementBuilder;
 use std::rc::Rc;
 
 use retgui::elements::{AsElement, Container, Element, Text, Window};

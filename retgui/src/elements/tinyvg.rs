@@ -161,7 +161,7 @@ impl TinyVg {
         Self { inner }
     }
 
-    pub fn resource_id(self, resource_id: ResourceId) -> Self {
+    pub(crate) fn resource_id(self, resource_id: ResourceId) -> Self {
         self.inner.borrow_mut().set_resource_id(resource_id);
         self
     }
@@ -540,4 +540,8 @@ fn get_brush(fill_style: &Style, color_table: &ColorTable, override_color: &Opti
             Brush::Gradient(radial)
         }
     }
+}
+
+impl TinyVg {
+    pub fn set_resource_id(&self, resource_id: ResourceId) { self.clone().resource_id(resource_id); }
 }

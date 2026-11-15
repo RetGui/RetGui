@@ -306,7 +306,7 @@ impl Radio {
     }
 
     /// Hide the default circle radio button.
-    pub fn hide_radio(mut self) -> Self {
+    pub(crate) fn hide_radio(mut self) -> Self {
         self.set_hide_radio(true);
         self
     }
@@ -322,6 +322,7 @@ impl Radio {
 
 #[cfg(test)]
 mod retained_tests {
+    use crate::elements::ElementBuilder;
     use super::*;
     use crate::elements::Container;
 

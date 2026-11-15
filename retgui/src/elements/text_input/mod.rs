@@ -66,7 +66,7 @@ impl TextInput {
     }
 
     /// Disables the text input.
-    pub fn disabled(self, disabled: bool) -> Self {
+    pub(crate) fn disabled(self, disabled: bool) -> Self {
         self.inner.borrow_mut().disabled(disabled);
         self
     }
@@ -81,7 +81,7 @@ impl TextInput {
         self.inner.borrow().state.multiline
     }
 
-    pub fn multiline(self, multiline: bool) -> Self {
+    pub(crate) fn multiline(self, multiline: bool) -> Self {
         self.inner.borrow_mut().multiline(multiline);
         self
     }
@@ -97,13 +97,13 @@ impl TextInput {
     ///
     /// Updates the text content immediately. Mark layout and render caches as dirty. Layout and
     /// render caches will be computed in the next layout/render pass.
-    pub fn text(self, text: &str) -> Self {
+    pub(crate) fn text(self, text: &str) -> Self {
         self.inner.borrow_mut().set_text(text);
         self
     }
 
     /// Styles the text along ranges.
-    pub fn ranged_styles(self, ranged_styles: RangedStyles) -> Self {
+    pub(crate) fn ranged_styles(self, ranged_styles: RangedStyles) -> Self {
         self.inner.borrow_mut().set_ranged_styles(ranged_styles);
         self
     }
@@ -662,4 +662,21 @@ fn parley_box_to_rect(bounding_box: BoundingBox) -> Rectangle {
 
 fn physical_text_scroll(scroll_y: f32, scroll_height: f32, scale_factor: f64) -> TextScroll {
     TextScroll::new(scroll_y * scale_factor as f32, scroll_height * scale_factor as f32)
+}
+
+impl TextInput {
+    pub fn set_disabled(&self, disabled: bool) {
+        self.clone().disabled(disabled);
+    }
+    pub fn set_multiline(&self, multiline: bool) {
+        self.clone().multiline(multiline);
+    }
+}
+
+impl TextInput {
+    pub fn set_text(&self, text: &str) { self.clone().text(text); }
+}
+
+impl TextInput {
+    pub fn set_ranged_styles(&self, ranged_styles: RangedStyles) { self.clone().ranged_styles(ranged_styles); }
 }

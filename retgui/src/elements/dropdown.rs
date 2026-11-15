@@ -645,7 +645,7 @@ impl Dropdown {
         Self { inner }
     }
 
-    pub fn selected_item(self, index: usize) -> Self {
+    pub(crate) fn selected_item(self, index: usize) -> Self {
         let binding = self.inner.clone();
         let mut inner = binding.borrow_mut();
         inner.set_selected_element(index);
@@ -944,5 +944,11 @@ impl DropdownInner {
             DynElement::new(target),
             index,
         )));
+    }
+}
+
+impl Dropdown {
+    pub fn set_selected_item(&self, index: usize) {
+        self.clone().selected_item(index);
     }
 }

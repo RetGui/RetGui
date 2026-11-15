@@ -9,6 +9,7 @@ name = "jsframeworkbench"
 path = "main.rs"
 
 [dependencies]
+retgui_builder = { path = "../../builder" }
 
 rand = "0.10.3"
 

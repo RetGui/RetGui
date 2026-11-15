@@ -9,6 +9,7 @@ name = "custom_event"
 path = "main.rs"
 
 [dependencies]
+retgui_builder = { path = "../../builder" }
 util = { path = "../util" }
 
 [dependencies.retgui]

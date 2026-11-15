@@ -652,6 +652,7 @@ name = "counter"
 version = "0.1.0"
 dependencies = [
  "retgui",
+ "retgui_builder",
  "util",
 ]
 
@@ -752,6 +753,7 @@ name = "custom_event"
 version = "0.1.0"
 dependencies = [
  "retgui",
+ "retgui_builder",
  "util",
 ]
 
@@ -1167,6 +1169,7 @@ version = "0.1.0"
 dependencies = [
  "reqwest",
  "retgui",
+ "retgui_builder",
  "serde",
  "util",
 ]
@@ -2055,6 +2058,7 @@ dependencies = [
  "getrandom 0.4.3",
  "rand",
  "retgui",
+ "retgui_builder",
 ]
 
 [[package]]
@@ -2501,6 +2505,7 @@ name = "multiwindow"
 version = "0.1.0"
 dependencies = [
  "retgui",
+ "retgui_builder",
  "util",
 ]
 
@@ -3080,6 +3085,7 @@ name = "pointer_events"
 version = "0.1.0"
 dependencies = [
  "retgui",
+ "retgui_builder",
 ]
 
 [[package]]
@@ -3503,6 +3509,7 @@ dependencies = [
  "parley",
  "peniko",
  "pulldown-cmark",
+ "retgui_builder",
  "retgui_calendar",
  "retgui_logging",
  "retgui_primitives",
@@ -3520,6 +3527,14 @@ dependencies = [
  "web-time",
  "windows",
  "winit",
+]
+
+[[package]]
+name = "retgui_builder"
+version = "0.1.1"
+dependencies = [
+ "retgui",
+ "smol_str",
 ]
 
 [[package]]
@@ -4262,6 +4277,7 @@ name = "text"
 version = "0.1.0"
 dependencies = [
  "retgui",
+ "retgui_builder",
  "util",
 ]
 
@@ -5028,6 +5044,7 @@ dependencies = [
  "console_error_panic_hook",
  "open",
  "retgui",
+ "retgui_builder",
  "tracing-web",
  "util",
  "web-sys",

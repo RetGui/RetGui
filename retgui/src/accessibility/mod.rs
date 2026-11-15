@@ -117,6 +117,7 @@ pub(crate) fn detach_subtree(element: &mut dyn ElementInternals) {
 
 #[cfg(test)]
 mod tests {
+    use crate::elements::ElementBuilder;
     use std::cell::{Cell, RefCell};
     use std::rc::Rc;
 

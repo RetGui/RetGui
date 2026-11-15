@@ -1,5 +1,6 @@
 //! A calendar.
 
+use crate::elements::traits::builder::ElementBuilder;
 use retgui_calendar::sys_locale::get_locale_or_default;
 use retgui_calendar::{DateAddOptions, DateDuration, Locale, Month, Weekday, current_calendar_start, current_month, day_abbreviation, first_day_of_week, format_date_day_number, month_name, year_name};
 
@@ -293,7 +294,7 @@ impl Calendar {
         self.inner.borrow_mut().select_date(date);
     }
 
-    pub fn on_date_selected(self, handler: impl Fn(&mut CalendarDateSelectedEvent) + 'static) -> Self {
+    pub(crate) fn on_date_selected(self, handler: impl Fn(&mut CalendarDateSelectedEvent) + 'static) -> Self {
         self.add_event_listener(
             EventCallbackKind::CalendarDateSelected(Rc::new(handler)),
             EventListenerOptions::default(),
@@ -310,7 +311,7 @@ impl Calendar {
         self.inner.borrow_mut().set_end_year(year);
     }
 
-    pub fn start_year(self, year: i32) -> Self {
+    pub(crate) fn start_year(self, year: i32) -> Self {
         if year < MIN_YEAR {
             panic!("Dates below {MIN_YEAR} are not supported.");
         }
@@ -321,7 +322,7 @@ impl Calendar {
         self
     }
 
-    pub fn end_year(self, year: i32) -> Self {
+    pub(crate) fn end_year(self, year: i32) -> Self {
         if year < MIN_YEAR {
             panic!("Dates below {MIN_YEAR} are not supported.");
         }
@@ -576,5 +577,11 @@ mod retained_tests {
             assert_eq!(calendar.inner.borrow().selected_date, Some(dates[index]));
         }
         assert_eq!(calendar.inner.borrow().day_dates, dates);
+    }
+}
+
+impl Calendar {
+    pub fn add_date_selected_listener(&self, handler: impl Fn(&mut CalendarDateSelectedEvent) + 'static) {
+        self.clone().on_date_selected(handler);
     }
 }

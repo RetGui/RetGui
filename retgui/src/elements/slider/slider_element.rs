@@ -63,7 +63,7 @@ impl Slider {
         }
     }
 
-    pub fn value(self, value: f64) -> Self {
+    pub(crate) fn value(self, value: f64) -> Self {
         self.inner.borrow_mut().set_value(value);
         self
     }
@@ -72,7 +72,7 @@ impl Slider {
         self.inner.borrow().get_value()
     }
 
-    pub fn step(self, value: f64) -> Self {
+    pub(crate) fn step(self, value: f64) -> Self {
         self.inner.borrow_mut().set_step(value);
         self
     }
@@ -81,7 +81,7 @@ impl Slider {
         self.inner.borrow().get_step()
     }
 
-    pub fn min(self, min: f64) -> Self {
+    pub(crate) fn min(self, min: f64) -> Self {
         self.inner.borrow_mut().set_min(min);
         self
     }
@@ -90,7 +90,7 @@ impl Slider {
         self.inner.borrow().get_min()
     }
 
-    pub fn max(self, max: f64) -> Self {
+    pub(crate) fn max(self, max: f64) -> Self {
         self.inner.borrow_mut().set_max(max);
         self
     }
@@ -99,7 +99,7 @@ impl Slider {
         self.inner.borrow().get_max()
     }
 
-    pub fn direction(self, direction: SliderDirection) -> Self {
+    pub(crate) fn direction(self, direction: SliderDirection) -> Self {
         self.inner.borrow_mut().set_direction(direction);
         self
     }
@@ -108,7 +108,7 @@ impl Slider {
         self.inner.borrow().get_direction()
     }
 
-    pub fn thumb_size(self, thumb_size: f64) -> Self {
+    pub(crate) fn thumb_size(self, thumb_size: f64) -> Self {
         self.inner.borrow_mut().set_thumb_size(thumb_size);
         self
     }
@@ -117,7 +117,7 @@ impl Slider {
         self.inner.borrow().get_thumb_size()
     }
 
-    pub fn thumb_color(self, thumb_background_color: Brush) -> Self {
+    pub(crate) fn thumb_color(self, thumb_background_color: Brush) -> Self {
         self.inner.borrow_mut().set_thumb_color(thumb_background_color);
         self
     }
@@ -126,7 +126,7 @@ impl Slider {
         self.inner.borrow().get_thumb_brush()
     }
 
-    pub fn thumb_border_radius(self, top: (f32, f32), right: (f32, f32), bottom: (f32, f32), left: (f32, f32)) -> Self {
+    pub(crate) fn thumb_border_radius(self, top: (f32, f32), right: (f32, f32), bottom: (f32, f32), left: (f32, f32)) -> Self {
         self.inner
             .borrow_mut()
             .set_thumb_border_radius(top, right, bottom, left);
@@ -137,14 +137,14 @@ impl Slider {
         self.inner.borrow().get_thumb_border_radius()
     }
 
-    pub fn track_color(self, track_background_color: Color) -> Self {
+    pub(crate) fn track_color(self, track_background_color: Color) -> Self {
         self.inner
             .borrow_mut()
             .set_track_brush(Brush::Color(track_background_color));
         self
     }
 
-    pub fn track_gradient(self, track_background_gradient: Gradient) -> Self {
+    pub(crate) fn track_gradient(self, track_background_gradient: Gradient) -> Self {
         self.inner
             .borrow_mut()
             .set_track_brush(Brush::Gradient(track_background_gradient));
@@ -155,7 +155,7 @@ impl Slider {
         self.inner.borrow().get_track_brush()
     }
 
-    pub fn track_border_radius(self, top: (f32, f32), right: (f32, f32), bottom: (f32, f32), left: (f32, f32)) -> Self {
+    pub(crate) fn track_border_radius(self, top: (f32, f32), right: (f32, f32), bottom: (f32, f32), left: (f32, f32)) -> Self {
         self.inner
             .borrow_mut()
             .set_track_border_radius(top, right, bottom, left);
@@ -506,4 +506,49 @@ impl ElementInternals for SliderInner {
         let contains = thumb_rect.contains(&point) || rect.contains(&point);
         contains && element_data.layout.clip_bounds.is_none_or(|clip| clip.contains(&point))
     }
+}
+
+impl Slider {
+    pub fn set_track_color(&self, track_background_color: Color) {
+        self.clone().track_color(track_background_color);
+    }
+    pub fn set_track_gradient(&self, track_background_gradient: Gradient) {
+        self.clone().track_gradient(track_background_gradient);
+    }
+}
+
+impl Slider {
+    pub fn set_value(&self, value: f64) { self.clone().value(value); }
+}
+
+impl Slider {
+    pub fn set_step(&self, value: f64) { self.clone().step(value); }
+}
+
+impl Slider {
+    pub fn set_min(&self, min: f64) { self.clone().min(min); }
+}
+
+impl Slider {
+    pub fn set_max(&self, max: f64) { self.clone().max(max); }
+}
+
+impl Slider {
+    pub fn set_direction(&self, direction: SliderDirection) { self.clone().direction(direction); }
+}
+
+impl Slider {
+    pub fn set_thumb_size(&self, thumb_size: f64) { self.clone().thumb_size(thumb_size); }
+}
+
+impl Slider {
+    pub fn set_thumb_color(&self, thumb_background_color: Brush) { self.clone().thumb_color(thumb_background_color); }
+}
+
+impl Slider {
+    pub fn set_thumb_border_radius(&self, top: (f32, f32), right: (f32, f32), bottom: (f32, f32), left: (f32, f32)) { self.clone().thumb_border_radius(top, right, bottom, left); }
+}
+
+impl Slider {
+    pub fn set_track_border_radius(&self, top: (f32, f32), right: (f32, f32), bottom: (f32, f32), left: (f32, f32)) { self.clone().track_border_radius(top, right, bottom, left); }
 }

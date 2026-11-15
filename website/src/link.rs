@@ -1,6 +1,7 @@
+use retgui_builder::ElementBuilder;
 use std::rc::Rc;
 
-use retgui::elements::{Container, Element};
+use retgui::elements::Container;
 use retgui::events::PointerButton;
 
 #[allow(non_snake_case)]

@@ -276,10 +276,11 @@ impl Drop for HeadlessApp {
 
 #[cfg(test)]
 mod harness_tests {
+    use crate::elements::ElementBuilder;
     use std::cell::Cell;
     use std::rc::Rc;
 
-    use crate::elements::{Container, Element, Window};
+    use crate::elements::{Container, Window};
     use crate::{RendererType, px};
     use retgui_primitives::geometry::Size;
 

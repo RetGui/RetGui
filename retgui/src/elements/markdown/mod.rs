@@ -1,3 +1,4 @@
+use crate::elements::traits::builder::ElementBuilder;
 use std::path::PathBuf;
 use std::str::FromStr;
 

@@ -1,7 +1,8 @@
+use retgui_builder::{ElementBuilder, TextBuilder};
 use crate::link::Link;
 use crate::router::NavigateFn;
 use crate::theme::{NAVBAR_BACKGROUND_COLOR, NAVBAR_TEXT_COLOR, wrapper};
-use retgui::elements::{Container, Element, Text};
+use retgui::elements::{Container, Text};
 use retgui::style::{AlignItems, Display, FontWeight, JustifyContent, Unit};
 use retgui::{pct, px, rgb};
 

@@ -1,5 +1,6 @@
 //! Stores one or more elements.
 
+use crate::elements::traits::builder::ElementBuilder;
 use std::cell::{OnceCell, RefCell};
 use std::collections::HashSet;
 use std::path::Path;
@@ -205,7 +206,7 @@ impl Audio {
         Self { inner }
     }
 
-    pub fn controls(self, controls: bool) -> Self {
+    pub(crate) fn controls(self, controls: bool) -> Self {
         self.inner.borrow_mut().set_controls(controls);
         self
     }
@@ -378,4 +379,8 @@ fn format_time(current_time: u32, total_time: u32) -> String {
             current_minutes, current_seconds, total_minutes, total_seconds
         )
     }
+}
+
+impl Audio {
+    pub fn set_controls(&self, controls: bool) { self.clone().controls(controls); }
 }

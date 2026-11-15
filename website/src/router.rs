@@ -1,3 +1,4 @@
+use retgui_builder::ElementBuilder;
 use retgui::elements::{Container, Element, Window};
 use retgui::pct;
 use retgui::style::{Display, FlexDirection};

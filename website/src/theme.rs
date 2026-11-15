@@ -1,4 +1,5 @@
-use retgui::elements::{Container, Element};
+use retgui_builder::ElementBuilder;
+use retgui::elements::Container;
 use retgui::style::Unit;
 use retgui::{Color, pct};
 

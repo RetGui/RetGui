@@ -1465,8 +1465,9 @@ fn restore_unfocused_outline(data: &mut crate::elements::element_data::ElementDa
 
 #[cfg(test)]
 mod tests {
+    use crate::elements::ElementBuilder;
     use super::*;
-    use crate::elements::{AsElement, Button, Element};
+    use crate::elements::{AsElement, Button};
 
     #[test]
     fn outline_changes_while_focused_are_restored_on_unfocus() {
