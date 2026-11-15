@@ -11,7 +11,7 @@ use issho::{SelectionData, SelectionGroup};
 
 use retgui_resource_manager::ResourceManager;
 
-use winit::keyboard::KeyCode;
+use winit::keyboard::{KeyCode, ModifiersState};
 use retgui_renderer::RenderList;
 use crate::elements::element_data::ElementData;
 use crate::elements::internal_helpers::{apply_generic_container_layout, draw_generic_container, push_child_to_element};
@@ -97,11 +97,7 @@ impl ElementInternals for RadioGroupInner {
         scrollable::handle_scroll_logic(self, event);
 
         if let EventKind::KeyDown(keyboard_event) = event {
-            let direction = match keyboard_event.code {
-                KeyCode::ArrowDown | KeyCode::ArrowRight => Some(1),
-                KeyCode::ArrowUp | KeyCode::ArrowLeft => Some(-1),
-                _ => None,
-            };
+            let direction = selection_direction(keyboard_event.code, keyboard_event.modifiers);
 
             if direction.is_some_and(|direction| self.move_selection(direction)) {
                 keyboard_event.stop_propagation();
@@ -112,6 +108,17 @@ impl ElementInternals for RadioGroupInner {
 
     fn push(&mut self, child: DynElement) {
         push_child_to_element(self, child.inner);
+    }
+}
+
+fn selection_direction(code: KeyCode, modifiers: ModifiersState) -> Option<isize> {
+    if modifiers.control_key() || modifiers.alt_key() || modifiers.meta_key() {
+        return None;
+    }
+    match code {
+        KeyCode::ArrowDown | KeyCode::ArrowRight => Some(1),
+        KeyCode::ArrowUp | KeyCode::ArrowLeft => Some(-1),
+        _ => None,
     }
 }
 
