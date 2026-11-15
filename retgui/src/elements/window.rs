@@ -666,7 +666,9 @@ impl WindowInternal {
 
     fn on_render_completed(&mut self, completion: RenderCompletion) {
         match completion {
+            #[cfg(not(target_arch = "wasm32"))]
             RenderCompletion::Frame(frame) => self.perf_stats.update_stats(frame.total, frame.layout, frame.render),
+            #[cfg(not(target_arch = "wasm32"))]
             RenderCompletion::Present { present, finished } => {
                 present();
                 finished.send(()).ok();

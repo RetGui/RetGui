@@ -1,4 +1,4 @@
-use retgui_builder::{ElementBuilder, TextBuilder, TextInputBuilder};
+use retgui_builder::{ElementBuilder, TextBuilder};
 use std::cell::RefCell;
 use std::rc::Rc;
 

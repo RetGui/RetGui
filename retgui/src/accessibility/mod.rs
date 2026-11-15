@@ -125,7 +125,7 @@ mod tests {
     use retgui_primitives::geometry::{Affine, Size};
 
     use crate::app::{dequeue_event, queue_event};
-    use crate::elements::{Button, Container, DynElement, Element as _, ElementData as _, ElementInternals, Text, Window};
+    use crate::elements::{Button, Container, DynElement, ElementData as _, ElementInternals, Text, Window};
     use crate::events::{ClickEvent, ClickTrigger, EventKind};
     use crate::text::text_context::TextContext;
 

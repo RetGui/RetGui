@@ -9,6 +9,7 @@ use retgui_resource_manager::ResourceManager;
 
 use retgui_runtime::sync::Mutex;
 
+#[cfg(not(target_arch = "wasm32"))]
 use crate::perf_stats::FrameStats;
 
 pub(crate) struct RenderBuffers {
@@ -85,7 +86,9 @@ pub struct FrameRequest {
 }
 
 pub(crate) enum RenderCompletion {
+    #[cfg(not(target_arch = "wasm32"))]
     Frame(FrameStats),
+    #[cfg(not(target_arch = "wasm32"))]
     Present {
         present: retgui_renderer::renderer::Presentation,
         finished: retgui_runtime::sync::oneshot::Sender<()>,

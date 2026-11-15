@@ -1,4 +1,4 @@
-use retgui_builder::{ElementBuilder, TextBuilder, TextInputBuilder};
+use retgui_builder::{ElementBuilder, TextBuilder};
 use retgui::elements::{Container, Element, Text, Window};
 use retgui::style::{AlignItems, FlexDirection, JustifyContent};
 use retgui::{Color, RetGuiOptions, pct, px, retgui_main, rgb};

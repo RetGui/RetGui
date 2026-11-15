@@ -311,27 +311,6 @@ impl Calendar {
         self.inner.borrow_mut().set_end_year(year);
     }
 
-    pub(crate) fn start_year(self, year: i32) -> Self {
-        if year < MIN_YEAR {
-            panic!("Dates below {MIN_YEAR} are not supported.");
-        }
-        if year > MAX_YEAR {
-            panic!("Dates above {MAX_YEAR} are not supported.");
-        }
-        self.inner.borrow_mut().set_start_year(year);
-        self
-    }
-
-    pub(crate) fn end_year(self, year: i32) -> Self {
-        if year < MIN_YEAR {
-            panic!("Dates below {MIN_YEAR} are not supported.");
-        }
-        if year > MAX_YEAR {
-            panic!("Dates above {MAX_YEAR} are not supported.");
-        }
-        self.inner.borrow_mut().set_end_year(year);
-        self
-    }
 }
 
 impl CalendarInner {
@@ -353,10 +332,10 @@ impl CalendarInner {
         if self.selected_date == date && !month_changed {
             return;
         }
-        if !month_changed {
-            if let Some(previous) = self.selected_index.take() {
-                self.set_day_selected(previous, false);
-            }
+        if !month_changed
+            && let Some(previous) = self.selected_index.take()
+        {
+            self.set_day_selected(previous, false);
         }
         self.selected_date = date;
         if month_changed {
@@ -556,6 +535,12 @@ impl CalendarInner {
     }
 }
 
+impl Calendar {
+    pub fn add_date_selected_listener(&self, handler: impl Fn(&mut CalendarDateSelectedEvent) + 'static) {
+        self.clone().on_date_selected(handler);
+    }
+}
+
 #[cfg(test)]
 mod retained_tests {
     use super::*;
@@ -577,11 +562,5 @@ mod retained_tests {
             assert_eq!(calendar.inner.borrow().selected_date, Some(dates[index]));
         }
         assert_eq!(calendar.inner.borrow().day_dates, dates);
-    }
-}
-
-impl Calendar {
-    pub fn add_date_selected_listener(&self, handler: impl Fn(&mut CalendarDateSelectedEvent) + 'static) {
-        self.clone().on_date_selected(handler);
     }
 }

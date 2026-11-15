@@ -9,7 +9,6 @@ use issho::{AccessEvent, IsshoError, SelectionData, SelectionGroupItem};
 use retgui_primitives::brush::Brush;
 use retgui_primitives::geometry::{Affine, Circle, TrblRectangle};
 
-
 use retgui_resource_manager::ResourceManager;
 
 use winit::keyboard::KeyCode;
@@ -303,12 +302,6 @@ impl Radio {
         let mut inner = self.inner.borrow_mut();
         inner.hide_radio = value;
         inner.request_window_redraw();
-    }
-
-    /// Hide the default circle radio button.
-    pub(crate) fn hide_radio(mut self) -> Self {
-        self.set_hide_radio(true);
-        self
     }
 
     pub fn get_label(&self) -> String {

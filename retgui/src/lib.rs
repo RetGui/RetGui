@@ -41,6 +41,7 @@ mod app;
 mod clipboard;
 mod options;
 mod perf_stats;
+#[cfg(not(target_arch = "wasm32"))]
 mod platform;
 mod utils;
 mod window_manager;

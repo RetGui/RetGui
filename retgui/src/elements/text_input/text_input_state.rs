@@ -953,9 +953,9 @@ fn copy(drv: &mut PlainEditorDriver) {
 }
 
 fn cut(drv: &mut PlainEditorDriver) {
-    if let Some(text) = drv.editor.selected_text() {
-        if crate::clipboard::copy(text.to_owned()) {
-            drv.delete_selection(true);
-        }
+    if let Some(text) = drv.editor.selected_text()
+        && crate::clipboard::copy(text.to_owned())
+    {
+        drv.delete_selection(true);
     }
 }
