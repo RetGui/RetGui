@@ -125,6 +125,7 @@ pub(super) fn call_user_event_handlers(event: &mut EventKind, capturing: bool) {
             }
             (EventKind::SliderValueChanged(event), EventCallbackKind::SliderValueChanged(handler)) => handler(event),
             (EventKind::RadioValueChanged(event), EventCallbackKind::RadioValueChanged(handler)) => handler(event),
+            (EventKind::CalendarDateSelected(event), EventCallbackKind::CalendarDateSelected(handler)) => handler(event),
             (EventKind::CheckboxToggled(event), EventCallbackKind::CheckboxToggled(handler)) => handler(event),
             (EventKind::TextInputChanged(event), EventCallbackKind::TextInputChanged(handler)) => handler(event),
             _ => {}

@@ -502,6 +502,21 @@ impl RadioValueChangedEvent {
 }
 
 #[derive(Clone)]
+pub struct CalendarDateSelectedEvent {
+    base: BaseEvent,
+    pub date: jiff::civil::Date,
+}
+
+impl CalendarDateSelectedEvent {
+    pub fn new(target: DynElement, date: jiff::civil::Date) -> Self {
+        Self {
+            base: BaseEvent::new(target),
+            date,
+        }
+    }
+}
+
+#[derive(Clone)]
 pub struct CheckboxToggledEvent {
     base: BaseEvent,
     pub label: String,
@@ -748,6 +763,16 @@ impl Event for CheckboxToggledEvent {
     }
 }
 
+impl Event for CalendarDateSelectedEvent {
+    fn base(&self) -> &BaseEvent {
+        &self.base
+    }
+
+    fn base_mut(&mut self) -> &mut BaseEvent {
+        &mut self.base
+    }
+}
+
 impl Event for CustomEvent {
     fn base(&self) -> &BaseEvent {
         &self.base
@@ -757,6 +782,8 @@ impl Event for CustomEvent {
         &mut self.base
     }
 }
+
+pub type CalendarDateSelectedHandler = Rc<dyn Fn(&mut CalendarDateSelectedEvent)>;
 
 pub type CheckboxToggledHandler = Rc<dyn Fn(&mut CheckboxToggledEvent)>;
 pub type ClickHandler = Rc<dyn Fn(&mut ClickEvent)>;
@@ -779,6 +806,7 @@ pub type UserEventData = dyn Any;
 
 #[derive(Clone)]
 pub enum EventCallbackKind {
+    CalendarDateSelected(CalendarDateSelectedHandler),
     CheckboxToggled(CheckboxToggledHandler),
     Click(ClickHandler),
     Custom(CustomHandler),
@@ -839,6 +867,7 @@ pub enum EventKind {
     Custom(CustomEvent),
     RadioValueChanged(RadioValueChangedEvent),
     Unfocus(UnfocusEvent),
+    CalendarDateSelected(CalendarDateSelectedEvent),
     CheckboxToggled(CheckboxToggledEvent),
 }
 
@@ -895,6 +924,7 @@ impl Event for EventKind {
             Self::Custom(event) => event.base(),
             Self::RadioValueChanged(event) => event.base(),
             Self::Unfocus(event) => event.base(),
+            Self::CalendarDateSelected(event) => event.base(),
             Self::CheckboxToggled(event) => event.base(),
         }
     }
@@ -924,6 +954,7 @@ impl Event for EventKind {
             Self::Custom(event) => event.base_mut(),
             Self::RadioValueChanged(event) => event.base_mut(),
             Self::Unfocus(event) => event.base_mut(),
+            Self::CalendarDateSelected(event) => event.base_mut(),
             Self::CheckboxToggled(event) => event.base_mut(),
         }
     }

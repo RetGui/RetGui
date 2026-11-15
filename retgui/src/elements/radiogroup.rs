@@ -117,13 +117,18 @@ impl ElementInternals for RadioGroupInner {
 
 impl RadioGroupInner {
     fn move_selection(&mut self, direction: isize) -> bool {
-        let radios = self
-            .element_data
-            .children
-            .iter()
-            .filter(|child| (child.borrow().deref() as &dyn Any).is::<RadioInner>())
-            .cloned()
-            .collect::<Vec<_>>();
+        fn collect(children: &[DynElement], radios: &mut Vec<DynElement>) {
+            for child in children {
+                let element = child.borrow();
+                if (element.deref() as &dyn Any).is::<RadioInner>() {
+                    radios.push(child.clone());
+                } else if !(element.deref() as &dyn Any).is::<RadioGroupInner>() {
+                    collect(&element.element_data().children, radios);
+                }
+            }
+        }
+        let mut radios = Vec::new();
+        collect(&self.element_data.children, &mut radios);
         let Some(current_index) = radios.iter().position(|radio| radio.borrow().is_focused()) else {
             return false;
         };
@@ -140,13 +145,6 @@ impl RadioGroupInner {
                 .expect("radio group child changed type during keyboard navigation");
             next.focus();
             next.set_value_from_group();
-        }
-        for radio in radios {
-            let mut radio = radio.inner.borrow_mut();
-            let radio = (radio.deref_mut() as &mut dyn Any)
-                .downcast_mut::<RadioInner>()
-                .expect("radio group child changed type during keyboard navigation");
-            radio.set_accessibility_selection();
         }
         true
     }

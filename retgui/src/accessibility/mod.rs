@@ -44,25 +44,17 @@ thread_local! {
         let event_dispatcher = tree.event_dispatcher.clone();
         let text_context = tree.text_context.clone();
         tree.set_on_access_event(move |tree, node_id, event| -> Result<(), IsshoError> {
-            let element: Rc<RefCell<dyn ElementInternals>> = {
-                let Some(node) = tree.get_node(node_id) else {
-                    return Err(IsshoError::MissingAccessNode(node_id));
-                };
-                let Some(context) = node.context() else {
-                    return Err(IsshoError::MissingAccessNode(node_id));
-                };
-                context.upgrade().unwrap()
-            };
+            let node = tree.get_node(node_id).ok_or(IsshoError::MissingAccessNode(node_id))?;
+            let target = node.context().ok_or(IsshoError::MissingAccessNode(node_id))?.clone();
+            drop(node);
+            let target = target.upgrade().ok_or(IsshoError::MissingAccessNode(node_id))?;
             {
-                let mut element = element.borrow_mut();
-                crate::elements::scrollable::handle_accessibility_scroll_event(&mut *element, &event);
-                element.on_access_event(event)?;
+                let mut target = target.borrow_mut();
+                crate::elements::scrollable::handle_accessibility_scroll_event(&mut *target, &event);
+                target.on_access_event(event)?;
             }
-
-            let mut event_dispatcher = event_dispatcher.borrow_mut();
-            let mut text_context = text_context.borrow_mut();
-            if let Some(text_context) = text_context.as_mut() {
-                event_dispatcher.dispatch_queued_events(text_context);
+            if let Some(context) = text_context.borrow_mut().as_mut() {
+                event_dispatcher.borrow_mut().dispatch_queued_events(context);
             }
             Ok(())
         });

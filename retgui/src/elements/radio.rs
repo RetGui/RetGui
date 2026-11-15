@@ -1,8 +1,6 @@
 //! A selectable circle.
 
-use std::any::Any;
 use std::cell::RefCell;
-use std::ops::DerefMut;
 use std::rc::{Rc, Weak};
 use std::sync::Arc;
 
@@ -28,6 +26,28 @@ use crate::style::Unit;
 use crate::text::text_context::TextContext;
 use crate::{auto, px, rgb};
 
+#[derive(Default)]
+struct RadioSelection {
+    selected: Option<Weak<RefCell<dyn ElementInternals>>>,
+}
+
+thread_local! {
+    static RADIO_SELECTIONS: RefCell<std::collections::HashMap<usize, Weak<RefCell<RadioSelection>>>> = RefCell::new(Default::default());
+}
+
+fn selection_for(value: &Rc<RefCell<String>>) -> Rc<RefCell<RadioSelection>> {
+    RADIO_SELECTIONS.with_borrow_mut(|selections| {
+        let key = Rc::as_ptr(value) as usize;
+        if let Some(selection) = selections.get(&key).and_then(Weak::upgrade) {
+            return selection;
+        }
+        selections.retain(|_, selection| selection.strong_count() > 0);
+        let selection = Rc::new(RefCell::new(RadioSelection::default()));
+        selections.insert(key, Rc::downgrade(&selection));
+        selection
+    })
+}
+
 #[derive(Clone)]
 pub struct Radio {
     pub(crate) inner: Rc<RefCell<RadioInner>>,
@@ -45,6 +65,7 @@ pub(crate) struct RadioInner {
     label: String,
     hide_radio: bool,
     active_value: Rc<RefCell<String>>,
+    selection: Rc<RefCell<RadioSelection>>,
 }
 
 impl Default for Radio {
@@ -193,35 +214,28 @@ impl ElementInternals for RadioInner {
 impl RadioInner {
     fn set_value(&mut self) {
         self.set_value_from_group();
-
-        let me = self.element_data.me.upgrade();
-        let parent = self.element_data.parent.as_ref().and_then(Weak::upgrade);
-        if let Some(parent) = parent {
-            for sibling in parent.borrow().element_data().children.clone() {
-                if me.as_ref().is_some_and(|me| Rc::ptr_eq(me, &sibling.inner)) {
-                    continue;
-                }
-                if let Some(radio) =
-                    (sibling.inner.borrow_mut().deref_mut() as &mut dyn Any).downcast_mut::<RadioInner>()
-                {
-                    radio.set_accessibility_selection();
-                }
-            }
-        }
     }
 
     pub(super) fn set_value_from_group(&mut self) {
-        let selection_changed = !self.is_selected();
+        if self.selection.borrow().selected.as_ref().is_some_and(|selected| selected.ptr_eq(&self.element_data.me)) {
+            return;
+        }
+        let previous = self.selection.borrow_mut().selected.clone();
+        self.selection.borrow_mut().selected = Some(self.element_data.me.clone());
         self.active_value.replace(self.value.clone());
+        if let Some(previous) = previous.and_then(|previous| previous.upgrade()) {
+            let mut previous = previous.borrow_mut();
+            previous.element_data_mut().set_accessibility_selection_data(Some(
+                SelectionData::SelectionGroupItem(SelectionGroupItem { is_selected: false }),
+            ));
+            previous.request_window_redraw();
+        }
         self.set_accessibility_selection();
         let target = self.element_data.me.upgrade().unwrap();
         queue_event(EventKind::RadioValueChanged(RadioValueChangedEvent::new(
             DynElement::new(target),
             self.active_value.clone(),
         )));
-        if selection_changed {
-            self.request_window_redraw();
-        }
     }
 
     fn is_selected(&self) -> bool {
@@ -234,11 +248,13 @@ impl RadioInner {
             .set_accessibility_selection_data(Some(SelectionData::SelectionGroupItem(SelectionGroupItem {
                 is_selected,
             })));
+        self.request_window_redraw();
     }
 }
 
 impl Radio {
     pub fn new(value: &str, label: &str, active_value: Rc<RefCell<String>>) -> Self {
+        let selection = selection_for(&active_value);
         let radius = 7.0;
         let inner = Rc::new_cyclic(|me: &Weak<RefCell<RadioInner>>| {
             RefCell::new(RadioInner {
@@ -249,6 +265,7 @@ impl Radio {
                 label: label.to_string(),
                 hide_radio: false,
                 active_value,
+                selection,
             })
         });
         let mut inner_mut = inner.borrow_mut();
@@ -270,6 +287,9 @@ impl Radio {
         {
             inner_mut.element_data.set_accessibility_role(issho::Role::RadioButton);
             inner_mut.element_data.set_accessibility_name(label.to_string());
+            if inner_mut.is_selected() {
+                inner_mut.selection.borrow_mut().selected = Some(inner_mut.element_data.me.clone());
+            }
             inner_mut.set_accessibility_selection();
         }
 
@@ -297,5 +317,33 @@ impl Radio {
 
     pub fn get_value(&self) -> String {
         self.inner.borrow().value.clone()
+    }
+}
+
+#[cfg(test)]
+mod retained_tests {
+    use super::*;
+    use crate::elements::Container;
+
+    #[test]
+    fn selection_changes_only_previous_and_next_radio() {
+        let value = Rc::new(RefCell::new("first".to_string()));
+        let first = Radio::new("first", "First", value.clone());
+        let second = Radio::new("second", "Second", value);
+        let unrelated = Container::new();
+        let _root = Container::new().push(first.clone()).push(second.clone()).push(unrelated.clone());
+        // An event must not borrow or traverse unrelated elements.
+        let _unrelated_borrow = unrelated.inner.borrow_mut();
+        assert!(second.inner.borrow_mut().on_access_event(AccessEvent::Select).is_ok());
+        for (radio, selected) in [(&first, false), (&second, true)] {
+            radio.with(|element| {
+                let data = element.element_data();
+                let node = data.access_tree.get_node(data.access_key.unwrap()).unwrap();
+                let Some(SelectionData::SelectionGroupItem(item)) = node.selection_data() else {
+                    panic!("missing radio selection");
+                };
+                assert_eq!(item.is_selected, selected);
+            });
+        }
     }
 }

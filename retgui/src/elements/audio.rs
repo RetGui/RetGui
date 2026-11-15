@@ -342,6 +342,7 @@ impl AudioInner {
                 self.duration.clone().text(&time);
             }
             sound_data.end_notifier.take_with(|| {
+                self.play_button.clone().accessibility_name("play");
                 self.play_button_icon.clone().resource_id(self.play_icon.clone());
             });
         }

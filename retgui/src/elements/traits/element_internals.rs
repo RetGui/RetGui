@@ -810,6 +810,7 @@ pub trait ElementInternals: ElementData + Any + Drop {
 
     fn set_display(&mut self, display: Display) {
         self.style_mut().set_display(display);
+        self.update_accessibility_visibility();
         self.update_gummy_style();
     }
 
@@ -829,7 +830,15 @@ pub trait ElementInternals: ElementData + Any + Drop {
 
     fn set_visible(&mut self, visible: bool) {
         self.style_mut().set_visible(visible);
+        self.update_accessibility_visibility();
         self.request_window_redraw();
+    }
+
+    fn update_accessibility_visibility(&self) {
+        let data = self.element_data();
+        if let Some(key) = data.access_key {
+            data.access_tree.set_hidden(key, !self.is_visible());
+        }
     }
 
     fn set_margin(&mut self, top: Unit, right: Unit, bottom: Unit, left: Unit) {

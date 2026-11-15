@@ -107,6 +107,15 @@ impl ElementData for DropdownInner {
 }
 
 impl ElementInternals for DropdownInner {
+    fn on_access_event(&mut self, event: issho::AccessEvent) -> Result<(), issho::IsshoError> {
+        match event {
+            issho::AccessEvent::Expand => self.open_menu(),
+            issho::AccessEvent::Collapse => self.close_menu(),
+            _ => {}
+        }
+        Ok(())
+    }
+
     fn deep_clone(&self) -> DynElement {
         let element = clone_element::<Self, _>(self, |element, gummy_tree| {
             let mut element = element.borrow_mut();
@@ -520,6 +529,16 @@ impl Dropdown {
             .borrow_mut()
             .element_data
             .set_accessibility_role(issho::Role::ComboBox);
+        if let Some(key) = inner.borrow().element_data.access_key {
+            inner
+                .borrow()
+                .element_data
+                .access_tree
+                .get_node_mut(key)
+                .unwrap()
+                .set_expanded(issho::ExpandCollapseState::ExpandCollapseState::Collapsed);
+        }
+
         inner.borrow_mut().element_data.style.set_display(Display::Flex);
 
         inner
@@ -764,7 +783,7 @@ impl DropdownInner {
         }
     }
 
-    fn set_selected_element(&mut self, child_index: usize) {
+    pub(crate) fn set_selected_element(&mut self, child_index: usize) {
         // Remove the old selected element from the layout tree.
         if let Some(old_selected_element) = &self.selected_element {
             GUMMY_TREE.with_borrow_mut(|gummy_tree| {
@@ -902,6 +921,16 @@ impl DropdownInner {
     }
 
     fn queue_dropdown_toggled(&self, is_open: bool) {
+        if let Some(key) = self.element_data.access_key
+            && let Some(mut node) = self.element_data.access_tree.get_node_mut(key)
+        {
+            node.set_expanded(if is_open {
+                issho::ExpandCollapseState::ExpandCollapseState::Expanded
+            } else {
+                issho::ExpandCollapseState::ExpandCollapseState::Collapsed
+            });
+        }
+
         let target = self.element_data.me.upgrade().unwrap();
         queue_event(EventKind::DropdownToggled(DropdownToggledEvent::new(
             DynElement::new(target),
