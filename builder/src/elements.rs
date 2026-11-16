@@ -8,10 +8,12 @@ use retgui::{Brush, Color, Gradient, ResourceId};
 use crate::ElementBuilder;
 
 pub trait TextBuilder: ElementBuilder<Element = Text> {
+    /// Set whether the text is selectable.
     fn selectable(self, selectable: bool) -> Self {
         self.element().set_selectable(selectable);
         self
     }
+    /// Set the content of the text. Layout and render will happen during the next frame.
     fn text(self, text: &str) -> Self {
         self.element().set_text(text);
         self

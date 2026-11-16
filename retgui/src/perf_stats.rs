@@ -123,7 +123,7 @@ impl RenderStats {
 
 impl PerfStats {
     pub(crate) fn new() -> Self {
-        let text = Text::new("").selectable(false);
+        let text = Text::new("").set_selectable(false);
         {
             let mut text_inner = text.inner.borrow_mut();
             text_inner.set_font_size(16.0);

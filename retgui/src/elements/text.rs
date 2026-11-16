@@ -40,45 +40,71 @@ use crate::text::text_render_data::TextRender;
 
 const MAX_CACHE_SIZE: usize = 16;
 
+/// Displays plain selectable text.
 #[derive(Clone)]
 pub struct Text {
     pub(crate) inner: Rc<RefCell<TextInner>>,
 }
 
-// A stateful element that shows text.
 #[derive(Clone)]
 pub(crate) struct TextInner {
     element_data: ElementData,
+    /// Whether the text can be selected.
     selectable: bool,
+    /// Underlying text data.
     pub(crate) state: TextState,
+    /// A weak reference to this element used for the gummy layout tree.
     me: Weak<RefCell<Self>>,
 }
 
+/// Text layout, render data, and state for the element's text.
 #[derive(Clone)]
 pub struct TextState {
+    /// The laid out glyphs, lines, and cursors needed to draw the text.
+    /// This includes all text data and is not culled.
     pub(crate) text_render: Option<Arc<TextRender>>,
+    /// The last time the text was clicked.
     pub(crate) last_click_time: Option<Instant>,
+    /// Click count used to determine how text should be selected e.g. words, lines, etc.
     pub(crate) click_count: u32,
+    /// True if the pointer is pressed on the element.
     pub(crate) pointer_down: bool,
+    /// The last time the cursor animation started.
     pub(crate) start_time: Option<Instant>,
+    /// Blink period used for animating the text cursor.
     pub(crate) blink_period: Duration,
+    /// The underlying string for this text element.
     text: SmolStr,
+    /// The scale factor including zoom and display scaling.
     scale_factor: f64,
+    /// Alignment of the text.
     text_align: TextAlign,
+    /// The selected text range. Multiple selections are not yet supported.
     selection: Selection,
     layout: Option<parley::Layout<Brush>>,
-    cache: FxHashMap<TextHashKey, Size<f32>>,
+    /// Cache used to store the computed size of text.
+    measure_cache: FxHashMap<TextHashKey, Size<f32>>,
+    /// The last measure key. If we have a new key, we need to re-layout the text.
     current_layout_key: Option<TextHashKey>,
+    /// The last measure key requested during layout.
+    /// Multiple measures may happen during layout, but only the final one needs rendered.
     last_requested_measure_key: Option<TextHashKey>,
+    /// The last render key. If we have a new key, we need to re-render the layout out text.
     current_render_key: Option<TextHashKey>,
     content_widths: Option<ContentWidths>,
+    /// True if the rendered text should use glyph caching.
+    /// Can cause performance issues for animated text.
     use_glyph_cache: bool,
     /// The last known cursor position.
     ///
     /// The cursor is assumed to start at (0.0, 0.0). The cursor_pos may return points
     /// outside the text input.
     cursor_pos: Point,
+    /// True if the layout needs to be recomputed for any reason.
     is_layout_dirty: bool,
+    /// True if the text needs to be re-rendered.
+    /// This is usually caused by layout changes.
+    /// But may also be set to true for visual only changes like text selection.
     is_render_dirty: bool,
 }
 
@@ -119,7 +145,7 @@ impl Default for TextState {
             selection: Selection::default(),
             text_render: None,
             layout: None,
-            cache: Default::default(),
+            measure_cache: Default::default(),
             current_layout_key: None,
             last_requested_measure_key: None,
             current_render_key: None,
@@ -353,6 +379,8 @@ impl ElementInternals for TextInner {
 }
 
 impl Text {
+
+    /// Create a selectable text element with a given string.
     pub fn new(text: &str) -> Self {
         let inner = Rc::new_cyclic(|me: &Weak<RefCell<TextInner>>| {
             RefCell::new(TextInner {
@@ -378,24 +406,29 @@ impl Text {
         Text { inner }
     }
 
-    pub fn get_selectable(&self) -> bool {
-        self.inner.borrow().selectable
-    }
-
-    pub(crate) fn selectable(self, selectable: bool) -> Self {
+    /// Set whether the text is selectable.
+    pub fn set_selectable(self, selectable: bool) -> Self {
         self.inner.borrow_mut().set_selectable(selectable);
         self
     }
 
-    pub fn get_text(&self) -> String {
-        self.inner.borrow().get_text().to_owned()
+    /// Return whether the text is selectable.
+    pub fn selectable(&self) -> bool {
+        self.inner.borrow().selectable()
     }
 
-    pub(crate) fn text(self, text: &str) -> Self {
+    /// Get the underlying text content regardless of selection.
+    pub fn text(&self) -> String {
+        self.inner.borrow().text().to_owned()
+    }
+
+    /// Set the content of the text. Layout and render will happen during the next frame.
+    pub fn set_text(self, text: &str) -> Self {
         self.inner.borrow_mut().set_text(text);
         self
     }
 
+    /// Set the content of the text. Layout and render will happen during the next frame.
     pub fn set_text_smol_str(self, text: SmolStr) -> Self {
         self.inner.borrow_mut().set_text_smol_str(text);
         self
@@ -403,13 +436,20 @@ impl Text {
 }
 
 impl TextInner {
+    /// Return whether the text is selectable.
+    pub fn selectable(&self) -> bool {
+        self.selectable
+    }
+
+    /// Set whether the text is selectable.
     pub fn set_selectable(&mut self, selectable: bool) -> &mut Self {
         self.selectable = selectable;
         self.element_data.set_selectable(self.selectable);
         self
     }
 
-    pub fn get_text(&self) -> &str {
+    /// Get the underlying text content regardless of selection.
+    pub fn text(&self) -> &str {
         &self.state.text
     }
 
@@ -434,6 +474,7 @@ impl TextInner {
         self.element_data.set_accessibility_name(self.state.text.clone());
     }
 
+    /// Measure the size of the text given the current styles and layout constraints.
     pub(crate) fn measure(
         &mut self,
         known_dimensions: Size<Option<f32>>,
@@ -450,6 +491,7 @@ impl TextInner {
 }
 
 impl TextState {
+    /// Measure the size of the text given the current styles and layout constraints.
     pub fn measure(
         &mut self,
         style: &Style,
@@ -475,13 +517,14 @@ impl TextState {
         let key = TextHashKey::new(known_dimensions, available_space);
 
         self.last_requested_measure_key = Some(key);
-        if let Some(value) = self.cache.get(&key) {
+        if let Some(value) = self.measure_cache.get(&key) {
             return *value;
         }
 
         self.layout(known_dimensions, available_space)
     }
 
+    /// Lays out the text under the given constraints.
     pub fn layout(&mut self, known_dimensions: Size<Option<f32>>, available_space: Size<AvailableSpace>) -> Size<f32> {
         let key = TextHashKey::new(known_dimensions, available_space);
 
@@ -536,17 +579,18 @@ impl TextState {
             height: logical_height,
         };
 
-        if self.cache.len() >= MAX_CACHE_SIZE {
+        if self.measure_cache.len() >= MAX_CACHE_SIZE {
             // TODO: Use LRU?
-            let oldest_key = *self.cache.keys().next().unwrap();
-            self.cache.remove(&oldest_key);
+            let oldest_key = *self.measure_cache.keys().next().unwrap();
+            self.measure_cache.remove(&oldest_key);
         }
 
-        self.cache.insert(key, size);
+        self.measure_cache.insert(key, size);
         self.current_layout_key = Some(key);
         size
     }
 
+    /// Use the text layout to update the rendered text data.
     pub fn try_update_text_render(
         &mut self,
         _text_context: &mut TextContext,
@@ -569,11 +613,13 @@ impl TextState {
         self.update_text_selection(selection_brush);
     }
 
+    /// Reset the cursor blink animation timings.
     pub fn cursor_reset(&mut self) {
         self.start_time = Some(Instant::now());
         self.blink_period = Duration::from_millis(500);
     }
 
+    /// Extend the text selection to the point.
     pub fn extend_selection_to_point(&mut self, point: Point) {
         let scale_factor = self.layout.as_ref().unwrap().scale() as f64;
         let point = Point::new(point.x * scale_factor, point.y * scale_factor);
@@ -582,27 +628,31 @@ impl TextState {
             .extend_to_point(self.layout.as_ref().unwrap(), point.x as f32, point.y as f32);
     }
 
+    /// Selects a word at the given point.
     pub fn select_word_at_point(&mut self, point: Point) {
         let scale_factor = self.layout.as_ref().unwrap().scale() as f64;
         let point = Point::new(point.x * scale_factor, point.y * scale_factor);
         self.selection = Selection::word_from_point(self.layout.as_ref().unwrap(), point.x as f32, point.y as f32);
     }
 
+    /// Selects the line the given point.
     pub fn select_line_at_point(&mut self, point: Point) {
         let scale_factor = self.layout.as_ref().unwrap().scale() as f64;
         let point = Point::new(point.x * scale_factor, point.y * scale_factor);
         self.selection = Selection::line_from_point(self.layout.as_ref().unwrap(), point.x as f32, point.y as f32);
     }
 
+    /// Moves the cursor to a single point.
     pub fn move_to_point(&mut self, point: Point) {
         let scale_factor = self.layout.as_ref().unwrap().scale() as f64;
         let point = Point::new(point.x * scale_factor, point.y * scale_factor);
         self.selection = Selection::from_point(self.layout.as_ref().unwrap(), point.x as f32, point.y as f32);
     }
 
+    /// Clear all the text caches and rendered text data.
     pub fn clear_cache(&mut self) {
         self.layout = None;
-        self.cache.clear();
+        self.measure_cache.clear();
         self.current_layout_key = None;
         self.last_requested_measure_key = None;
         self.current_render_key = None;
@@ -611,6 +661,9 @@ impl TextState {
         self.is_layout_dirty = false;
     }
 
+    /// Update the rendered text data with the highlighted text region.
+    ///
+    /// This is typically called after the text selection changes.
     fn update_text_selection(&mut self, selection_brush: Brush) {
         if let Some(layout) = self.layout.as_ref() {
             let text_renderer = self.text_render.as_mut().unwrap();
@@ -631,12 +684,4 @@ impl TextState {
             });
         }
     }
-}
-
-impl Text {
-    pub fn set_selectable(&self, selectable: bool) { self.clone().selectable(selectable); }
-}
-
-impl Text {
-    pub fn set_text(&self, text: &str) { self.clone().text(text); }
 }

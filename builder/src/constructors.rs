@@ -50,6 +50,7 @@ pub fn slider(thumb_size: f32) -> Builder<Slider> {
     Builder::new(Slider::new(thumb_size))
 }
 
+/// Create a selectable text element with a given string.
 pub fn text(text: &str) -> Builder<Text> {
     Builder::new(Text::new(text))
 }

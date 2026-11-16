@@ -150,7 +150,7 @@ impl Audio {
             .max(100.0)
             .value(100.0)
             .step(1.0);
-        let duration = Text::new("").selectable(false).line_height(0.5).color(Color::WHITE);
+        let duration = Text::new("").set_selectable(false).line_height(0.5).color(Color::WHITE);
         let inner = Rc::new_cyclic(|me: &Weak<RefCell<AudioInner>>| {
             RefCell::new(AudioInner {
                 element_data: ElementData::new(me.clone(), true),
@@ -283,7 +283,7 @@ impl AudioInner {
 
         let current_time = sound.cursor_seconds().unwrap() as u32;
         let time = format_time(current_time, duration as u32);
-        self.duration.clone().text(&time);
+        self.duration.clone().set_text(&time);
         ctx.sounds.insert(self.element_data.internal_id);
         // Todo: Clean up old sound data
         self.sound_data = Some(SoundData {
@@ -341,7 +341,7 @@ impl AudioInner {
                 track.value(current_time);
                 let total_time = sound.length_seconds().unwrap() as u32;
                 let time = format_time(current_time as u32, total_time);
-                self.duration.clone().text(&time);
+                self.duration.clone().set_text(&time);
             }
             sound_data.end_notifier.take_with(|| {
                 self.play_button.clone().accessibility_name("play");

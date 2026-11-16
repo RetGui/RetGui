@@ -232,7 +232,7 @@ impl Calendar {
                     .display(Display::Flex)
                     .justify_content(JustifyContent::Center)
                     .align_items(AlignItems::Center)
-                    .push(Text::new(day.as_str()).selectable(false))
+                    .push(Text::new(day.as_str()).set_selectable(false))
                     .width(CELL_SIZE)
                     .height(CELL_SIZE),
             );
@@ -243,7 +243,7 @@ impl Calendar {
                 .display(Display::Flex)
                 .flex_direction(FlexDirection::Row);
             for _ in 0..COLUMNS {
-                let day_text = Text::new("").selectable(false);
+                let day_text = Text::new("").set_selectable(false);
                 let day = Button::new()
                     .display(Display::Flex)
                     .border_radius_all((4.0, 4.0))
@@ -483,7 +483,7 @@ impl CalendarInner {
         for year in self.start_year..=self.end_year {
             dropdown
                 .clone()
-                .push(Text::new(&year_name(&self.locale, year)).selectable(false))
+                .push(Text::new(&year_name(&self.locale, year)).set_selectable(false))
                 .font_size(20.0);
             if year == self.focus_year {
                 Self::select_dropdown(&dropdown, (year - self.start_year) as usize);
@@ -497,7 +497,7 @@ impl CalendarInner {
         for month in 0..12 {
             dropdown
                 .clone()
-                .push(Text::new(&month_name(&self.locale, Month::new(month + 1), self.focus_year)).selectable(false))
+                .push(Text::new(&month_name(&self.locale, Month::new(month + 1), self.focus_year)).set_selectable(false))
                 .font_size(20.0);
             if month + 1 == self.focus_month {
                 Self::select_dropdown(&dropdown, month as usize);
