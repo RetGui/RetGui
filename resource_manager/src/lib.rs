@@ -9,8 +9,8 @@ use std::sync::Arc;
 use retgui_runtime::RetGuiRuntimeHandle;
 
 use crate::decoders::{image_decoder, tinyvg_decoder};
-use crate::lock_free_map::LockFreeMap;
 use crate::resource::Resource;
+use crate::resource_map::ResourceMap;
 use crate::resource_type::ResourceType;
 
 pub mod decoders;
@@ -20,13 +20,13 @@ pub mod resource_event;
 pub mod resource_type;
 
 mod identifier;
-mod lock_free_map;
+mod resource_map;
 
 pub type ResourceFuture = Pin<Box<dyn Future<Output = Box<dyn Any + Send + Sync>> + Send + Sync>>;
 pub type DecoderFn = fn(Vec<u8>) -> Box<dyn Any + Send + Sync>;
 
 pub struct ResourceManager {
-    resources: LockFreeMap<ResourceId, Resource>,
+    resources: ResourceMap<ResourceId, Resource>,
     pub(crate) runtime: RetGuiRuntimeHandle,
     decoders: HashMap<ResourceType, DecoderFn>,
 }
@@ -34,7 +34,7 @@ pub struct ResourceManager {
 impl ResourceManager {
     pub fn new(retgui_runtime_handle: RetGuiRuntimeHandle) -> Self {
         Self {
-            resources: LockFreeMap::new(),
+            resources: ResourceMap::new(),
             runtime: retgui_runtime_handle,
             decoders: HashMap::from([
                 (
