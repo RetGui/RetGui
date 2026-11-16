@@ -6,7 +6,7 @@ use std::time;
 
 use gummy::{AvailableSpace, Size};
 
-use parley::{Alignment, AlignmentOptions, ContentWidths, Selection};
+use parley::{AlignmentOptions, ContentWidths, Selection};
 
 use retgui_primitives::brush::Brush;
 use retgui_primitives::geometry::{Point, Rectangle, Vec2};
@@ -100,10 +100,6 @@ pub struct TextState {
     cursor_pos: Point,
     /// True if the layout needs to be recomputed for any reason.
     is_layout_dirty: bool,
-    /// True if the text needs to be re-rendered.
-    /// This is usually caused by layout changes.
-    /// But may also be set to true for visual only changes like text selection.
-    is_render_dirty: bool,
 }
 
 impl Element for Text {}
@@ -156,7 +152,6 @@ impl Default for TextState {
             start_time: None,
             blink_period: Default::default(),
             is_layout_dirty: false,
-            is_render_dirty: false,
         }
     }
 }
@@ -269,7 +264,6 @@ impl ElementInternals for TextInner {
         self.element_data.applied_scale_factor = scale_factor;
         self.apply_borders(scale_factor);
         self.state.is_layout_dirty = true;
-        self.state.is_render_dirty = true;
         self.mark_dirty();
         self.state.scale_factor = scale_factor;
     }
@@ -285,7 +279,6 @@ impl ElementInternals for TextInner {
 
     fn on_text_style_changed(&mut self) {
         self.state.is_layout_dirty = true;
-        self.state.is_render_dirty = true;
     }
 
     fn set_selection_brush(&mut self, selection_brush: Brush) {
@@ -385,7 +378,6 @@ impl TextInner {
     pub fn set_text_smol_str(&mut self, text: SmolStr) {
         self.state.text = text;
         self.state.is_layout_dirty = true;
-        self.state.is_render_dirty = true;
         self.mark_dirty();
         self.element_data.set_accessibility_name(self.state.text.clone());
     }
@@ -639,6 +631,9 @@ impl TextState {
     pub fn layout(&mut self, known_dimensions: Size<Option<f32>>, available_space: Size<AvailableSpace>) -> Size<f32> {
         let key = TextHashKey::new(known_dimensions, available_space);
 
+        let known_dimensions = known_dimensions.map(|dimension| {
+            dimension.map(|value| dpi::PhysicalUnit::from_logical::<f32, f32>(value, self.scale_factor).0)
+        });
         let content_widths = self.content_widths.as_ref().unwrap();
         let width_constraint = known_dimensions.width.or(match available_space.width {
             AvailableSpace::MinContent => Some(content_widths.min),
@@ -660,15 +655,7 @@ impl TextState {
             }
         });
 
-        let alignment = match self.text_align {
-            TextAlign::Start => Alignment::Start,
-            TextAlign::End => Alignment::End,
-            TextAlign::Left => Alignment::Left,
-            TextAlign::Center => Alignment::Center,
-            TextAlign::Right => Alignment::Right,
-            TextAlign::Justify => Alignment::Justify,
-        };
-
+        let alignment = self.text_align.to_parley_alignment();
         let layout = self.layout.as_mut().unwrap();
         layout.set_alignment(
             alignment,
@@ -678,6 +665,7 @@ impl TextState {
             },
         );
         layout.break_all_lines(width_constraint);
+        self.selection = self.selection.refresh(layout);
 
         let width = layout.width();
         let height = layout.height().min(height_constraint.unwrap_or(f32::MAX));
@@ -690,10 +678,10 @@ impl TextState {
             height: logical_height,
         };
 
-        if self.measure_cache.len() >= MAX_CACHE_SIZE {
+        if self.measure_cache.len() >= MAX_CACHE_SIZE && !self.measure_cache.contains_key(&key) {
             // TODO: Use LRU?
-            let oldest_key = *self.measure_cache.keys().next().unwrap();
-            self.measure_cache.remove(&oldest_key);
+            let evicted_key = *self.measure_cache.keys().next().unwrap();
+            self.measure_cache.remove(&evicted_key);
         }
 
         self.measure_cache.insert(key, size);

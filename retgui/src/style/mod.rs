@@ -227,6 +227,20 @@ pub enum TextAlign {
     Justify,
 }
 
+impl TextAlign {
+    /// Convert our alignment property to Parley's equivalent.
+    pub(crate) fn to_parley_alignment(self) -> parley::Alignment {
+        match self {
+            Self::Start => parley::Alignment::Start,
+            Self::End => parley::Alignment::End,
+            Self::Left => parley::Alignment::Left,
+            Self::Center => parley::Alignment::Center,
+            Self::Right => parley::Alignment::Right,
+            Self::Justify => parley::Alignment::Justify,
+        }
+    }
+}
+
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
 pub enum FontStyle {
     Normal,
