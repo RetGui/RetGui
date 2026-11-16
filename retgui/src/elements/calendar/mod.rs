@@ -355,7 +355,7 @@ impl CalendarInner {
     }
 
     fn update_calendar(&mut self) {
-        self.update_calendar_for_today(jiff::Zoned::now().date());
+        self.update_calendar_for_today(jiff::ZonedDateTime::now().date());
     }
 
     fn update_calendar_for_today(&mut self, today: Date) {

@@ -92,7 +92,7 @@ default-features = false
 features = []
 
 [workspace.dependencies.jiff]
-version = "0.2.43"
+version = "1.0.0"
 default-features = false
 features = ["default", "js"]
 

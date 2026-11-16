@@ -17,7 +17,7 @@ use icu_calendar::{Date, Gregorian};
 
 use icu_datetime::{FixedCalendarDateTimeFormatter, fieldsets};
 
-use jiff::Zoned;
+use jiff::ZonedDateTime;
 
 /// Returns the first day of the week for the current system user.
 ///
@@ -62,14 +62,14 @@ fn fallback_day_abbreviation(locale: &Locale, day: Weekday) -> String {
 }
 
 pub fn current_date() -> Date<Gregorian> {
-    let now = Zoned::now();
+    let now = ZonedDateTime::now();
 
     Date::try_new_gregorian(now.year().into(), now.month() as u8, now.day() as u8)
         .expect("Invalid date provided by system")
 }
 
 pub fn current_month() -> Date<Gregorian> {
-    let now = Zoned::now();
+    let now = ZonedDateTime::now();
 
     Date::try_new_gregorian(now.year().into(), now.month() as u8, 1).expect("Invalid date provided by system")
 }
