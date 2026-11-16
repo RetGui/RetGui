@@ -24,19 +24,17 @@ use time::{Duration, Instant};
 #[cfg(target_arch = "wasm32")]
 use web_time as time;
 
-use winit::dpi;
-
 use crate::elements::element_data::ElementData;
 use crate::elements::traits::clone_element;
 use crate::elements::{AsElement, DynElement, Element, ElementInternals};
-use crate::events::PointerButton;
-use crate::events::{Event, EventKind};
+use crate::events::{Event, EventKind, KeyboardEvent, PointerButton, PointerButtonEvent, PointerMovedEvent};
 use crate::layout::GummyTree;
 use crate::layout::layout_context::{GummyTextContext, LayoutContext, TextHashKey};
 use crate::style::{Style, TextAlign};
 use crate::text::text_context::TextContext;
 use crate::text::text_render_data;
 use crate::text::text_render_data::TextRender;
+use winit::dpi;
 
 const MAX_CACHE_SIZE: usize = 16;
 
@@ -236,7 +234,13 @@ impl ElementInternals for TextInner {
         self.add_hit_testable(render_list, true, _scale_factor);
         let content_rectangle = self.element_data.layout.local_box().content_rectangle();
         self.draw_borders(render_list, _scale_factor);
-        render_list.draw_text(self.state.text_render.clone().unwrap(), content_rectangle.scale(_scale_factor), None, false, self.state.use_glyph_cache);
+        render_list.draw_text(
+            self.state.text_render.clone().unwrap(),
+            content_rectangle.scale(_scale_factor),
+            None,
+            false,
+            self.state.use_glyph_cache,
+        );
         self.maybe_end_overlay(render_list);
     }
 
@@ -244,107 +248,20 @@ impl ElementInternals for TextInner {
         if !self.selectable {
             return;
         }
-
-        let _content_rect = self.computed_box().content_rectangle();
-
-        // Handle selection.
-        if self.selectable {
-            if matches!(event, EventKind::PointerDown(pb) if pb.button == Some(PointerButton::Left)) {
-                self.focus();
+        match event {
+            EventKind::PointerDown(event) if event.button == Some(PointerButton::Left) => {
+                self.handle_pointer_down(event);
             }
-            let text_position = self.get_computed_box_transformed().content_rectangle();
-            #[cfg(all(
-                any(target_os = "windows", target_os = "macos", target_os = "linux"),
-                feature = "clipboard"
-            ))]
-            let focused = self.is_focused();
-
-            let state: &mut TextState = &mut self.state;
-            match event {
-                EventKind::PointerDown(pb) if pb.button == Some(PointerButton::Left) => {
-                    let previous_selection = (state.selection.anchor(), state.selection.focus());
-                    state.pointer_down = true;
-                    state.cursor_reset();
-                    let now = Instant::now();
-                    if let Some(last) = state.last_click_time.take() {
-                        if now.duration_since(last).as_secs_f64() < 0.25 {
-                            state.click_count = (state.click_count + 1) % 4;
-                        } else {
-                            state.click_count = 1;
-                        }
-                    } else {
-                        state.click_count = 1;
-                    }
-                    state.last_click_time = Some(now);
-                    let click_count = state.click_count;
-                    let cursor_pos = state.cursor_pos;
-                    match click_count {
-                        2 => state.select_word_at_point(cursor_pos),
-                        3 => state.select_line_at_point(cursor_pos),
-                        _ => state.move_to_point(cursor_pos),
-                    }
-                    let selection_changed = previous_selection != (state.selection.anchor(), state.selection.focus());
-                    if selection_changed {
-                        state.update_text_selection(self.element_data.style.get_selection_brush());
-                    }
-                    if click_count == 1 {
-                        self.set_pointer_capture(pb.pointer.pointer_id.unwrap());
-                    }
-                    if selection_changed {
-                        self.request_window_redraw();
-                    }
-                    pb.prevent_default();
-                }
-                EventKind::PointerUp(pb) if pb.button == Some(PointerButton::Left) => {
-                    state.pointer_down = false;
-                    state.cursor_reset();
-                    self.release_pointer_capture(pb.pointer.pointer_id.unwrap());
-                    pb.prevent_default();
-                }
-                EventKind::PointerMoved(pointer_moved) => {
-                    let prev_pos = state.cursor_pos;
-                    // NOTE: Cursor position should be relative to the top left of the text box.
-                    state.cursor_pos = pointer_moved.current.logical_point()
-                        - Vec2::new(text_position.x as f64, text_position.y as f64);
-                    // macOS seems to generate a spurious move after selecting word?
-                    if state.pointer_down && prev_pos != state.cursor_pos {
-                        let previous_selection = (state.selection.anchor(), state.selection.focus());
-                        state.cursor_reset();
-                        let cursor_pos = state.cursor_pos;
-                        state.extend_selection_to_point(cursor_pos);
-                        if previous_selection != (state.selection.anchor(), state.selection.focus()) {
-                            state.update_text_selection(self.element_data.style.get_selection_brush());
-                            self.request_window_redraw();
-                        }
-                    }
-                    pointer_moved.prevent_default();
-                }
-                #[cfg(all(
-                    any(target_os = "windows", target_os = "macos", target_os = "linux"),
-                    feature = "clipboard"
-                ))]
-                EventKind::KeyDown(keyboard_event)
-                    if focused
-                        && !keyboard_event.is_composing
-                        && if cfg!(target_os = "macos") {
-                            keyboard_event.modifiers.meta_key()
-                        } else {
-                            keyboard_event.modifiers.control_key()
-                        }
-                        && matches!(&keyboard_event.key, winit::keyboard::Key::Character(c) if c.eq_ignore_ascii_case("c")) =>
-                {
-
-                    let range = state.selection.text_range();
-                    if !range.is_empty()
-                        && let Some(text) = state.text.get(range)
-                        && crate::clipboard::copy(text.to_owned())
-                    {
-                        keyboard_event.prevent_default();
-                        keyboard_event.stop_propagation();
-                    }
-                }
-                _ => {}
+            EventKind::PointerUp(event) if event.button == Some(PointerButton::Left) => {
+                self.handle_pointer_up(event);
             }
+            EventKind::PointerMoved(event) => {
+                self.handle_pointer_move(event);
+            }
+            EventKind::KeyDown(event) => {
+                self.handle_key_down(event);
+            }
+            _ => {}
         }
     }
 
@@ -379,7 +296,6 @@ impl ElementInternals for TextInner {
 }
 
 impl Text {
-
     /// Create a selectable text element with a given string.
     pub fn new(text: &str) -> Self {
         let inner = Rc::new_cyclic(|me: &Weak<RefCell<TextInner>>| {
@@ -487,6 +403,200 @@ impl TextInner {
             available_space,
             text_context,
         )
+    }
+
+    fn handle_pointer_down(&mut self, event: &mut PointerButtonEvent) {
+        self.focus();
+
+        let state: &mut TextState = &mut self.state;
+        let previous_selection = (state.selection.anchor(), state.selection.focus());
+        state.pointer_down = true;
+        state.cursor_reset();
+        let now = Instant::now();
+        if let Some(last) = state.last_click_time.take() {
+            if now.duration_since(last).as_secs_f64() < 0.25 {
+                state.click_count = (state.click_count + 1) % 4;
+            } else {
+                state.click_count = 1;
+            }
+        } else {
+            state.click_count = 1;
+        }
+        state.last_click_time = Some(now);
+        let click_count = state.click_count;
+        let cursor_pos = state.cursor_pos;
+        match click_count {
+            2 => state.select_word_at_point(cursor_pos),
+            3 => state.select_line_at_point(cursor_pos),
+            _ => state.move_to_point(cursor_pos),
+        }
+        let selection_changed = previous_selection != (state.selection.anchor(), state.selection.focus());
+        if selection_changed {
+            state.update_text_selection(self.element_data.style.get_selection_brush());
+        }
+        if click_count == 1 {
+            self.set_pointer_capture(event.pointer.pointer_id.unwrap());
+        }
+        if selection_changed {
+            self.request_window_redraw();
+        }
+        event.prevent_default();
+    }
+
+    /// Handles pointer up. This involves text selection.
+    fn handle_pointer_up(&mut self, event: &mut PointerButtonEvent) {
+        self.state.pointer_down = false;
+        self.state.cursor_reset();
+        self.release_pointer_capture(event.pointer.pointer_id.unwrap());
+        event.prevent_default();
+    }
+
+    /// Handles pointer move. This involves text selection.
+    fn handle_pointer_move(&mut self, event: &mut PointerMovedEvent) {
+        let text_position = self.get_computed_box_transformed().content_rectangle();
+        let prev_pos = self.state.cursor_pos;
+        // NOTE: Cursor position should be relative to the top left of the text box.
+        self.state.cursor_pos =
+            event.current.logical_point() - Vec2::new(text_position.x as f64, text_position.y as f64);
+        // macOS seems to generate a spurious move after selecting word?
+        if self.state.pointer_down && prev_pos != self.state.cursor_pos {
+            let previous_selection = (self.state.selection.anchor(), self.state.selection.focus());
+            self.state.cursor_reset();
+            let cursor_pos = self.state.cursor_pos;
+            self.state.extend_selection_to_point(cursor_pos);
+            if previous_selection != (self.state.selection.anchor(), self.state.selection.focus()) {
+                self.state
+                    .update_text_selection(self.element_data.style.get_selection_brush());
+                self.request_window_redraw();
+            }
+        }
+        event.prevent_default();
+    }
+
+    #[cfg(all(
+        any(target_os = "windows", target_os = "macos", target_os = "linux"),
+        feature = "clipboard"
+    ))]
+    fn handle_ctrl_c(&mut self, event: &mut KeyboardEvent) {
+        let copy_modifier = if cfg!(target_os = "macos") {
+            event.modifiers.meta_key()
+        } else {
+            event.modifiers.control_key()
+        };
+        let is_c_key = matches!(&event.key, winit::keyboard::Key::Character(c) if c.eq_ignore_ascii_case("c"));
+        let range = self.state.selection.text_range();
+        let is_copy_key_combo = self.is_focused() && !event.is_composing && copy_modifier && is_c_key;
+        if is_copy_key_combo && !range.is_empty() {
+            let selected_text = self.state.text.get(range);
+            if let Some(text) = selected_text
+                && crate::clipboard::copy(text.to_owned())
+            {
+                event.prevent_default();
+                event.stop_propagation();
+            }
+        }
+    }
+
+    /// Handles keyboard selection.
+    fn handle_keyboard_selection(&mut self, event: &mut KeyboardEvent) {
+        if !self.is_focused() || event.is_composing {
+            return;
+        }
+        let Some(layout) = self.state.layout.as_ref() else {
+            return;
+        };
+
+        let extend = event.modifiers.shift_key();
+        let is_mac = cfg!(target_os = "macos");
+        let action_modifier = if is_mac {
+            event.modifiers.meta_key()
+        } else {
+            event.modifiers.control_key()
+        };
+        let word_modifier = if is_mac {
+            event.modifiers.alt_key()
+        } else {
+            event.modifiers.control_key()
+        };
+        let previous_selection = (self.state.selection.anchor(), self.state.selection.focus());
+        let selection = &self.state.selection;
+        self.state.selection = match &event.key {
+            winit::keyboard::Key::Named(winit::keyboard::NamedKey::ArrowLeft) => {
+                if is_mac && action_modifier {
+                    selection.line_start(layout, extend)
+                } else if word_modifier {
+                    selection.previous_visual_word(layout, extend)
+                } else {
+                    selection.previous_visual(layout, extend)
+                }
+            }
+            winit::keyboard::Key::Named(winit::keyboard::NamedKey::ArrowRight) => {
+                if is_mac && action_modifier {
+                    selection.line_end(layout, extend)
+                } else if word_modifier {
+                    selection.next_visual_word(layout, extend)
+                } else {
+                    selection.next_visual(layout, extend)
+                }
+            }
+            winit::keyboard::Key::Named(winit::keyboard::NamedKey::ArrowUp) => {
+                if is_mac && action_modifier {
+                    selection.move_lines(layout, isize::MIN, extend)
+                } else if word_modifier {
+                    selection
+                        .previous_visual(layout, extend)
+                        .hard_line_start(layout, extend)
+                } else {
+                    selection.previous_line(layout, extend)
+                }
+            }
+            winit::keyboard::Key::Named(winit::keyboard::NamedKey::ArrowDown) => {
+                if is_mac && action_modifier {
+                    selection.move_lines(layout, isize::MAX, extend)
+                } else if word_modifier {
+                    selection.hard_line_end(layout, extend).next_visual(layout, extend)
+                } else {
+                    selection.next_line(layout, extend)
+                }
+            }
+            winit::keyboard::Key::Named(winit::keyboard::NamedKey::Home) => {
+                if action_modifier {
+                    selection.move_lines(layout, isize::MIN, extend)
+                } else {
+                    selection.line_start(layout, extend)
+                }
+            }
+            winit::keyboard::Key::Named(winit::keyboard::NamedKey::End) => {
+                if action_modifier {
+                    selection.move_lines(layout, isize::MAX, extend)
+                } else {
+                    selection.line_end(layout, extend)
+                }
+            }
+            _ => return,
+        };
+
+        self.state.cursor_reset();
+        if previous_selection != (self.state.selection.anchor(), self.state.selection.focus()) {
+            self.state
+                .update_text_selection(self.element_data.style.get_selection_brush());
+            self.request_window_redraw();
+        }
+        event.prevent_default();
+        event.stop_propagation();
+    }
+
+    /// Handles key down, which is typically ctrl + c and keyboard based text selection.
+    fn handle_key_down(&mut self, event: &mut KeyboardEvent) {
+        #[cfg(all(
+            any(target_os = "windows", target_os = "macos", target_os = "linux"),
+            feature = "clipboard"
+        ))]
+        self.handle_ctrl_c(event);
+        if event.is_propagation_stopped() {
+            return;
+        }
+        self.handle_keyboard_selection(event);
     }
 }
 
