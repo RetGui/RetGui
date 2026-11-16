@@ -405,6 +405,7 @@ impl TextInner {
         )
     }
 
+    /// Handles pointer down. This involves text selection.
     fn handle_pointer_down(&mut self, event: &mut PointerButtonEvent) {
         self.focus();
 
