@@ -660,7 +660,7 @@ impl TextState {
     }
 
     /// Lays out the text with the given size constraints.
-    fn layout_text(&mut self, constraints: Size<Option<f32>>) -> Size<f32> {
+    fn layout_text(&mut self, key: TextHashKey, constraints: Size<Option<f32>>) -> Size<f32> {
         let alignment = self.text_align.to_parley_alignment();
         let layout = self.layout.as_mut().unwrap();
         layout.set_alignment(
@@ -674,6 +674,7 @@ impl TextState {
         self.selection = self.selection.refresh(layout);
         let height = layout.height().min(constraints.height.unwrap_or(f32::MAX));
         let size = dpi::PhysicalSize::new(layout.width(), height).to_logical::<f32>(self.scale_factor);
+        self.current_layout_key = Some(key);
         Size {
             width: size.width,
             height: size.height,
@@ -688,14 +689,13 @@ impl TextState {
             self.measure_cache.remove(&evicted_key);
         }
         self.measure_cache.insert(key, size);
-        self.current_layout_key = Some(key);
     }
 
     /// Lays out the text under the given constraints.
     pub fn layout(&mut self, known_dimensions: Size<Option<f32>>, available_space: Size<AvailableSpace>) -> Size<f32> {
         let constraints = self.compute_constraints(known_dimensions, available_space);
-        let size = self.layout_text(constraints);
         let key = TextHashKey::new(known_dimensions, available_space);
+        let size = self.layout_text(key, constraints);
         self.cache_layout(key, size);
         size
     }
