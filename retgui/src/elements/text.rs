@@ -627,10 +627,12 @@ impl TextState {
         self.layout(known_dimensions, available_space)
     }
 
-    /// Lays out the text under the given constraints.
-    pub fn layout(&mut self, known_dimensions: Size<Option<f32>>, available_space: Size<AvailableSpace>) -> Size<f32> {
-        let key = TextHashKey::new(known_dimensions, available_space);
-
+    /// Calculates the constraints from known dimensions and available space.
+    fn compute_constraints(
+        &mut self,
+        known_dimensions: Size<Option<f32>>,
+        available_space: Size<AvailableSpace>,
+    ) -> Size<Option<f32>> {
         let known_dimensions = known_dimensions.map(|dimension| {
             dimension.map(|value| dpi::PhysicalUnit::from_logical::<f32, f32>(value, self.scale_factor).0)
         });
@@ -640,12 +642,9 @@ impl TextState {
             AvailableSpace::MaxContent => Some(content_widths.max),
             AvailableSpace::Definite(width) => {
                 let scaled_width: f32 = dpi::PhysicalUnit::from_logical::<f32, f32>(width, self.scale_factor).0;
-
-                // Constrain the width to max(width, content_min).
                 Some(scaled_width.max(content_widths.min))
             }
         });
-
         let height_constraint = known_dimensions.height.or(match available_space.height {
             AvailableSpace::MinContent => None,
             AvailableSpace::MaxContent => None,
@@ -654,7 +653,14 @@ impl TextState {
                 Some(scaled_height)
             }
         });
+        Size {
+            width: width_constraint,
+            height: height_constraint,
+        }
+    }
 
+    /// Lays out the text with the given size constraints.
+    fn layout_text(&mut self, constraints: Size<Option<f32>>) -> Size<f32> {
         let alignment = self.text_align.to_parley_alignment();
         let layout = self.layout.as_mut().unwrap();
         layout.set_alignment(
@@ -664,28 +670,33 @@ impl TextState {
                 ..Default::default()
             },
         );
-        layout.break_all_lines(width_constraint);
+        layout.break_all_lines(constraints.width);
         self.selection = self.selection.refresh(layout);
+        let height = layout.height().min(constraints.height.unwrap_or(f32::MAX));
+        let size = dpi::PhysicalSize::new(layout.width(), height).to_logical::<f32>(self.scale_factor);
+        Size {
+            width: size.width,
+            height: size.height,
+        }
+    }
 
-        let width = layout.width();
-        let height = layout.height().min(height_constraint.unwrap_or(f32::MAX));
-
-        let logical_width = dpi::LogicalUnit::from_physical::<f32, f32>(width, self.scale_factor).0;
-        let logical_height = dpi::LogicalUnit::from_physical::<f32, f32>(height, self.scale_factor).0;
-
-        let size = Size {
-            width: logical_width,
-            height: logical_height,
-        };
-
+    /// Caches the laid out text dimensions for a given key.
+    fn cache_layout(&mut self, key: TextHashKey, size: Size<f32>) {
         if self.measure_cache.len() >= MAX_CACHE_SIZE && !self.measure_cache.contains_key(&key) {
             // TODO: Use LRU?
             let evicted_key = *self.measure_cache.keys().next().unwrap();
             self.measure_cache.remove(&evicted_key);
         }
-
         self.measure_cache.insert(key, size);
         self.current_layout_key = Some(key);
+    }
+
+    /// Lays out the text under the given constraints.
+    pub fn layout(&mut self, known_dimensions: Size<Option<f32>>, available_space: Size<AvailableSpace>) -> Size<f32> {
+        let constraints = self.compute_constraints(known_dimensions, available_space);
+        let size = self.layout_text(constraints);
+        let key = TextHashKey::new(known_dimensions, available_space);
+        self.cache_layout(key, size);
         size
     }
 
