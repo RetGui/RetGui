@@ -3,7 +3,7 @@ use retgui_primitives::geometry::{Point, Size};
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::event::{ButtonSource, ElementState, Ime, KeyEvent, MouseButton, PointerSource, WindowEvent};
 
-use crate::app::{App, WINDOW_MANAGER, WindowEventResult};
+use crate::app::{App, WINDOW_MANAGER};
 use crate::drivers::Driver;
 use crate::elements::{Element, Window};
 
@@ -56,12 +56,7 @@ impl HeadlessDriver {
     }
 
     pub fn dispatch_event(&mut self, event: HeadlessEvent) {
-        match self.app.on_window_event(event.window, event.winit_event) {
-            WindowEventResult::Continue => {}
-            WindowEventResult::ExitRequested => {
-                self.app.close_requested = true;
-            }
-        }
+        self.app.on_window_event(event.window, event.winit_event);
     }
 }
 

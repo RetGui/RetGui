@@ -12,7 +12,7 @@ use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoopBuilder};
 use winit::platform::android::EventLoopBuilderExtAndroid;
 use winit::window::WindowId;
 
-use crate::app::{App, WINDOW_MANAGER, WindowEventResult};
+use crate::app::{App, WINDOW_MANAGER};
 use crate::drivers::Driver;
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -36,17 +36,11 @@ impl ApplicationHandler for WinitDriver {
         self.app.on_resume(Some(event_loop));
     }
 
-    fn window_event(&mut self, event_loop: &dyn ActiveEventLoop, window_id: WindowId, event: WindowEvent) {
-        if let Some(context) = self.app.text_context.borrow_mut().as_mut() {
-            self.app.clipboard.receive(&event, context);
-        }
+    fn window_event(&mut self, _event_loop: &dyn ActiveEventLoop, window_id: WindowId, event: WindowEvent) {
         let Some(window) = self.app.window_by_id(window_id) else {
             return;
         };
-        match self.app.on_window_event(window, event) {
-            WindowEventResult::Continue => {}
-            WindowEventResult::ExitRequested => event_loop.exit(),
-        }
+        self.app.on_window_event(window, event);
     }
 
     fn about_to_wait(&mut self, event_loop: &dyn ActiveEventLoop) {

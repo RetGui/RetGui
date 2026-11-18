@@ -13,7 +13,7 @@ pub use retgui_runtime::{self, RetGuiRuntime};
 
 pub use winit;
 
-pub use crate::app::{App, WindowEventResult};
+pub use crate::app::App;
 pub use crate::options::RetGuiOptions;
 pub use crate::utils::retgui_error::RetGuiError;
 pub use crate::utils::style_helpers::{auto, pct, px, rgb, rgba};

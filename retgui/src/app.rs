@@ -81,14 +81,6 @@ pub struct App {
     pub(crate) last_audio_ui_update: Option<Instant>,
 }
 
-/// The action requested after dispatching a window event to [`App`].
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-#[must_use]
-pub enum WindowEventResult {
-    Continue,
-    ExitRequested,
-}
-
 impl App {
     pub(crate) fn new(retgui_options: RetGuiOptions) -> Self {
         let runtime = RetGuiRuntime::new();
@@ -117,17 +109,10 @@ impl App {
     }
 
     /// Handle window events.
-    pub fn on_window_event(&mut self, window: Window, event: WindowEvent) -> WindowEventResult {
-        if matches!(
-            &event,
-            WindowEvent::KeyboardInput {
-                is_synthetic: true,
-                ..
-            }
-        ) {
-            return WindowEventResult::Continue;
+    pub fn on_window_event(&mut self, window: Window, event: WindowEvent) {
+        if let Some(context) = self.text_context.borrow_mut().as_mut() {
+            self.clipboard.receive(&event, context);
         }
-
         match event {
             WindowEvent::KeyboardInput { event, .. } => self.on_keyboard_input(window, event),
             WindowEvent::ModifiersChanged(modifiers) => {
@@ -175,13 +160,12 @@ impl App {
             WindowEvent::CloseRequested => {/*
                 self.hit_test_targets
                     .remove(&window.inner.borrow().element_data().internal_id);*/
-                return WINDOW_MANAGER.with_borrow_mut(|window_manager| {
+                WINDOW_MANAGER.with_borrow_mut(|window_manager| {
                     window_manager.close_window(&window, &self.runtime);
                     if window_manager.is_empty() {
                         self.on_close_requested();
                         self.close_requested = true;
                     }
-                    WindowEventResult::Continue
                 });
             }
             WindowEvent::ScaleFactorChanged { scale_factor, .. } => {
@@ -201,8 +185,6 @@ impl App {
             }
             _ => {}
         }
-
-        WindowEventResult::Continue
     }
 
     pub fn on_close_requested(&mut self) {
