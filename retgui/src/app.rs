@@ -2,7 +2,6 @@ use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::rc::{Rc, Weak};
 use std::sync::Arc;
-use std::time::Instant as JobInstant;
 #[cfg(all(feature = "audio", not(target_arch = "wasm32")))]
 use std::time::{Duration, Instant};
 
@@ -12,18 +11,18 @@ use issho::AccessEvent;
 
 use retgui_logging::info;
 
-use retgui_primitives::geometry::{Point, Size};
+use retgui_primitives::geometry::Size;
 
 use retgui_resource_manager::resource_type::ResourceType;
 use retgui_resource_manager::{ResourceId, ResourceManager};
 
-use retgui_runtime::{Job, RetGuiRuntime, pop_gui_thread_work, push_gui_thread_work};
+use retgui_runtime::RetGuiRuntime;
 
 #[cfg(all(feature = "audio", target_arch = "wasm32"))]
 use web_time::{Duration, Instant};
 
 use winit::dpi::PhysicalPosition;
-use winit::event::{ElementState, Ime, KeyEvent, PointerKind, WindowEvent};
+use winit::event::{ElementState, Ime, KeyEvent, MouseScrollDelta, PointerKind, WindowEvent};
 use winit::event_loop::ActiveEventLoop;
 
 use crate::RetGuiOptions;
@@ -139,35 +138,14 @@ impl App {
                 let pointer = PointerInfo::from_button(&button, primary);
                 self.on_pointer_button(
                     window,
-                    button.clone().mouse_button(),
+                    button.mouse_button(),
                     pointer,
                     PointerState::new(position, scale_factor),
                     state == ElementState::Released,
                 );
             }
-            WindowEvent::MouseWheel { delta, .. } => {
-                let scale_factor = window.effective_scale_factor();
-                let logical_position = window.mouse_position().unwrap_or_default();
-                let physical_position =
-                    PhysicalPosition::new(logical_position.x * scale_factor, logical_position.y * scale_factor);
-                self.on_pointer_scroll(
-                    window,
-                    PointerInfo::new(PointerKind::Mouse, true),
-                    delta,
-                    PointerState::new(physical_position, scale_factor),
-                );
-            }
-            WindowEvent::CloseRequested => {/*
-                self.hit_test_targets
-                    .remove(&window.inner.borrow().element_data().internal_id);*/
-                WINDOW_MANAGER.with_borrow_mut(|window_manager| {
-                    window_manager.close_window(&window, &self.runtime);
-                    if window_manager.is_empty() {
-                        self.on_close_requested();
-                        self.close_requested = true;
-                    }
-                });
-            }
+            WindowEvent::MouseWheel { delta, .. } => self.on_mouse_wheel(window, delta),
+            WindowEvent::CloseRequested => self.close_window(&window),
             WindowEvent::ScaleFactorChanged { scale_factor, .. } => {
                 self.on_scale_factor_changed(window, scale_factor);
             }
@@ -185,6 +163,29 @@ impl App {
             }
             _ => {}
         }
+    }
+
+    fn on_mouse_wheel(&mut self, window: Window, delta: MouseScrollDelta) {
+        let scale_factor = window.effective_scale_factor();
+        let logical_position = window.mouse_position().unwrap_or_default();
+        let physical_position =
+            PhysicalPosition::new(logical_position.x * scale_factor, logical_position.y * scale_factor);
+        self.on_pointer_scroll(
+            window,
+            PointerInfo::new(PointerKind::Mouse, true),
+            delta,
+            PointerState::new(physical_position, scale_factor),
+        );
+    }
+
+    fn close_window(&mut self, window: &Window) {
+        WINDOW_MANAGER.with_borrow_mut(|window_manager| {
+            window_manager.close_window(window, &self.runtime);
+            if window_manager.is_empty() {
+                self.on_close_requested();
+                self.close_requested = true;
+            }
+        });
     }
 
     pub fn on_close_requested(&mut self) {
@@ -219,13 +220,8 @@ impl App {
         if let Some(context) = self.text_context.borrow_mut().as_mut() {
             self.clipboard.process(event_loop, context);
         }
-        #[cfg(not(target_arch = "wasm32"))]
-        self.runtime.maybe_block_on(async {
-            retgui_runtime::task::yield_now().await;
-        });
-        self.runtime.handle().update_local_set();
+        self.poll_runtime();
         self.process_resources();
-        self.process_external_work();
         if let Some(text_context) = self.text_context.borrow_mut().as_mut() {
             self.event_dispatcher.borrow_mut().dispatch_queued_events(text_context);
         }
@@ -236,6 +232,14 @@ impl App {
         WINDOW_MANAGER.with_borrow_mut(|window_manager| {
             window_manager.on_about_to_wait(self, event_loop);
         });
+    }
+
+    fn poll_runtime(&mut self) {
+        #[cfg(not(target_arch = "wasm32"))]
+        self.runtime.maybe_block_on(async {
+            retgui_runtime::task::yield_now().await;
+        });
+        self.runtime.handle().update_local_set();
     }
 
     fn process_resources(&mut self) {
@@ -261,29 +265,8 @@ impl App {
         }
     }
 
-    fn process_external_work(&mut self) {
-        // Elements changed by scheduled work request their own redraws.
-        let mut timer_jobs: Vec<Job> = vec![];
-        while let Some(mut work) = pop_gui_thread_work() {
-            if work.interval.is_none() || work.last_run.elapsed() >= work.interval.unwrap() {
-                (work.callback)();
-                work.last_run = JobInstant::now();
-            }
-
-            if work.interval.is_some() {
-                timer_jobs.push(work);
-            }
-        }
-
-        for timer_job in timer_jobs {
-            push_gui_thread_work(timer_job);
-        }
-    }
-
     #[cfg(feature = "audio")]
     fn update_audio_ui(&mut self) {
-        use std::any::Any;
-        use std::ops::DerefMut;
         let now = Instant::now();
         if !audio_ui_update_due(self.last_audio_ui_update, now) {
             return;
@@ -293,14 +276,7 @@ impl App {
         AUDIO_CONTEXT.with(|audio_context| {
             if let Some(ctx) = audio_context.get() {
                 for audio_element in &ctx.borrow().sounds {
-                    if let Some(audio) = ELEMENTS.with(|elements| elements.borrow().get(*audio_element).cloned()) {
-                        let audio = audio.upgrade().unwrap();
-                        let mut audio = audio.borrow_mut();
-                        let audio: &mut AudioInner = (audio.deref_mut() as &mut dyn Any)
-                            .downcast_mut()
-                            .expect("Failed to downcast");
-                        audio.update();
-                    }
+                    update_audio_element(*audio_element);
                 }
             }
         });
@@ -351,7 +327,7 @@ impl App {
         &mut self,
         window: Window,
         pointer: PointerInfo,
-        delta: winit::event::MouseScrollDelta,
+        delta: MouseScrollDelta,
         state: PointerState,
     ) {
         let pointer_scroll_update =
@@ -359,7 +335,7 @@ impl App {
         if window.inner.borrow_mut().maybe_zoom(&pointer_scroll_update) {
             return;
         }
-        self.dispatch_event(window, EventKind::PointerScroll(pointer_scroll_update));
+        self.dispatch_event(&window, EventKind::PointerScroll(pointer_scroll_update));
     }
 
     pub fn on_pointer_button(
@@ -382,15 +358,15 @@ impl App {
         } else {
             EventKind::PointerDown(pointer_event)
         };
-        window.set_mouse_position(Some(Point::new(cursor_position.x, cursor_position.y)));
+        window.set_mouse_position(Some(cursor_position));
 
-        self.dispatch_event(window.clone(), event);
+        self.dispatch_event(&window, event);
     }
 
     pub fn on_pointer_moved(&mut self, window: Window, pointer: PointerInfo, state: PointerState) {
         window.set_mouse_position(Some(state.logical_point()));
         let event = PointerMovedEvent::new(DynElement::new(window.inner.clone()), pointer, state);
-        self.dispatch_event(window.clone(), EventKind::PointerMoved(event));
+        self.dispatch_event(&window, EventKind::PointerMoved(event));
     }
 
     pub fn on_ime(&mut self, window: Window, ime: Ime) {
@@ -402,7 +378,7 @@ impl App {
             window.inner.borrow_mut().ime_composing = is_composing;
         }
         let event = ImeEvent::new(DynElement::new(window.inner.clone()), ime);
-        self.dispatch_event(window.clone(), EventKind::Ime(event));
+        self.dispatch_event(&window, EventKind::Ime(event));
     }
 
     pub fn on_keyboard_input(&mut self, window: Window, keyboard_input: KeyEvent) {
@@ -431,15 +407,15 @@ impl App {
             ElementState::Pressed => EventKind::KeyDown(event),
             ElementState::Released => EventKind::KeyUp(event),
         };
-        let prevent_defaults = self.dispatch_event(window.clone(), event);
+        let prevent_defaults = self.dispatch_event(&window, event);
         if !prevent_defaults && let Some(target) = navigation_target {
             target.borrow_mut().focus();
             scrollable::handle_accessibility_scroll_event(&mut *target.borrow_mut(), &AccessEvent::ScrollIntoView);
             window.request_redraw();
         }
     }
-    
-    fn dispatch_event(&mut self, window: Window, mut event: EventKind) -> bool {
+
+    fn dispatch_event(&mut self, window: &Window, mut event: EventKind) -> bool {
         let mouse_pos = window.mouse_position();
         self.event_dispatcher.borrow_mut().dispatch_event(
             &mut event,
@@ -468,35 +444,46 @@ impl App {
 
     /// Initialize any data needed to layout/render text.
     fn setup_text_context(&mut self) {
-        if self.text_context.borrow().is_none() {
-            #[cfg(any(target_arch = "wasm32", not(feature = "system_fonts")))]
-            let mut text_context = TextContext::new();
+        self.text_context.borrow_mut().get_or_insert_with(|| {
             #[cfg(all(not(target_arch = "wasm32"), feature = "system_fonts"))]
-            let text_context = TextContext::new();
-
+            let context = TextContext::new();
             #[cfg(any(target_arch = "wasm32", not(feature = "system_fonts")))]
-            {
-                let regular = include_bytes!("../../assets/fonts/Roboto-VariableFont_wdth,wght.ttf");
-                let italic = include_bytes!("../../assets/fonts/Roboto-Italic-VariableFont_wdth,wght.ttf");
+            let context = {
+                let mut context = TextContext::new();
+                register_fallback_fonts(&mut context);
+                context
+            };
+            context
+        });
+    }
+}
 
-                fn register_and_append(font_data: &'static [u8], text_context: &mut TextContext) {
-                    let blob = peniko::Blob::new(Arc::new(font_data));
-                    let fonts = text_context.font_context.collection.register_fonts(blob, None);
+#[cfg(feature = "audio")]
+fn update_audio_element(id: u64) {
+    use std::any::Any;
 
-                    // Register all the Roboto families under parley::GenericFamily::SystemUi.
-                    // This will become the fallback font for platforms like WASM.
-                    text_context
-                        .font_context
-                        .collection
-                        .append_generic_families(parley::GenericFamily::SystemUi, fonts.iter().map(|f| f.0));
-                }
+    let Some(element) = ELEMENTS.with_borrow(|elements| elements.get(id).cloned()) else {
+        return;
+    };
+    let element = element.upgrade().unwrap();
+    let mut element = element.borrow_mut();
+    let audio = (&mut *element as &mut dyn Any)
+        .downcast_mut::<AudioInner>()
+        .expect("Failed to downcast");
+    audio.update();
+}
 
-                register_and_append(regular, &mut text_context);
-                register_and_append(italic, &mut text_context);
-            }
-
-            *self.text_context.borrow_mut() = Some(text_context);
-        }
+#[cfg(any(target_arch = "wasm32", not(feature = "system_fonts")))]
+fn register_fallback_fonts(context: &mut TextContext) {
+    let fonts: [&'static [u8]; 2] = [
+        include_bytes!("../../assets/fonts/Roboto-VariableFont_wdth,wght.ttf"),
+        include_bytes!("../../assets/fonts/Roboto-Italic-VariableFont_wdth,wght.ttf"),
+    ];
+    let collection = &mut context.font_context.collection;
+    for data in fonts {
+        let blob = peniko::Blob::new(Arc::new(data));
+        let families = collection.register_fonts(blob, None);
+        collection.append_generic_families(parley::GenericFamily::SystemUi, families.iter().map(|family| family.0));
     }
 }
 
