@@ -51,7 +51,7 @@ fn copy_mouse_selected_text_to_clipboard() {
         }
         test.modifiers_changed(&window, ModifiersState::empty());
 
-        assert_eq!(text.get_text(), "Copy this text", "copy must not modify the source");
+        assert_eq!(Text::text(&text), "Copy this text", "copy must not modify the source");
         assert_eq!(
             test.clipboard_text(),
             "Copy this text",
